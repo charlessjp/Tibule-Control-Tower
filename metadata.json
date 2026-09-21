@@ -1,0 +1,6 @@
+{
+  "name": "Tibule Control Tower",
+  "description": "Internal workforce operations, workload intelligence and performance management platform for Tibule.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
