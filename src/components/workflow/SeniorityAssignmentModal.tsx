@@ -34,6 +34,7 @@ export const SeniorityAssignmentModal: React.FC<SeniorityAssignmentModalProps> =
 
   const [prescribedHours, setPrescribedHours] = useState<number>(benchmarkHours);
   const [dueDate, setDueDate] = useState<string>(job?.dueDate || '2026-09-25T17:00:00Z');
+  const [overrideReason, setOverrideReason] = useState<string>('');
 
   // Update prescribed hours automatically when staff selection or seniority changes
   useEffect(() => {
@@ -45,6 +46,9 @@ export const SeniorityAssignmentModal: React.FC<SeniorityAssignmentModalProps> =
 
   if (!isOpen || !job) return null;
 
+  const standardBenchmarkForSelected = selectedUser ? getStandardTaskBenchmarkHours(standardTask, selectedUser.seniority || 'mid') : 16;
+  const isOverridden = prescribedHours !== standardBenchmarkForSelected;
+
   const handleAssign = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStaffId) return;
@@ -54,7 +58,8 @@ export const SeniorityAssignmentModal: React.FC<SeniorityAssignmentModalProps> =
       selectedStaffId,
       staffSeniority,
       Number(prescribedHours),
-      dueDate
+      dueDate,
+      isOverridden ? overrideReason : undefined
     );
 
     onClose();
@@ -207,9 +212,9 @@ export const SeniorityAssignmentModal: React.FC<SeniorityAssignmentModalProps> =
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div>
               <label className="block text-xs font-semibold mb-1 flex items-center justify-between">
-                <span>Prescribed Benchmark Hours</span>
+                <span>Manager Allocation Hours</span>
                 <span className="text-[10px] font-normal" style={{ color: 'var(--color-brand)' }}>
-                  {selectedUser?.name} ({staffSeniority.toUpperCase()})
+                  Standard: {standardBenchmarkForSelected}h
                 </span>
               </label>
               <div className="relative">
@@ -237,6 +242,26 @@ export const SeniorityAssignmentModal: React.FC<SeniorityAssignmentModalProps> =
               />
             </div>
           </div>
+
+          {/* Override Justification if hours differ from benchmark */}
+          {isOverridden && (
+            <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 space-y-1.5 animate-in fade-in">
+              <label className="block text-xs font-semibold text-amber-400">
+                Manager Allocation Rationale (Override from Standard {standardBenchmarkForSelected}h)
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Added 4h buffer for complex vector typography and multi-lingual master sets..."
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-amber-500/40 bg-surface text-text-primary text-xs outline-hidden focus:border-amber-400"
+              />
+              <p className="text-[10px] text-amber-300/80">
+                This rationale will be recorded in the immutable operational event stream to maintain transparency.
+              </p>
+            </div>
+          )}
 
           {/* Capacity warning callout if assignee has existing active workload */}
           {capacityInfo && capacityInfo.activeJobsCount > 0 && (

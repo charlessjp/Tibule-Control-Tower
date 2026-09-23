@@ -90,7 +90,7 @@ const SYSTEM_TERM_MAP: Record<string, string> = {
   mid: 'Specialist',
   senior: 'Senior',
   lead: 'Lead',
-  nss_intern: 'NSS / Intern',
+  nss_intern: 'NSS/Intern',
   low: 'Low',
   medium: 'Medium',
   high: 'High',
@@ -201,8 +201,11 @@ export function formatAuditAction(action?: string | null): string {
 }
 
 export function formatSeniority(seniority?: string | null): string {
-  if (!seniority) return 'Unspecified';
+  if (!seniority) return 'Specialist';
   const lower = seniority.trim().toLowerCase();
+  if (lower === 'nss_intern' || lower === 'nss / intern' || lower === 'nss/intern') {
+    return 'NSS/Intern';
+  }
   return SYSTEM_TERM_MAP[lower] || formatReadable(seniority);
 }
 

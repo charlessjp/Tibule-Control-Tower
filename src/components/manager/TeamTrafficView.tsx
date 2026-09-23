@@ -4,6 +4,7 @@ import { SpotlightCard } from '../common/SpotlightCard';
 import { CapacityMeter } from '../common/CapacityMeter';
 import { TrafficState } from '../../types';
 import { SeniorityBadge } from '../common/SeniorityBadge';
+import { canGenerateReportForUser } from '../../utils/reportPermissions';
 import {
   Users,
   Filter,
@@ -12,7 +13,8 @@ import {
   ChevronRight,
   CheckCircle2,
   AlertTriangle,
-  Lock
+  Lock,
+  FileDown
 } from 'lucide-react';
 
 export const TeamTrafficView: React.FC = () => {
@@ -22,6 +24,7 @@ export const TeamTrafficView: React.FC = () => {
     currentUser,
     employeeCapacities,
     setSelectedEmployeeId,
+    openReportModal,
     theme
   } = useApp();
 
@@ -183,12 +186,27 @@ export const TeamTrafficView: React.FC = () => {
                   />
                 </div>
 
-                <div
-                  className="text-xs font-semibold flex items-center gap-0.5 shrink-0"
-                  style={{ color: 'var(--color-brand)' }}
-                >
-                  <span>Details</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2 shrink-0">
+                  {canGenerateReportForUser(currentUser, member, users, teams) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openReportModal(member.id);
+                      }}
+                      title={`Generate performance report for ${member.name}`}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition-all cursor-pointer"
+                    >
+                      <FileDown className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="hidden sm:inline">PDF Dossier</span>
+                    </button>
+                  )}
+                  <div
+                    className="text-xs font-semibold flex items-center gap-0.5"
+                    style={{ color: 'var(--color-brand)' }}
+                  >
+                    <span>Details</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </div>
                 </div>
               </div>
             </SpotlightCard>

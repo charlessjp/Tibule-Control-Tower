@@ -21,7 +21,12 @@ import {
   Zap,
   Sliders,
   ChevronRight,
-  Lock
+  Lock,
+  Clock,
+  Award,
+  Sunrise,
+  Sunset,
+  ThumbsUp
 } from 'lucide-react';
 
 export const ManagerDashboard: React.FC = () => {
@@ -37,7 +42,10 @@ export const ManagerDashboard: React.FC = () => {
     rebalanceWorkload,
     resolveException,
     resolveBlocker,
-    setMetricTraceModal
+    setMetricTraceModal,
+    overtimeLogs,
+    acknowledgeOvertime,
+    getUserOvertimeSummary
   } = useApp();
 
   const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
@@ -201,6 +209,7 @@ export const ManagerDashboard: React.FC = () => {
               trafficState: 'clear'
             };
 
+            const ot = getUserOvertimeSummary(member.id);
             const isOver = cap.capacityPercent >= 95;
             const isNear = cap.capacityPercent >= 80;
 
@@ -224,11 +233,29 @@ export const ManagerDashboard: React.FC = () => {
                       {member.name.charAt(0)}
                     </div>
                     <div>
-                      <div className="font-bold text-sm text-text-primary group-hover:text-brand-primary transition-colors">
-                        {member.name}
+                      <div className="flex items-center gap-2">
+                        <div className="font-bold text-sm text-text-primary group-hover:text-brand-primary transition-colors">
+                          {member.name}
+                        </div>
+                        {ot.goodBooksPoints > 0 && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-0.5">
+                            <Award className="w-3 h-3 text-amber-500" />
+                            +{ot.goodBooksPoints} pts
+                          </span>
+                        )}
+                        {ot.pendingCount > 0 && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                            {ot.pendingCount} pending endorsement
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] font-mono text-text-tertiary">
                         {member.jobTitle}
+                        {ot.totalHours > 0 && (
+                          <span className="ml-2 text-amber-600 dark:text-amber-400 font-bold">
+                            · {ot.totalHours}h OT (Pre-9: {ot.pre9amHours}h, Post-5: {ot.post5pmHours}h)
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -374,6 +401,123 @@ export const ManagerDashboard: React.FC = () => {
           ))}
         </div>
       </section>
+
+      {/* 6. TEAM GOOD BOOKS & OVERTIME MATERIAL REVIEW */}
+      {(() => {
+        const teamUserIds = new Set(teamMembers.map((m) => m.id));
+        const teamOvertimeLogs = overtimeLogs.filter((log) => teamUserIds.has(log.userId));
+        const pendingCount = teamOvertimeLogs.filter((l) => l.status === 'pending_acknowledgment').length;
+        const totalTeamOtHours = teamOvertimeLogs.reduce((sum, l) => sum + l.hoursLogged, 0);
+        const totalGoodBooksPts = teamOvertimeLogs.reduce((sum, l) => sum + l.goodBooksPoints, 0);
+
+        return (
+          <section className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-500" />
+                  <h2 className="text-base font-bold text-text-primary tracking-tight flex items-center gap-2">
+                    <span>Team Good Books &amp; Overtime Material</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      Standard: 9:00 AM – 5:00 PM
+                    </span>
+                  </h2>
+                </div>
+                <p className="text-xs text-text-tertiary mt-0.5">
+                  Review early arrivals (pre-9 AM) and late finishes (post-5 PM) logged on team deliverables. Endorse genuine employee material into their permanent Good Books file.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-lg bg-surface border border-border text-xs font-mono">
+                  Team OT: <strong className="text-amber-500">{totalTeamOtHours.toFixed(1)}h</strong>
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-surface border border-border text-xs font-mono">
+                  Points: <strong className="text-emerald-500">+{totalGoodBooksPts}</strong>
+                </span>
+                {pendingCount > 0 && (
+                  <span className="px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold font-mono">
+                    {pendingCount} Pending Endorsement
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {teamOvertimeLogs.length === 0 ? (
+              <div className="p-8 rounded-2xl border border-border bg-surface text-center space-y-2">
+                <Clock className="w-7 h-7 text-text-tertiary mx-auto opacity-50" />
+                <div className="text-xs font-semibold text-text-secondary">
+                  No overtime logged yet by team members.
+                </div>
+                <p className="text-[11px] text-text-tertiary max-w-md mx-auto">
+                  When team members log extra hours before 9:00 AM or after 5:00 PM on active assignments, their entries and material evidence will appear here for manager endorsement.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {teamOvertimeLogs.map((log) => {
+                  const member = users.find((u) => u.id === log.userId);
+                  return (
+                    <SpotlightCard key={log.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-surface-elevated border border-border flex items-center justify-center font-bold text-xs text-text-primary">
+                            {member?.name.charAt(0) || 'U'}
+                          </div>
+                          <div>
+                            <div className="font-bold text-xs text-text-primary">
+                              {log.userName}
+                            </div>
+                            <div className="text-[10px] font-mono text-text-tertiary">
+                              {log.jobTitle} ({log.jobId})
+                            </div>
+                          </div>
+                        </div>
+
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                          +{log.hoursLogged}h · {log.period === 'pre_9am' ? 'Pre-9 AM' : log.period === 'post_5pm' ? 'Post-5 PM' : 'Weekend'}
+                        </span>
+                      </div>
+
+                      {/* Material Note */}
+                      <div className="p-2.5 rounded-lg bg-surface-elevated/70 border border-border/80 text-xs space-y-1">
+                        <span className="text-[9px] uppercase font-mono font-bold text-text-tertiary block">
+                          Employee Material &amp; Focus Context:
+                        </span>
+                        <p className="text-text-secondary leading-relaxed italic text-[11px]">
+                          &ldquo;{log.materialNote}&rdquo;
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-border/60 text-xs">
+                        <div className="text-[10px] font-mono text-text-tertiary">
+                          {log.date} · {log.startTime}–{log.endTime} · <strong className="text-emerald-500">+{log.goodBooksPoints} pts</strong>
+                        </div>
+
+                        {log.status === 'pending_acknowledgment' ? (
+                          <button
+                            type="button"
+                            onClick={() => acknowledgeOvertime(log.id)}
+                            className="px-3 py-1 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <ThumbsUp className="w-3.5 h-3.5" />
+                            <span>Endorse for Good Books</span>
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Endorsed ({log.acknowledgedByName || 'Manager'})</span>
+                          </div>
+                        )}
+                      </div>
+                    </SpotlightCard>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        );
+      })()}
     </div>
   );
 };

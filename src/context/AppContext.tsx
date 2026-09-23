@@ -25,8 +25,16 @@ import {
   DeliverableEscalationStage,
   WebNotificationItem,
   EfficiencyReward,
-  EfficiencyLeaderboardEntry
+  EfficiencyLeaderboardEntry,
+  OvertimeLog,
+  OvertimePeriod,
+  OperationalEvent,
+  WorkCycle,
+  ReworkClassification,
+  RevertCategory,
+  BlockerType
 } from '../types';
+import { calculateUserCapacity } from '../utils/capacityEngine';
 import {
   evaluateDeliverableEscalation,
   generateInitialWebNotifications,
@@ -40,7 +48,8 @@ import {
   INITIAL_EXCEPTIONS,
   INITIAL_CASES,
   INITIAL_RECOGNITIONS,
-  INITIAL_AUDIT_EVENTS
+  INITIAL_AUDIT_EVENTS,
+  INITIAL_OVERTIME_LOGS
 } from '../mockData';
 import { INITIAL_BRANDS } from '../data/brands';
 import {
@@ -120,13 +129,15 @@ interface AppContextType {
   setShowBuildCaseModal: (show: boolean) => void;
   showCorrectionModal: boolean;
   setShowCorrectionModal: (show: boolean) => void;
+  operationalEvents: OperationalEvent[];
+  logOperationalEvent: (event: Omit<OperationalEvent, 'id' | 'timestamp' | 'actorId' | 'actorName' | 'actorRole'>) => void;
   // Actions
   createJob: (job: Omit<Job, 'id' | 'createdDate' | 'commentsCount' | 'attachmentsCount'>) => void;
   updateJobStatus: (jobId: string, status: JobStatus, reason?: string) => void;
   assignJob: (jobId: string, assigneeId: string) => void;
   reassignJob: (jobId: string, newAssigneeId: string, reason: string) => void;
   unassignJob: (jobId: string) => void;
-  indicateBlocker: (jobId: string, blockerReason: string, dependency?: string) => void;
+  indicateBlocker: (jobId: string, blockerReason: string, dependency?: string, blockerType?: BlockerType) => void;
   resolveBlocker: (jobId: string) => void;
   addComment: (jobId: string, content: string) => void;
   createCase: (caseItem: Omit<ProgressionCase, 'id' | 'submissionDate'>) => void;
@@ -157,7 +168,8 @@ interface AppContextType {
     assigneeId: string,
     seniority: SeniorityLevel,
     prescribedHours: number,
-    dueDate?: string
+    dueDate?: string,
+    overrideReason?: string
   ) => void;
   staffSubmitDeliverable: (
     jobId: string,
@@ -177,7 +189,9 @@ interface AppContextType {
     feedbackNotes: string,
     requestedChanges: string[],
     additionalHours?: number,
-    urgency?: Priority
+    urgency?: Priority,
+    reworkClassification?: ReworkClassification,
+    revertCategory?: RevertCategory
   ) => void;
   resolveRevertConflict: (
     jobId: string,
@@ -218,6 +232,41 @@ interface AppContextType {
   markAllNotificationsRead: () => void;
   deleteNotification: (id: string) => void;
   awardReward: (rewardData: Omit<EfficiencyReward, 'id'>) => void;
+  // Overtime & Good Books Engine
+  overtimeLogs: OvertimeLog[];
+  isLogOvertimeModalOpen: boolean;
+  setIsLogOvertimeModalOpen: (open: boolean) => void;
+  logOvertimeTargetJobId: string | null;
+  setLogOvertimeTargetJobId: (jobId: string | null) => void;
+  openLogOvertimeModal: (jobId?: string) => void;
+  closeLogOvertimeModal: () => void;
+  logOvertime: (entry: {
+    jobId: string;
+    period: OvertimePeriod;
+    date: string;
+    startTime: string;
+    endTime: string;
+    hoursLogged: number;
+    materialNote: string;
+  }) => void;
+  acknowledgeOvertime: (logId: string, note?: string) => void;
+  getUserOvertimeSummary: (userId: string) => {
+    totalHours: number;
+    pre9amHours: number;
+    post5pmHours: number;
+    weekendHours: number;
+    count: number;
+    goodBooksPoints: number;
+    acknowledgedCount: number;
+    logs: OvertimeLog[];
+  };
+  // Performance PDF Report Modal
+  isReportModalOpen: boolean;
+  setIsReportModalOpen: (open: boolean) => void;
+  reportTargetUserId: string | null;
+  setReportTargetUserId: (id: string | null) => void;
+  openReportModal: (targetUserId?: string) => void;
+  closeReportModal: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -254,6 +303,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [efficiencyLeaderboard, setEfficiencyLeaderboard] = useState<EfficiencyLeaderboardEntry[]>(INITIAL_LEADERBOARD);
   const [efficiencyRewards, setEfficiencyRewards] = useState<EfficiencyReward[]>(INITIAL_REWARDS);
   const [isDeadlineRadarOpen, setIsDeadlineRadarOpen] = useState<boolean>(false);
+
+  // V2 Operational Event Stream
+  const [operationalEvents, setOperationalEvents] = useState<OperationalEvent[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_operational_events');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_operational_events', JSON.stringify(operationalEvents));
+    } catch {}
+  }, [operationalEvents]);
+
+  // Overtime & Good Books State
+  const [overtimeLogs, setOvertimeLogs] = useState<OvertimeLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_overtime_logs');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_OVERTIME_LOGS;
+  });
+
+  const [isLogOvertimeModalOpen, setIsLogOvertimeModalOpen] = useState<boolean>(false);
+  const [logOvertimeTargetJobId, setLogOvertimeTargetJobId] = useState<string | null>(null);
+
+  // Performance PDF Report Modal State
+  const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
+  const [reportTargetUserId, setReportTargetUserId] = useState<string | null>(null);
+
+  const openReportModal = useCallback((targetUserId?: string) => {
+    setReportTargetUserId(targetUserId || null);
+    setIsReportModalOpen(true);
+  }, []);
+
+  const closeReportModal = useCallback(() => {
+    setIsReportModalOpen(false);
+    setReportTargetUserId(null);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_overtime_logs', JSON.stringify(overtimeLogs));
+    } catch {}
+  }, [overtimeLogs]);
 
   // Active persona: restore from active session if exists, otherwise Kwame Mensah (Traffic Manager)
   const [currentUser, setCurrentUser] = useState<User>(() => {
@@ -471,6 +567,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     root.style.setProperty('--color-halo-glow', pMode.glowPrimary);
     root.style.setProperty('--color-halo-secondary', pMode.glowSecondary);
 
+    // Sync browser tab favicon dynamically with current theme mode & active brand palette
+    try {
+      const isDarkMode = theme === 'dark';
+      const bgColor = isDarkMode ? pMode.bgSurfaceElevated : pMode.accentPrimary;
+      const borderColor = isDarkMode ? pMode.accentPrimary : 'transparent';
+      const strokeColor = isDarkMode ? pMode.accentPrimary : pMode.accentContrast;
+      
+      const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"><rect width="32" height="32" rx="8" fill="${bgColor}" stroke="${borderColor}" stroke-width="${isDarkMode ? '1.5' : '0'}" /><g fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(4, 4)"><path d="M4 6h16" /><path d="M12 6v14" /><path d="M7 11h10" /></g></svg>`;
+      const iconUrl = `data:image/svg+xml,${encodeURIComponent(svgString)}`;
+
+      const faviconLink = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+      if (faviconLink) {
+        faviconLink.href = iconUrl;
+      }
+      const appleTouchLink = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
+      if (appleTouchLink) {
+        appleTouchLink.href = iconUrl;
+      }
+    } catch {
+      // ignore
+    }
+
     try {
       localStorage.setItem('tibule_appearance', appearancePreference);
       localStorage.setItem('tibule_theme', theme);
@@ -602,51 +720,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAuditEvents((prev) => [newEvent, ...prev]);
   }, [currentUser]);
 
-  // Calculate capacity engine metrics
+  // V2 Structured Operational Event Logger
+  const logOperationalEvent = useCallback((
+    event: Omit<OperationalEvent, 'id' | 'timestamp' | 'actorId' | 'actorName' | 'actorRole'>
+  ) => {
+    const newOpEvent: OperationalEvent = {
+      ...event,
+      id: `ope-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toISOString(),
+      actorId: currentUser.id,
+      actorName: currentUser.name,
+      actorRole: currentUser.jobTitle
+    };
+    setOperationalEvents((prev) => [newOpEvent, ...prev]);
+  }, [currentUser]);
+
+  // Calculate capacity engine metrics with V2 availability & explainability model
   const employeeCapacities = useMemo(() => {
     const calc: Record<string, EmployeeCapacityCalculation> = {};
-
     users.forEach((user) => {
-      const userJobs = jobs.filter((j) => j.assigneeId === user.id && j.status !== 'completed');
-      const assignedHours = userJobs.reduce((sum, j) => sum + (j.estimatedHours || 0), 0);
-      const capHours = user.capacityHoursPerWeek || 38;
-      const capacityPercent = Math.round((assignedHours / capHours) * 100);
-
-      const blockedCount = userJobs.filter((j) => j.status === 'blocked').length;
-      const dueSoonCount = userJobs.filter((j) => {
-        const due = new Date(j.dueDate).getTime();
-        const now = new Date('2026-09-14T09:30:00Z').getTime();
-        return due - now < 48 * 3600 * 1000 && due >= now;
-      }).length;
-
-      let trafficState: TrafficState = 'clear';
-      if (blockedCount > 0 && capacityPercent >= 90) {
-        trafficState = 'blocked';
-      } else if (capacityPercent >= 105 || (capacityPercent >= 95 && dueSoonCount >= 2)) {
-        trafficState = 'critical';
-      } else if (capacityPercent >= 85) {
-        trafficState = 'congested';
-      } else if (capacityPercent >= 65) {
-        trafficState = 'building';
-      } else {
-        trafficState = 'clear';
-      }
-
-      calc[user.id] = {
-        userId: user.id,
-        name: user.name,
-        jobTitle: user.jobTitle,
-        teamId: user.teamId,
-        capacityHoursPerWeek: capHours,
-        assignedHours,
-        capacityPercent,
-        activeJobsCount: userJobs.length,
-        dueSoonCount,
-        blockedCount,
-        trafficState
-      };
+      calc[user.id] = calculateUserCapacity(user, jobs);
     });
-
     return calc;
   }, [users, jobs]);
 
@@ -749,40 +843,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [logAuditEvent]);
 
-  const indicateBlocker = useCallback((jobId: string, blockerReason: string, dependency?: string) => {
+  const indicateBlocker = useCallback((
+    jobId: string,
+    blockerReason: string,
+    dependency?: string,
+    blockerType: BlockerType = 'scope_clarification'
+  ) => {
     setJobs((prev) =>
       prev.map((job) => {
         if (job.id === jobId) {
-          logAuditEvent('JOB_BLOCKED', jobId, job.title, job.status, 'BLOCKED', `Blocker indicated: ${blockerReason}`);
+          logAuditEvent('JOB_BLOCKED', jobId, job.title, job.status, 'BLOCKED', `[${blockerType}] ${blockerReason}`);
+          
+          logOperationalEvent({
+            eventType: 'blocker_logged',
+            jobId,
+            jobTitle: job.title,
+            cycleNumber: job.activeCycleNumber || 1,
+            summary: `Blocker indicated (${blockerType}): ${blockerReason}`,
+            impact: 'blocked'
+          });
+
           return {
             ...job,
             status: 'blocked',
             blockerReason,
             blockedSince: new Date().toISOString(),
-            dependencies: dependency ? [...(job.dependencies || []), dependency] : job.dependencies
+            dependencies: dependency ? [...(job.dependencies || []), dependency] : job.dependencies,
+            blockerDetail: {
+              type: blockerType,
+              description: blockerReason,
+              loggedAt: new Date().toISOString(),
+              loggedBy: currentUser.name,
+              dependency
+            }
           };
         }
         return job;
       })
     );
-  }, [logAuditEvent]);
+  }, [currentUser, logAuditEvent, logOperationalEvent]);
 
   const resolveBlocker = useCallback((jobId: string) => {
     setJobs((prev) =>
       prev.map((job) => {
         if (job.id === jobId) {
           logAuditEvent('JOB_UNBLOCKED', jobId, job.title, 'BLOCKED', 'IN_PROGRESS', 'Dependency resolved by team');
+          
+          logOperationalEvent({
+            eventType: 'blocker_resolved',
+            jobId,
+            jobTitle: job.title,
+            cycleNumber: job.activeCycleNumber || 1,
+            summary: `Blocker cleared: Work resumed`,
+            impact: 'neutral'
+          });
+
           return {
             ...job,
             status: 'in_progress',
             blockerReason: undefined,
-            blockedSince: undefined
+            blockedSince: undefined,
+            blockerDetail: undefined
           };
         }
         return job;
       })
     );
-  }, [logAuditEvent]);
+  }, [logAuditEvent, logOperationalEvent]);
 
   const addComment = useCallback((jobId: string, content: string) => {
     const newComment: JobComment = {
@@ -922,6 +1049,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }) => {
     const newId = `CT-${Math.floor(1865 + Math.random() * 800)}`;
     const baseHours = brief.estimatedHours || getStandardTaskBenchmarkHours(brief.standardTaskType, 'mid');
+    
+    // V2 Initialize WorkCycle 1
+    const initialCycle: WorkCycle = {
+      id: `cyc-${newId.toLowerCase()}-1`,
+      jobId: newId,
+      cycleNumber: 1,
+      title: `Cycle 1: ${brief.title}`,
+      cycleType: 'initial_production',
+      standardAllocation: baseHours,
+      managerAllocation: baseHours,
+      actualEffort: 0,
+      reworkEffort: 0,
+      startedAt: new Date().toISOString(),
+      status: 'active'
+    };
+
     const newJob: Job = {
       id: newId,
       title: brief.title,
@@ -936,6 +1079,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       standardTaskType: brief.standardTaskType,
       workflowStage: 'brief_intake',
       benchmarkBaseHours: baseHours,
+      standardAllocationHours: baseHours,
+      managerAllocationHours: baseHours,
+      actualEffortHours: 0,
+      reworkEffortHours: 0,
       estimatedHours: baseHours,
       actualHours: 0,
       createdDate: new Date().toISOString(),
@@ -943,11 +1090,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'unassigned',
       commentsCount: 0,
       attachmentsCount: 1,
-      isAtRisk: false
+      isAtRisk: false,
+      activeCycleNumber: 1,
+      workCycles: [initialCycle]
     };
 
     setJobs((prev) => [newJob, ...prev]);
     logAuditEvent('BRIEF_SUBMITTED', newId, newJob.title, undefined, 'brief_intake', `Client Service submitted standard brief (${brief.standardTaskType})`);
+    logOperationalEvent({
+      eventType: 'cycle_started',
+      jobId: newId,
+      jobTitle: newJob.title,
+      cycleNumber: 1,
+      summary: `Initial work cycle opened with ${baseHours}h standard benchmark`,
+      impact: 'neutral'
+    });
   }, [logAuditEvent]);
 
   const trafficRouteBrief = useCallback((jobId: string, targetManagerId: string, notes?: string) => {
@@ -975,36 +1132,81 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     assigneeId: string,
     seniority: SeniorityLevel,
     prescribedHours: number,
-    dueDate?: string
+    dueDate?: string,
+    overrideReason?: string
   ) => {
     const staff = users.find((u) => u.id === assigneeId);
     setJobs((prev) =>
       prev.map((job) => {
         if (job.id === jobId) {
+          const standardBench = getStandardTaskBenchmarkHours(job.standardTaskType, seniority);
+          const isOverridden = prescribedHours !== standardBench;
+
           logAuditEvent(
             'STAFF_ASSIGNED_WITH_BENCHMARK',
             jobId,
             job.title,
             'unassigned',
             staff?.name || assigneeId,
-            `Assigned to ${staff?.name} (${seniority.toUpperCase()}) with ${prescribedHours}h benchmark`
+            `Assigned to ${staff?.name} (${seniority.toUpperCase()}) with ${prescribedHours}h allocation${isOverridden ? ` (Standard: ${standardBench}h, Reason: ${overrideReason || 'Manager adjustment'})` : ''}`
           );
+
+          logOperationalEvent({
+            eventType: isOverridden ? 'allocation_overridden' : 'assignment_changed',
+            jobId,
+            jobTitle: job.title,
+            summary: `Staff assigned: ${staff?.name}. Manager allocation: ${prescribedHours}h (Standard: ${standardBench}h)${isOverridden && overrideReason ? ` - Note: ${overrideReason}` : ''}`,
+            impact: isOverridden ? 'congested' : 'neutral'
+          });
+
+          // Update active workCycle allocation
+          const updatedCycles = (job.workCycles || []).map((c) => {
+            if (c.cycleNumber === (job.activeCycleNumber || 1)) {
+              return {
+                ...c,
+                standardAllocation: standardBench,
+                managerAllocation: prescribedHours,
+                managerOverrideReason: overrideReason
+              };
+            }
+            return c;
+          });
+
           return {
             ...job,
             assigneeId,
             assignedSeniority: seniority,
+            standardAllocationHours: standardBench,
+            managerAllocationHours: prescribedHours,
+            managerAllocationReason: overrideReason,
             estimatedHours: prescribedHours,
             dueDate: dueDate || job.dueDate,
             workflowStage: 'in_production',
             status: 'assigned',
             assignedDate: new Date().toISOString(),
-            startDate: new Date().toISOString()
+            startDate: new Date().toISOString(),
+            workCycles: updatedCycles.length > 0 ? updatedCycles : [
+              {
+                id: `cyc-${job.id.toLowerCase()}-1`,
+                jobId: job.id,
+                cycleNumber: 1,
+                title: `Cycle 1: ${job.title}`,
+                cycleType: 'initial_production',
+                standardAllocation: standardBench,
+                managerAllocation: prescribedHours,
+                actualEffort: 0,
+                reworkEffort: 0,
+                startedAt: new Date().toISOString(),
+                status: 'active',
+                managerOverrideReason: overrideReason
+              }
+            ]
           };
         }
         return job;
       })
     );
-  }, [users, logAuditEvent]);
+  }, [users, logAuditEvent, logOperationalEvent]);
 
   const staffSubmitDeliverable = useCallback((
     jobId: string,
@@ -1045,6 +1247,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setJobs((prev) =>
       prev.map((job) => {
         if (job.id === jobId) {
+          const currentCycleNum = job.activeCycleNumber || 1;
+
           if (decision === 'feedback') {
             const extraHours = revisedHours || 4;
             const feedbackItem = {
@@ -1056,17 +1260,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               revisedHours: extraHours,
               timestamp: new Date().toISOString()
             };
-            logAuditEvent('MANAGER_FEEDBACK_GIVEN', jobId, job.title, 'internal_review', 'in_production', `Manager provided feedback: +${extraHours}h added`);
+
+            const nextCycleNum = currentCycleNum + 1;
+            const newCycle: WorkCycle = {
+              id: `cyc-${job.id.toLowerCase()}-${nextCycleNum}`,
+              jobId: job.id,
+              cycleNumber: nextCycleNum,
+              title: `Internal Revision: ${feedbackNotes.slice(0, 40)}...`,
+              cycleType: 'internal_revision',
+              reworkClassification: 'rework',
+              standardAllocation: extraHours,
+              managerAllocation: extraHours,
+              actualEffort: 0,
+              reworkEffort: extraHours,
+              startedAt: new Date().toISOString(),
+              status: 'active',
+              feedbackNotes
+            };
+
+            const updatedCycles = (job.workCycles || []).map((c) =>
+              c.cycleNumber === currentCycleNum
+                ? { ...c, status: 'superseded' as const, completedAt: new Date().toISOString() }
+                : c
+            );
+
+            logAuditEvent('MANAGER_FEEDBACK_GIVEN', jobId, job.title, 'internal_review', 'in_production', `Manager requested revision: +${extraHours}h rework added`);
+            logOperationalEvent({
+              eventType: 'cycle_started',
+              jobId,
+              jobTitle: job.title,
+              cycleNumber: nextCycleNum,
+              summary: `Internal revision cycle #${nextCycleNum} initiated (+${extraHours}h rework)`,
+              impact: 'congested'
+            });
+
             return {
               ...job,
               workflowStage: 'in_production',
               status: 'in_progress',
               estimatedHours: job.estimatedHours + extraHours,
+              reworkEffortHours: (job.reworkEffortHours || 0) + extraHours,
+              activeCycleNumber: nextCycleNum,
+              workCycles: [...updatedCycles, newCycle],
               feedbackHistory: [...(job.feedbackHistory || []), feedbackItem]
             };
           } else {
             // Manager Approved -> Hand off to Client Service
             logAuditEvent('MANAGER_APPROVED', jobId, job.title, 'internal_review', 'client_service_handoff', `Manager approved deliverable for client dispatch`);
+            logOperationalEvent({
+              eventType: 'quality_review_completed',
+              jobId,
+              jobTitle: job.title,
+              cycleNumber: currentCycleNum,
+              summary: `Manager review passed successfully; ready for client delivery`,
+              impact: 'neutral'
+            });
+
             return {
               ...job,
               workflowStage: 'client_service_handoff',
@@ -1077,13 +1326,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return job;
       })
     );
-  }, [currentUser, logAuditEvent]);
+  }, [currentUser, logAuditEvent, logOperationalEvent]);
 
   const clientServiceSendToClient = useCallback((jobId: string, clientContactEmail?: string) => {
     setJobs((prev) =>
       prev.map((job) => {
         if (job.id === jobId) {
           logAuditEvent('SENT_TO_CLIENT', jobId, job.title, 'client_service_handoff', 'client_review', `Dispatched to client (${clientContactEmail || job.requestor})`);
+          logOperationalEvent({
+            eventType: 'client_submitted',
+            jobId,
+            jobTitle: job.title,
+            cycleNumber: job.activeCycleNumber || 1,
+            summary: `Deliverable delivered to client for formal review`,
+            impact: 'neutral'
+          });
           return {
             ...job,
             workflowStage: 'client_review',
@@ -1093,14 +1350,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return job;
       })
     );
-  }, [logAuditEvent]);
+  }, [logAuditEvent, logOperationalEvent]);
 
   const clientSubmitRevert = useCallback((
     jobId: string,
     feedbackNotes: string,
     requestedChanges: string[],
     additionalHours: number = 4,
-    urgency: Priority = 'urgent'
+    urgency: Priority = 'urgent',
+    reworkClassification: ReworkClassification = 'correction',
+    revertCategory: RevertCategory = 'stakeholder_subjective_preference'
   ) => {
     setJobs((prev) => {
       const targetJob = prev.find((j) => j.id === jobId);
@@ -1115,14 +1374,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         urgency
       );
 
+      const currentCycleNum = targetJob.activeCycleNumber || 1;
+      const nextCycleNum = currentCycleNum + 1;
+
+      // V2 Structured Revert Cycle
+      const revertCycle: WorkCycle = {
+        id: `cyc-${targetJob.id.toLowerCase()}-${nextCycleNum}`,
+        jobId: targetJob.id,
+        cycleNumber: nextCycleNum,
+        title: `Client Revert #${revertRecord.revertCount}: ${revertCategory.replace(/_/g, ' ')}`,
+        cycleType: 'client_revert_revision',
+        reworkClassification,
+        revertCategory,
+        standardAllocation: additionalHours,
+        managerAllocation: additionalHours,
+        actualEffort: 0,
+        reworkEffort: additionalHours,
+        startedAt: new Date().toISOString(),
+        status: 'active',
+        feedbackNotes
+      };
+
+      const updatedCycles = (targetJob.workCycles || []).map((c) =>
+        c.cycleNumber === currentCycleNum
+          ? { ...c, status: 'superseded' as const, completedAt: new Date().toISOString() }
+          : c
+      );
+
       logAuditEvent(
         'CLIENT_REVERT_RECEIVED',
         jobId,
         targetJob.title,
         'client_review',
         'client_revert',
-        `Client revert #${revertRecord.revertCount}. Conflict: ${revertRecord.conflictDetected ? 'YES (Assignee busy on another job)' : 'NO'}`
+        `Client revert #${revertRecord.revertCount} [Class: ${reworkClassification}, Category: ${revertCategory}]. Conflict: ${revertRecord.conflictDetected ? 'YES' : 'NO'}`
       );
+
+      logOperationalEvent({
+        eventType: 'client_revert_received',
+        jobId,
+        jobTitle: targetJob.title,
+        cycleNumber: nextCycleNum,
+        summary: `Client Revert cycle #${nextCycleNum} registered (${reworkClassification} / ${revertCategory}). +${additionalHours}h allocated. Conflict: ${revertRecord.conflictDetected ? 'YES' : 'NO'}`,
+        impact: 'blocked'
+      });
 
       return prev.map((j) => {
         if (j.id === jobId) {
@@ -1132,13 +1427,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             status: 'reopened',
             priority: urgency,
             estimatedHours: j.estimatedHours + additionalHours,
+            reworkEffortHours: (j.reworkEffortHours || 0) + additionalHours,
+            activeCycleNumber: nextCycleNum,
+            workCycles: [...updatedCycles, revertCycle],
             clientRevertInfo: revertRecord
           };
         }
         return j;
       });
     });
-  }, [logAuditEvent]);
+  }, [logAuditEvent, logOperationalEvent]);
 
   const resolveRevertConflict = useCallback((
     jobId: string,
@@ -1718,6 +2016,133 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [logAuditEvent]);
 
+  // Overtime & Good Books Methods
+  const openLogOvertimeModal = useCallback((jobId?: string) => {
+    setLogOvertimeTargetJobId(jobId || null);
+    setIsLogOvertimeModalOpen(true);
+  }, []);
+
+  const closeLogOvertimeModal = useCallback(() => {
+    setIsLogOvertimeModalOpen(false);
+    setLogOvertimeTargetJobId(null);
+  }, []);
+
+  const logOvertime = useCallback((entry: {
+    jobId: string;
+    period: OvertimePeriod;
+    date: string;
+    startTime: string;
+    endTime: string;
+    hoursLogged: number;
+    materialNote: string;
+  }) => {
+    const targetJob = jobs.find((j) => j.id === entry.jobId);
+    const periodMultiplier = entry.period === 'weekend_crunch' ? 1.5 : entry.period === 'pre_9am' ? 1.25 : 1.1;
+    const points = Math.round(entry.hoursLogged * 10 * periodMultiplier);
+
+    const newLog: OvertimeLog = {
+      id: `ot-${Date.now()}`,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.role,
+      department: currentUser.department,
+      jobId: entry.jobId,
+      jobTitle: targetJob?.title || 'Agency Deliverable',
+      brandName: targetJob?.brandName || targetJob?.requestor || 'Client Deliverable',
+      period: entry.period,
+      date: entry.date,
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+      hoursLogged: entry.hoursLogged,
+      materialNote: entry.materialNote,
+      goodBooksPoints: points,
+      status: 'pending_acknowledgment',
+      createdAt: new Date().toISOString()
+    };
+
+    setOvertimeLogs((prev) => [newLog, ...prev]);
+
+    // Keep actual task hours synchronized
+    if (targetJob) {
+      setJobs((prev) =>
+        prev.map((j) => {
+          if (j.id === entry.jobId) {
+            return {
+              ...j,
+              actualHours: (j.actualHours || 0) + entry.hoursLogged
+            };
+          }
+          return j;
+        })
+      );
+    }
+
+    logAuditEvent(
+      'OVERTIME_LOGGED',
+      entry.jobId,
+      targetJob?.title || 'Deliverable',
+      undefined,
+      `${entry.hoursLogged} hrs (${entry.period.replace('_', ' ')})`,
+      `${currentUser.name} logged ${entry.hoursLogged}h overtime [${entry.period.replace('_', ' ')}: ${entry.startTime} - ${entry.endTime}] on task ${entry.jobId}. Material contribution: "${entry.materialNote}". Added +${points} Good Books dedication points.`
+    );
+
+    closeLogOvertimeModal();
+  }, [jobs, currentUser, logAuditEvent, closeLogOvertimeModal]);
+
+  const acknowledgeOvertime = useCallback((logId: string, note?: string) => {
+    const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
+    const newStatus = isGM ? 'acknowledged_by_gm' : 'acknowledged_by_manager';
+
+    setOvertimeLogs((prev) =>
+      prev.map((log) => {
+        if (log.id === logId) {
+          return {
+            ...log,
+            status: newStatus,
+            acknowledgedBy: currentUser.id,
+            acknowledgedByName: currentUser.name,
+            acknowledgedAt: new Date().toISOString(),
+            acknowledgmentNote: note || (isGM ? 'Endorsed by General Manager for Good Books dossier.' : 'Acknowledged by Studio Manager. Commended dedication.')
+          };
+        }
+        return log;
+      })
+    );
+
+    const targetLog = overtimeLogs.find((l) => l.id === logId);
+    if (targetLog) {
+      logAuditEvent(
+        'OVERTIME_ACKNOWLEDGED',
+        targetLog.jobId,
+        targetLog.jobTitle,
+        targetLog.status,
+        newStatus,
+        `${currentUser.name} (${currentUser.jobTitle}) endorsed ${targetLog.userName}'s ${targetLog.hoursLogged}h overtime into the agency Good Books.`
+      );
+    }
+  }, [currentUser, overtimeLogs, logAuditEvent]);
+
+  const getUserOvertimeSummary = useCallback((userId: string) => {
+    const userLogs = overtimeLogs.filter((l) => l.userId === userId);
+    const totalHours = userLogs.reduce((sum, l) => sum + l.hoursLogged, 0);
+    const pre9amHours = userLogs.filter((l) => l.period === 'pre_9am').reduce((sum, l) => sum + l.hoursLogged, 0);
+    const post5pmHours = userLogs.filter((l) => l.period === 'post_5pm').reduce((sum, l) => sum + l.hoursLogged, 0);
+    const weekendHours = userLogs.filter((l) => l.period === 'weekend_crunch').reduce((sum, l) => sum + l.hoursLogged, 0);
+    const goodBooksPoints = userLogs.reduce((sum, l) => sum + l.goodBooksPoints, 0);
+    const acknowledgedCount = userLogs.filter((l) => l.status !== 'pending_acknowledgment').length;
+
+    return {
+      totalHours: Math.round(totalHours * 10) / 10,
+      pre9amHours: Math.round(pre9amHours * 10) / 10,
+      post5pmHours: Math.round(post5pmHours * 10) / 10,
+      weekendHours: Math.round(weekendHours * 10) / 10,
+      count: userLogs.length,
+      goodBooksPoints,
+      acknowledgedCount,
+      logs: userLogs
+    };
+  }, [overtimeLogs]);
+
   return (
     <AppContext.Provider
       value={{
@@ -1779,6 +2204,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setShowBuildCaseModal,
         showCorrectionModal,
         setShowCorrectionModal,
+        operationalEvents,
+        logOperationalEvent,
         createJob,
         updateJobStatus,
         assignJob,
@@ -1820,7 +2247,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markNotificationRead,
         markAllNotificationsRead,
         deleteNotification,
-        awardReward
+        awardReward,
+        overtimeLogs,
+        isLogOvertimeModalOpen,
+        setIsLogOvertimeModalOpen,
+        logOvertimeTargetJobId,
+        setLogOvertimeTargetJobId,
+        openLogOvertimeModal,
+        closeLogOvertimeModal,
+        logOvertime,
+        acknowledgeOvertime,
+        getUserOvertimeSummary,
+        isReportModalOpen,
+        setIsReportModalOpen,
+        reportTargetUserId,
+        setReportTargetUserId,
+        openReportModal,
+        closeReportModal
       }}
     >
       {children}

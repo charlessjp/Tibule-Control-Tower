@@ -1,4 +1,4 @@
-import { User, Team, Job, ProgressionCase, Recognition, AuditEvent, ExceptionItem, JobComment } from './types';
+import { User, Team, Job, ProgressionCase, Recognition, AuditEvent, ExceptionItem, JobComment, OvertimeLog, WorkCycle, OperationalEvent } from './types';
 
 export const INITIAL_TEAMS: Team[] = [
   {
@@ -158,7 +158,15 @@ export const INITIAL_USERS: User[] = [
     createdDate: '2025-01-15',
     lastLogin: '2026-09-14T09:05:00Z',
     skillProfile: ['Brand Identity', 'Complex Art Direction', 'Typography Systems', 'Motion Direction', 'Cross-Team Coordination'],
-    capacityHoursPerWeek: 38
+    capacityHoursPerWeek: 38,
+    availability: {
+      contractedHoursPerWeek: 40,
+      leaveHours: 0,
+      trainingHours: 2,
+      meetingsHours: 6,
+      nonProductionHours: 2,
+      availableProductionHours: 30
+    }
   },
   {
     id: 'usr-amara-okafor',
@@ -174,7 +182,15 @@ export const INITIAL_USERS: User[] = [
     createdDate: '2025-02-01',
     lastLogin: '2026-09-14T08:15:00Z',
     skillProfile: ['Motion Graphics', '3D Cinema', 'Digital Advertising', 'Interactive Prototyping'],
-    capacityHoursPerWeek: 38
+    capacityHoursPerWeek: 38,
+    availability: {
+      contractedHoursPerWeek: 40,
+      leaveHours: 0,
+      trainingHours: 0,
+      meetingsHours: 4,
+      nonProductionHours: 2,
+      availableProductionHours: 34
+    }
   },
   {
     id: 'usr-priyah-sharma',
@@ -226,10 +242,10 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'usr-tariq-afriq',
     name: 'Tariq Afriq',
-    email: 'tariq.afriq@tibule.com',
+    email: 'tariq.afriq@afriqintel.com',
     role: 'admin',
     seniority: 'senior',
-    jobTitle: 'Lead Platform Architect & Admin',
+    jobTitle: 'AfriqIntel Platform Architect & Admin',
     teamId: 'team-ops',
     status: 'active',
     managerId: 'usr-marcus-sterling',
@@ -267,6 +283,26 @@ export const INITIAL_JOBS: Job[] = [
     workflowStage: 'in_production',
     assignedSeniority: 'senior',
     benchmarkBaseHours: 16,
+    standardAllocationHours: 16,
+    managerAllocationHours: 16,
+    actualEffortHours: 12,
+    reworkEffortHours: 0,
+    activeCycleNumber: 1,
+    workCycles: [
+      {
+        id: 'cyc-1842-1',
+        jobId: 'CT-1842',
+        cycleNumber: 1,
+        title: 'Initial Visual Token System & Guidelines Layout',
+        cycleType: 'initial_production',
+        standardAllocation: 16,
+        managerAllocation: 16,
+        actualEffort: 12,
+        reworkEffort: 0,
+        startedAt: relDate(-96),
+        status: 'active'
+      }
+    ],
     estimatedHours: 16,
     actualHours: 12,
     createdDate: relDate(-120),
@@ -294,6 +330,45 @@ export const INITIAL_JOBS: Job[] = [
     workflowStage: 'client_revert',
     assignedSeniority: 'senior',
     benchmarkBaseHours: 10,
+    standardAllocationHours: 10,
+    managerAllocationHours: 10,
+    actualEffortHours: 10,
+    reworkEffortHours: 4,
+    activeCycleNumber: 2,
+    workCycles: [
+      {
+        id: 'cyc-1848-1',
+        jobId: 'CT-1848',
+        cycleNumber: 1,
+        title: 'V1 Annual Impact Publication Visual Layout',
+        cycleType: 'initial_production',
+        standardAllocation: 10,
+        managerAllocation: 10,
+        actualEffort: 10,
+        reworkEffort: 0,
+        startedAt: relDate(-140),
+        submittedAt: relDate(-100),
+        reviewedAt: relDate(-90),
+        completedAt: relDate(-80),
+        status: 'superseded'
+      },
+      {
+        id: 'cyc-1848-2',
+        jobId: 'CT-1848',
+        cycleNumber: 2,
+        title: 'Emergency Fiscal Delta & Regional Legend Adjustments',
+        cycleType: 'client_revert_revision',
+        reworkClassification: 'correction',
+        revertCategory: 'client_scope_shift',
+        standardAllocation: 4,
+        managerAllocation: 4,
+        actualEffort: 0,
+        reworkEffort: 4,
+        startedAt: relDate(-24),
+        status: 'active',
+        feedbackNotes: 'Board requested emergency updates to fiscal delta figures on page 14 and alignment changes to regional map legends.'
+      }
+    ],
     estimatedHours: 14,
     actualHours: 10,
     createdDate: relDate(-160),
@@ -1023,5 +1098,115 @@ export const INITIAL_AUDIT_EVENTS: AuditEvent[] = [
     previousValue: 'NONE',
     newValue: 'PENDING_SETUP',
     details: 'Branded onboarding invitation dispatched to noah.thorne@tibule.com.'
+  }
+];
+
+export const INITIAL_OVERTIME_LOGS: OvertimeLog[] = [
+  {
+    id: 'ot-01',
+    userId: 'usr-sarah-jenkins',
+    userName: 'Sarah Jenkins',
+    userRole: 'team_lead',
+    department: 'creative',
+    jobId: 'CT-1842',
+    jobTitle: 'Q3 Zenith Global Brand Refresh Asset System',
+    brandName: 'Zenith Global Bank',
+    period: 'pre_9am',
+    date: '2026-09-18',
+    startTime: '07:00',
+    endTime: '09:00',
+    hoursLogged: 2.0,
+    materialNote: 'Arrived at 7:00 AM to rebuild the primary font kerning vector tables and responsive lockups before the client 10:00 AM executive review.',
+    goodBooksPoints: 25,
+    status: 'acknowledged_by_manager',
+    acknowledgedBy: 'usr-elena-rostova',
+    acknowledgedByName: 'Elena Rostova',
+    acknowledgedAt: '2026-09-18T11:30:00Z',
+    acknowledgmentNote: 'Exceptional ownership. This ensured our presentation went off without a hitch with the C-Suite.',
+    createdAt: '2026-09-18T09:05:00Z'
+  },
+  {
+    id: 'ot-02',
+    userId: 'usr-amara-okafor',
+    userName: 'Amara Okafor',
+    userRole: 'employee',
+    department: 'creative',
+    jobId: 'CT-1875',
+    jobTitle: 'Vodafone Cash Merchant QR Onboarding Visual Kit',
+    brandName: 'Vodafone Ghana',
+    period: 'post_5pm',
+    date: '2026-09-19',
+    startTime: '17:30',
+    endTime: '20:30',
+    hoursLogged: 3.0,
+    materialNote: 'Late evening push to complete 12 merchant animation loop variations and compress deliverables for regional field testing.',
+    goodBooksPoints: 35,
+    status: 'acknowledged_by_gm',
+    acknowledgedBy: 'usr-marcus-sterling',
+    acknowledgedByName: 'Marcus Sterling',
+    acknowledgedAt: '2026-09-20T09:15:00Z',
+    acknowledgmentNote: 'Demonstrated true initiative and pride in craft. Added directly to Good Books for upcoming Q3 promotion review.',
+    createdAt: '2026-09-19T20:35:00Z'
+  },
+  {
+    id: 'ot-03',
+    userId: 'usr-kofi-boateng',
+    userName: 'Kofi Boateng',
+    userRole: 'employee',
+    department: 'creative',
+    jobId: 'CT-1844',
+    jobTitle: 'Stanbic Wealth Management Private Banking Portal',
+    brandName: 'Stanbic Bank Ghana',
+    period: 'post_5pm',
+    date: '2026-09-20',
+    startTime: '17:00',
+    endTime: '19:30',
+    hoursLogged: 2.5,
+    materialNote: 'Stayed past 5:00 PM to debug SVG clipping bugs on the high-net-worth customer investment breakdown dashboard layout.',
+    goodBooksPoints: 30,
+    status: 'pending_acknowledgment',
+    createdAt: '2026-09-20T19:35:00Z'
+  },
+  {
+    id: 'ot-04',
+    userId: 'usr-michael-chen',
+    userName: 'Michael Chen',
+    userRole: 'employee',
+    department: 'client_services',
+    jobId: 'CT-1845',
+    jobTitle: 'Apex FinTech Omnichannel Launch Executive Deck',
+    brandName: 'Apex FinTech EMEA',
+    period: 'pre_9am',
+    date: '2026-09-21',
+    startTime: '07:30',
+    endTime: '09:00',
+    hoursLogged: 1.5,
+    materialNote: 'Early morning proofing of all financial milestone charts with legal compliance notes ahead of the C-Suite board review.',
+    goodBooksPoints: 20,
+    status: 'pending_acknowledgment',
+    createdAt: '2026-09-21T09:02:00Z'
+  },
+  {
+    id: 'ot-05',
+    userId: 'usr-liam-oconnor',
+    userName: "Liam O'Connor",
+    userRole: 'employee',
+    department: 'client_services',
+    jobId: 'CT-1860',
+    jobTitle: 'Guinness Smooth Street Culture Visual Assets',
+    brandName: 'Guinness Ghana',
+    period: 'weekend_crunch',
+    date: '2026-09-20',
+    startTime: '10:00',
+    endTime: '14:00',
+    hoursLogged: 4.0,
+    materialNote: 'Saturday emergency crunch to composite high-res photography plates for urgent print campaign billboard release.',
+    goodBooksPoints: 45,
+    status: 'acknowledged_by_manager',
+    acknowledgedBy: 'usr-david-vance',
+    acknowledgedByName: 'David Vance',
+    acknowledgedAt: '2026-09-21T08:30:00Z',
+    acknowledgmentNote: 'Superb dedication over the weekend. A true asset to the agency.',
+    createdAt: '2026-09-20T14:05:00Z'
   }
 ];

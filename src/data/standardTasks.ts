@@ -226,7 +226,7 @@ export const SENIORITY_LABELS: Record<SeniorityLevel, { label: string; badgeColo
     description: 'Executive authority. High-leverage directional oversight.'
   },
   nss_intern: {
-    label: 'NSS / Intern',
+    label: 'NSS/Intern',
     badgeColor: 'badge-seniority-junior',
     description: 'National Service Scheme personnel / intern. Undergoing structured mentorship and skill building.'
   }

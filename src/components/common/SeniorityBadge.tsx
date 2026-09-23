@@ -23,6 +23,7 @@ export const SeniorityBadge: React.FC<SeniorityBadgeProps> = ({
   const getBadgeClass = () => {
     switch (norm) {
       case 'junior':
+      case 'nss_intern':
         return 'badge-seniority-junior';
       case 'senior':
         return 'badge-seniority-senior';

@@ -19,11 +19,17 @@ import {
   ExternalLink,
   ChevronRight,
   ShieldAlert,
-  FileCheck
+  FileCheck,
+  Sunrise,
+  Sunset,
+  Sparkles,
+  Award,
+  ThumbsUp
 } from 'lucide-react';
 
 export const OperationalInspector: React.FC = () => {
   const {
+    currentUser,
     theme,
     selectedJobId,
     setSelectedJobId,
@@ -41,7 +47,11 @@ export const OperationalInspector: React.FC = () => {
     addComment,
     rebalanceWorkload,
     setShowBuildCaseModal,
-    setShowCorrectionModal
+    setShowCorrectionModal,
+    overtimeLogs,
+    acknowledgeOvertime,
+    openLogOvertimeModal,
+    getUserOvertimeSummary
   } = useApp();
 
   const isDark = theme === 'dark';
@@ -353,6 +363,74 @@ export const OperationalInspector: React.FC = () => {
                 </button>
               </form>
             </div>
+
+            {/* Overtime & Good Books on this Task */}
+            <div className="p-3 rounded-xl bg-surface-elevated/70 border border-amber-500/30 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-amber-500" />
+                  <span className="text-xs font-bold text-text-primary">Task Overtime &amp; Good Books</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openLogOvertimeModal(activeJob.id)}
+                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors cursor-pointer"
+                >
+                  + Log Overtime
+                </button>
+              </div>
+
+              {overtimeLogs.filter((l) => l.jobId === activeJob.id).length > 0 ? (
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-0.5">
+                  {overtimeLogs
+                    .filter((l) => l.jobId === activeJob.id)
+                    .map((log) => (
+                      <div
+                        key={log.id}
+                        className="p-2.5 rounded-lg bg-surface border border-border text-[11px] space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-text-primary">{log.userName}</span>
+                          <span className="font-mono text-[10px] font-bold text-amber-500">
+                            +{log.hoursLogged}h ({log.period === 'pre_9am' ? 'Pre-9 AM' : log.period === 'post_5pm' ? 'Post-5 PM' : 'Weekend'})
+                          </span>
+                        </div>
+                        <p className="text-text-secondary italic text-[10px] leading-snug">
+                          &ldquo;{log.materialNote}&rdquo;
+                        </p>
+                        <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                          <span className="text-[9px] font-mono text-emerald-500 font-bold">
+                            +{log.goodBooksPoints} Good Books pts
+                          </span>
+                          {log.status === 'pending_acknowledgment' ? (
+                            (currentUser.role === 'general_manager' || currentUser.role.includes('manager') || currentUser.role === 'admin') ? (
+                              <button
+                                type="button"
+                                onClick={() => acknowledgeOvertime(log.id)}
+                                className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <ThumbsUp className="w-3 h-3" />
+                                <span>Endorse to Good Books</span>
+                              </button>
+                            ) : (
+                              <span className="text-[9px] text-text-tertiary font-mono">Pending Endorsement</span>
+                            )
+                          ) : (
+                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>{log.status === 'acknowledged_by_gm' ? 'GM Endorsed' : 'Manager Endorsed'}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-text-tertiary">
+                  Standard hours (9–5). No early or late overtime logged yet for this deliverable.
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -451,6 +529,135 @@ export const OperationalInspector: React.FC = () => {
                   ))}
               </div>
             </div>
+
+            {/* Overtime & Good Books Career Material */}
+            {(() => {
+              const otSummary = getUserOvertimeSummary(activeEmployee.id);
+              const isManagerOrGM =
+                currentUser.role === 'general_manager' ||
+                currentUser.role === 'admin' ||
+                currentUser.role.includes('manager') ||
+                currentUser.role.includes('lead') ||
+                currentUser.role.includes('director');
+
+              return (
+                <div className="p-3.5 rounded-xl bg-surface-elevated/70 border border-amber-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Award className="w-4 h-4 text-amber-500" />
+                      <div>
+                        <div className="text-xs font-bold text-text-primary">Good Books · Overtime Material</div>
+                        <div className="text-[10px] text-text-tertiary font-mono">
+                          Standard Workday: 9:00 AM – 5:00 PM
+                        </div>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      +{otSummary.goodBooksPoints} pts
+                    </span>
+                  </div>
+
+                  {/* Stat breakdown */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 rounded-lg bg-surface border border-border">
+                      <div className="text-[9px] font-mono uppercase text-text-tertiary flex items-center justify-center gap-1">
+                        <Sunrise className="w-3 h-3 text-amber-500" />
+                        <span>Pre-9 AM</span>
+                      </div>
+                      <div className="text-xs font-bold font-mono text-text-primary mt-0.5">
+                        {otSummary.pre9amHours}h
+                      </div>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-surface border border-border">
+                      <div className="text-[9px] font-mono uppercase text-text-tertiary flex items-center justify-center gap-1">
+                        <Sunset className="w-3 h-3 text-indigo-500" />
+                        <span>Post-5 PM</span>
+                      </div>
+                      <div className="text-xs font-bold font-mono text-text-primary mt-0.5">
+                        {otSummary.post5pmHours}h
+                      </div>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-surface border border-border">
+                      <div className="text-[9px] font-mono uppercase text-text-tertiary">
+                        Total OT
+                      </div>
+                      <div className="text-xs font-bold font-mono text-amber-500 mt-0.5">
+                        {otSummary.totalHours}h
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Overtime log items */}
+                  {otSummary.logs.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="text-[10px] uppercase font-mono font-bold text-text-tertiary">
+                        Verified Task Contributions ({otSummary.logs.length})
+                      </div>
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-0.5">
+                        {otSummary.logs.map((log) => (
+                          <div
+                            key={log.id}
+                            className="p-2.5 rounded-lg bg-surface border border-border text-[11px] space-y-1.5"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-text-primary">
+                                [{log.jobId}] {log.jobTitle}
+                              </span>
+                              <span className="font-mono text-[10px] font-bold text-amber-500">
+                                {log.hoursLogged}h ({log.period === 'pre_9am' ? 'Pre-9 AM' : log.period === 'post_5pm' ? 'Post-5 PM' : 'Weekend'})
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-text-tertiary font-mono">
+                              {log.date} · {log.startTime} – {log.endTime}
+                            </div>
+                            <p className="text-text-secondary italic text-[11px] leading-snug">
+                              &ldquo;{log.materialNote}&rdquo;
+                            </p>
+
+                            <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                              <span className="text-[9px] font-mono text-emerald-500 font-bold">
+                                +{log.goodBooksPoints} Good Books pts
+                              </span>
+
+                              {log.status === 'pending_acknowledgment' ? (
+                                isManagerOrGM ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => acknowledgeOvertime(log.id)}
+                                    className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                  >
+                                    <ThumbsUp className="w-3 h-3" />
+                                    <span>Endorse into Good Books</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-[9px] text-text-tertiary font-mono">
+                                    Pending Manager / GM Endorsement
+                                  </span>
+                                )
+                              ) : (
+                                <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>
+                                    {log.status === 'acknowledged_by_gm' ? 'GM Endorsed' : 'Manager Endorsed'}
+                                    {log.acknowledgedByName ? ` (${log.acknowledgedByName})` : ''}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-text-tertiary text-center py-2">
+                      No overtime logged yet for this employee.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>

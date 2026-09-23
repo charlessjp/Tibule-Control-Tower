@@ -30,6 +30,8 @@ import { AgencyWorkflowEngineView } from './components/workflow/AgencyWorkflowEn
 import { StudioChampionsView } from './components/competition/StudioChampionsView';
 import { DeadlineRadarModal } from './components/notifications/DeadlineRadarModal';
 import { AuthPortal } from './components/auth/AuthPortal';
+import { LogOvertimeModal } from './components/employee/LogOvertimeModal';
+import { PerformanceReportModal } from './components/reports/PerformanceReportModal';
 
 const AppContent: React.FC = () => {
   const {
@@ -59,7 +61,10 @@ const AppContent: React.FC = () => {
     showBuildCaseModal,
     setShowBuildCaseModal,
     showCorrectionModal,
-    setShowCorrectionModal
+    setShowCorrectionModal,
+    isReportModalOpen,
+    closeReportModal,
+    reportTargetUserId
   } = useApp();
 
   const renderActiveView = () => {
@@ -224,6 +229,16 @@ const AppContent: React.FC = () => {
       <DeadlineRadarModal
         isOpen={isDeadlineRadarOpen}
         onClose={() => setIsDeadlineRadarOpen(false)}
+      />
+
+      {/* Pre-9 AM / Post-5 PM Overtime Logging Modal */}
+      <LogOvertimeModal />
+
+      {/* Graphical PDF Performance Report Modal */}
+      <PerformanceReportModal
+        isOpen={isReportModalOpen}
+        onClose={closeReportModal}
+        initialTargetUserId={reportTargetUserId}
       />
 
       {/* Squad Member Registration & Account Switch Modal */}

@@ -18,7 +18,8 @@ import {
   Scale,
   Trophy,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  FileDown
 } from 'lucide-react';
 import sidebarMountainImg from '../../assets/images/sidebar_mountain_1789471169503.jpg';
 
@@ -33,7 +34,8 @@ export const Sidebar: React.FC = () => {
     theme,
     setIsAnalystTipsOpen,
     isSidebarCollapsed,
-    toggleSidebar
+    toggleSidebar,
+    openReportModal
   } = useApp();
   const isDark = theme === 'dark';
 
@@ -523,6 +525,15 @@ export const Sidebar: React.FC = () => {
         className={`${isSidebarCollapsed ? 'p-1.5' : 'p-3'} border-t space-y-1`}
         style={{ borderColor: 'var(--color-border)' }}
       >
+        <button
+          onClick={() => openReportModal()}
+          title="Generate PDF Performance Report"
+          className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3.5 py-2'} rounded-xl text-xs font-semibold text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer`}
+        >
+          <FileDown className="w-4 h-4 text-emerald-500 shrink-0" />
+          {!isSidebarCollapsed && <span>PDF Performance Report</span>}
+        </button>
+
         <button
           onClick={() => setActiveView('cases')}
           title="Governance & Settings"

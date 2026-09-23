@@ -10,11 +10,12 @@ import {
   ArrowRight,
   Info,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  FileDown
 } from 'lucide-react';
 
 export const AnalyticsView: React.FC = () => {
-  const { teams, setMetricTraceModal } = useApp();
+  const { teams, setMetricTraceModal, openReportModal } = useApp();
 
   const [dateRange, setDateRange] = useState('q3_2026');
 
@@ -36,6 +37,13 @@ export const AnalyticsView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 text-xs">
+          <button
+            onClick={() => openReportModal()}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 font-semibold transition-colors cursor-pointer"
+          >
+            <FileDown className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Generate PDF Dossier</span>
+          </button>
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}

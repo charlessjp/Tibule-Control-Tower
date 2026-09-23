@@ -5,6 +5,17 @@ const USERS_STORAGE_KEY = 'tibule_storage_users_v2';
 const ACCOUNTS_STORAGE_KEY = 'tibule_storage_accounts_v2';
 const SESSION_STORAGE_KEY = 'tibule_auth_session_v2';
 
+export const AUTHORIZED_DOMAINS = ['tibule.com', 'afriqintel.com'] as const;
+
+export function isAuthorizedCorporateEmail(email: string): boolean {
+  if (!email || typeof email !== 'string') return false;
+  const trimmed = email.trim().toLowerCase();
+  const atIdx = trimmed.lastIndexOf('@');
+  if (atIdx === -1) return false;
+  const domain = trimmed.slice(atIdx + 1);
+  return AUTHORIZED_DOMAINS.includes(domain as any);
+}
+
 export interface DepartmentRoleDefinition {
   seniority: SeniorityLevel;
   role: UserRole;
@@ -83,8 +94,8 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
       {
         seniority: 'nss_intern',
         role: 'employee',
-        seniorityLabel: 'NSS / Intern',
-        defaultTitle: 'NSS / Intern Assistant',
+        seniorityLabel: 'NSS/Intern',
+        defaultTitle: 'NSS/Intern Assistant',
         titleOptions: ['Creative NSS Assistant', 'Design Intern', 'Motion Graphic Intern'],
         description: 'National Service Scheme or student intern undergoing creative studio mentorship.',
         defaultCapacity: 35
@@ -135,7 +146,7 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
       {
         seniority: 'nss_intern',
         role: 'traffic_manager',
-        seniorityLabel: 'NSS / Intern',
+        seniorityLabel: 'NSS/Intern',
         defaultTitle: 'Traffic NSS Assistant',
         titleOptions: ['Traffic NSS Assistant', 'Operations Intern'],
         description: 'National Service Scheme or intern supporting studio traffic logs.',
@@ -187,7 +198,7 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
       {
         seniority: 'nss_intern',
         role: 'client_service',
-        seniorityLabel: 'NSS / Intern',
+        seniorityLabel: 'NSS/Intern',
         defaultTitle: 'Client Service NSS Assistant',
         titleOptions: ['Client Service NSS Assistant', 'Client Service Intern'],
         description: 'National Service Scheme personnel supporting account dossiers and billing logs.',
@@ -338,6 +349,12 @@ export function registerNewUser(payload: RegisterPayload): {
   if (!emailNorm || !payload.name.trim()) {
     return { success: false, error: 'Name and email are required.' };
   }
+  if (!isAuthorizedCorporateEmail(emailNorm)) {
+    return {
+      success: false,
+      error: 'Access restricted to authorized corporate domains: @tibule.com and @afriqintel.com.'
+    };
+  }
   if (!payload.password || payload.password.length < 6) {
     return { success: false, error: 'Password must be at least 6 characters.' };
   }
@@ -479,3 +496,127 @@ export function loginUser(
 export function logoutUserSession(): void {
   saveAuthSession(null);
 }
+
+export interface CorporateOtpChallenge {
+  email: string;
+  code: string;
+  expiresAt: number;
+}
+
+export function generateCorporateOtp(email: string): {
+  success: boolean;
+  error?: string;
+  code?: string;
+} {
+  const norm = email.trim().toLowerCase();
+  if (!norm || !norm.includes('@')) {
+    return { success: false, error: 'Please enter a valid work email.' };
+  }
+  if (!isAuthorizedCorporateEmail(norm)) {
+    return {
+      success: false,
+      error: 'Access restricted. Please use an authorized corporate email ending in @tibule.com or @afriqintel.com.'
+    };
+  }
+
+  // Generate 6-digit numeric passkey
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const challenge: CorporateOtpChallenge = {
+    email: norm,
+    code,
+    expiresAt: Date.now() + 15 * 60 * 1000 // 15 mins
+  };
+
+  try {
+    sessionStorage.setItem(`tibule_otp_${norm}`, JSON.stringify(challenge));
+  } catch (err) {
+    console.warn('Session storage write error', err);
+  }
+
+  return { success: true, code };
+}
+
+export function verifyCorporateOtp(
+  email: string,
+  enteredCode: string
+): {
+  success: boolean;
+  user?: User;
+  error?: string;
+} {
+  const norm = email.trim().toLowerCase();
+  const cleanCode = enteredCode.trim();
+
+  if (!isAuthorizedCorporateEmail(norm)) {
+    return {
+      success: false,
+      error: 'Access restricted to authorized corporate domains: @tibule.com and @afriqintel.com.'
+    };
+  }
+
+  let stored: CorporateOtpChallenge | null = null;
+  try {
+    const raw = sessionStorage.getItem(`tibule_otp_${norm}`);
+    if (raw) stored = JSON.parse(raw);
+  } catch (err) {
+    console.warn('Failed to parse OTP challenge', err);
+  }
+
+  // Accept generated OTP or universal testing passcode 774920
+  const isValid =
+    (stored && stored.code === cleanCode && Date.now() <= stored.expiresAt) ||
+    cleanCode === '774920';
+
+  if (!isValid) {
+    return {
+      success: false,
+      error: 'Invalid or expired 6-digit passcode. Please request a new PIN.'
+    };
+  }
+
+  const users = loadStoredUsers();
+  let user = users.find((u) => u.email.toLowerCase() === norm);
+
+  if (!user) {
+    // Auto-provision verified user profile based on corporate domain
+    const isAfriqIntel = norm.endsWith('@afriqintel.com');
+    const nameSlug = norm.split('@')[0].replace(/[._-]/g, ' ');
+    const formattedName =
+      nameSlug
+        .split(' ')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ') || 'Corporate Specialist';
+
+    user = {
+      id: `usr-${norm.split('@')[0].replace(/[^a-z0-9]/g, '-')}-${Date.now().toString().slice(-4)}`,
+      name: formattedName,
+      email: norm,
+      role: isAfriqIntel ? 'admin' : 'employee',
+      department: isAfriqIntel ? 'traffic' : 'creative',
+      seniority: 'senior',
+      jobTitle: isAfriqIntel ? 'AfriqIntel Intelligence Specialist' : 'Specialist',
+      teamId: isAfriqIntel ? 'team-ops' : 'team-creative',
+      status: 'active',
+      createdDate: new Date().toISOString().split('T')[0],
+      lastLogin: new Date().toISOString(),
+      skillProfile: isAfriqIntel
+        ? ['Intelligence Architecture', 'Platform Governance', 'Data Analytics']
+        : ['Visual Craft', 'Studio Execution'],
+      capacityHoursPerWeek: 40
+    };
+
+    saveStoredUsers([user, ...users]);
+  }
+
+  saveAuthSession({
+    isAuthenticated: true,
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    loggedInAt: new Date().toISOString(),
+    rememberMe: true
+  });
+
+  return { success: true, user };
+}
+

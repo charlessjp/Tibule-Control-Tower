@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Job, Priority } from '../../types';
+import { Job, Priority, ReworkClassification, RevertCategory } from '../../types';
 import { checkAssigneeWorkloadConflict } from '../../utils/revertConflictEngine';
 import { SeniorityBadge } from '../common/SeniorityBadge';
-import { X, AlertOctagon, RotateCcw } from 'lucide-react';
+import { X, AlertOctagon, RotateCcw, Tag } from 'lucide-react';
 
 interface ClientRevertModalProps {
   job: Job | null;
@@ -28,6 +28,8 @@ export const ClientRevertModal: React.FC<ClientRevertModalProps> = ({
   );
   const [additionalHours, setAdditionalHours] = useState<number>(4);
   const [urgency, setUrgency] = useState<Priority>('urgent');
+  const [reworkClassification, setReworkClassification] = useState<ReworkClassification>('correction');
+  const [revertCategory, setRevertCategory] = useState<RevertCategory>('client_scope_shift');
 
   if (!isOpen || !job) return null;
 
@@ -46,7 +48,9 @@ export const ClientRevertModal: React.FC<ClientRevertModalProps> = ({
       feedbackNotes,
       changes,
       Number(additionalHours),
-      urgency
+      urgency,
+      reworkClassification,
+      revertCategory
     );
 
     onClose();
@@ -136,6 +140,42 @@ export const ClientRevertModal: React.FC<ClientRevertModalProps> = ({
               onChange={(e) => setRequestedChangesText(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-text-primary text-xs font-mono outline-hidden focus:border-rose-500"
             />
+          </div>
+
+          {/* V2 Classification & Taxonomy */}
+          <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl border border-border bg-surface-elevated">
+            <div>
+              <label className="block text-xs font-semibold mb-1 text-text-secondary flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-brand" />
+                Rework Classification
+              </label>
+              <select
+                value={reworkClassification}
+                onChange={(e) => setReworkClassification(e.target.value as ReworkClassification)}
+                className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-text-primary text-xs outline-hidden focus:border-brand"
+              >
+                <option value="correction">Correction (Defect / Typo / Spec)</option>
+                <option value="rework">Rework (Directional Revision)</option>
+                <option value="scope_change">Scope Change (New Deliverable Additions)</option>
+              </select>
+              <p className="text-[10px] text-text-tertiary mt-1">Classifies effort for agency efficiency metrics.</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-1 text-text-secondary">Root Revert Category</label>
+              <select
+                value={revertCategory}
+                onChange={(e) => setRevertCategory(e.target.value as RevertCategory)}
+                className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-text-primary text-xs outline-hidden focus:border-brand"
+              >
+                <option value="client_scope_shift">Client Scope Shift</option>
+                <option value="creative_misinterpretation">Brief Misinterpretation</option>
+                <option value="technical_dieline_adjustment">Technical / Print Dieline Fix</option>
+                <option value="stakeholder_subjective_preference">Subjective Preference</option>
+                <option value="other">Other / General Feedback</option>
+              </select>
+              <p className="text-[10px] text-text-tertiary mt-1">Root cause taxonomy for Revision Profile analytics.</p>
+            </div>
           </div>
 
           {/* Additional Hours & Urgency */}

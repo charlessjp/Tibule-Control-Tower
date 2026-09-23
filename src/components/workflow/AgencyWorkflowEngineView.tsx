@@ -15,6 +15,8 @@ import { WorkflowStatusBadge } from '../common/WorkflowStatusBadge';
 import { SpotlightCard } from '../common/SpotlightCard';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { SeniorityBadge } from '../common/SeniorityBadge';
+import { formatSeniority } from '../../utils/formatters';
+import { OperationalEventStream } from './OperationalEventStream';
 import {
   Workflow,
   Plus,
@@ -35,7 +37,9 @@ import {
   Info,
   Calendar,
   Layers,
-  FileText
+  FileText,
+  Activity,
+  History
 } from 'lucide-react';
 
 export const AgencyWorkflowEngineView: React.FC = () => {
@@ -51,6 +55,9 @@ export const AgencyWorkflowEngineView: React.FC = () => {
   } = useApp();
 
   const isDark = theme === 'dark';
+
+  // Sub-tab view: Deliverables board vs Operational Events stream
+  const [engineSubView, setEngineSubView] = useState<'board' | 'events'>('board');
 
   // Filter state for workflow stages
   const [selectedStageFilter, setSelectedStageFilter] = useState<string>('all');
@@ -130,7 +137,33 @@ export const AgencyWorkflowEngineView: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          {/* View Toggle */}
+          <div className="flex items-center p-1 rounded-xl border border-border bg-surface">
+            <button
+              onClick={() => setEngineSubView('board')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                engineSubView === 'board'
+                  ? 'bg-surface-elevated text-text-primary shadow-xs border border-border'
+                  : 'text-text-tertiary hover:text-text-secondary'
+              }`}
+            >
+              <Workflow className="w-3.5 h-3.5" />
+              <span>Deliverables Flow</span>
+            </button>
+            <button
+              onClick={() => setEngineSubView('events')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                engineSubView === 'events'
+                  ? 'bg-surface-elevated text-text-primary shadow-xs border border-border'
+                  : 'text-text-tertiary hover:text-text-secondary'
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Operational Event Log</span>
+            </button>
+          </div>
+
           <button
             onClick={() => setIsMatrixExpanded(!isMatrixExpanded)}
             className={`px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1.5 ${
@@ -336,8 +369,13 @@ export const AgencyWorkflowEngineView: React.FC = () => {
         </div>
       )}
 
-      {/* Filter Tabs & Task Type Filter Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-2 border-b border-border/40">
+      {/* Sub-view: Operational Event Log */}
+      {engineSubView === 'events' ? (
+        <OperationalEventStream />
+      ) : (
+        <>
+          {/* Filter Tabs & Task Type Filter Bar */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-2 border-b border-border/40">
         {/* Stages Filter Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
           {STAGE_STEPS.map((step) => {
@@ -442,7 +480,7 @@ export const AgencyWorkflowEngineView: React.FC = () => {
                       <span>•</span>
                       <span>
                         Assignee: <strong className="text-text-primary">
-                          {assignee ? `${assignee.name} (${assignee.seniority ? assignee.seniority.toUpperCase() : 'STAFF'})` : 'Unassigned'}
+                          {assignee ? `${assignee.name} (${assignee.seniority ? formatSeniority(assignee.seniority).toUpperCase() : 'STAFF'})` : 'Unassigned'}
                         </strong>
                       </span>
                       <span>•</span>
@@ -468,6 +506,36 @@ export const AgencyWorkflowEngineView: React.FC = () => {
                         <div className="text-[11px] text-text-secondary truncate mt-0.5">
                           "{job.deliverableSubmission.summary}"
                         </div>
+                      </div>
+                    )}
+
+                    {/* V2 WorkCycle Sequence & Rework Audit Strip */}
+                    {job.workCycles && job.workCycles.length > 0 && (
+                      <div className="pt-2 border-t border-border/50 flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-mono uppercase text-text-tertiary font-semibold">
+                          Work Cycles ({job.workCycles.length}):
+                        </span>
+                        {job.workCycles.map((cycle) => (
+                          <div
+                            key={cycle.id}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono flex items-center gap-1 border ${
+                              cycle.cycleNumber === (job.activeCycleNumber || 1)
+                                ? 'bg-[var(--color-brand)]/15 border-[var(--color-brand)] font-bold text-text-primary'
+                                : 'bg-surface-elevated border-border text-text-tertiary'
+                            }`}
+                          >
+                            <span>#{cycle.cycleNumber}</span>
+                            <span className="opacity-70">
+                              {cycle.cycleType === 'initial_production' ? 'Initial' : cycle.cycleType === 'client_revert_revision' ? 'Client Revert' : 'Revision'}
+                            </span>
+                            {cycle.managerOverrideReason && (
+                              <span className="text-amber-400 font-bold" title={cycle.managerOverrideReason}>★</span>
+                            )}
+                            {cycle.reworkEffort > 0 && (
+                              <span className="text-rose-400 font-semibold">+{cycle.reworkEffort}h</span>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
 
@@ -645,6 +713,8 @@ export const AgencyWorkflowEngineView: React.FC = () => {
           })
         )}
       </div>
+        </>
+      )}
 
       {/* Modals Mounted */}
       <NewBriefModal

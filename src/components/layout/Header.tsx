@@ -15,7 +15,8 @@ import {
   PanelLeftOpen,
   LogOut,
   UserPlus,
-  Shield
+  Shield,
+  FileDown
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -39,6 +40,7 @@ export const Header: React.FC<HeaderProps> = () => {
     setIsCommandBarOpen,
     setIsDeadlineRadarOpen,
     setIsAuthModalOpen,
+    openReportModal,
     logout,
     jobs,
     webNotifications,
@@ -128,6 +130,20 @@ export const Header: React.FC<HeaderProps> = () => {
         >
           <Palette className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
           <span className="hidden md:inline text-[11px]">{currentPalette.name}</span>
+        </button>
+
+        {/* Executive PDF Performance Dossier Report Trigger */}
+        <button
+          onClick={() => openReportModal()}
+          title="Generate Graphically Appealing PDF Performance Report"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-xs hover:border-emerald-500/50 transition-all cursor-pointer text-text-primary"
+          style={{
+            backgroundColor: 'var(--color-surface-elevated)',
+            borderColor: 'var(--color-border)'
+          }}
+        >
+          <FileDown className="w-3.5 h-3.5 text-emerald-500" />
+          <span className="hidden sm:inline text-[11px]">PDF Report</span>
         </button>
 
         {/* AI Assistant Trigger */}

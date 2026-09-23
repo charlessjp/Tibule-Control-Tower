@@ -18,7 +18,12 @@ import {
   ChevronDown,
   Activity,
   Zap,
-  Globe
+  Globe,
+  Award,
+  Sunrise,
+  Sunset,
+  Sparkles,
+  ThumbsUp
 } from 'lucide-react';
 
 export const GeneralManagerDashboard: React.FC = () => {
@@ -30,7 +35,10 @@ export const GeneralManagerDashboard: React.FC = () => {
     setSelectedEmployeeId,
     setSelectedJobId,
     setActiveView,
-    setMetricTraceModal
+    setMetricTraceModal,
+    overtimeLogs,
+    acknowledgeOvertime,
+    getUserOvertimeSummary
   } = useApp();
 
   const [drilldownTeamId, setDrilldownTeamId] = useState<string | null>(null);
@@ -269,11 +277,12 @@ export const GeneralManagerDashboard: React.FC = () => {
                 .filter((u) => u.teamId === drilldownTeamId)
                 .map((member) => {
                   const cap = employeeCapacities[member.id];
+                  const ot = getUserOvertimeSummary(member.id);
                   return (
                     <div
                       key={member.id}
                       onClick={() => setSelectedEmployeeId(member.id)}
-                      className="p-3.5 rounded-xl bg-surface border border-border/70 hover:border-brand-primary/50 cursor-pointer space-y-2 transition-colors"
+                      className="p-3.5 rounded-xl bg-surface border border-border/70 hover:border-brand-primary/50 cursor-pointer space-y-2.5 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-text-primary text-xs truncate">
@@ -284,6 +293,15 @@ export const GeneralManagerDashboard: React.FC = () => {
                       <div className="text-[11px] text-text-tertiary font-mono">
                         {cap?.capacityPercent}% saturation · {cap?.activeJobsCount} jobs
                       </div>
+                      <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t border-border/50">
+                        <span className="text-amber-500 font-bold">
+                          {ot.totalHours > 0 ? `+${ot.totalHours}h OT` : '9-5 Baseline'}
+                        </span>
+                        <span className="text-emerald-500 font-bold flex items-center gap-0.5">
+                          <Award className="w-3 h-3 text-amber-500" />
+                          +{ot.goodBooksPoints} pts
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -292,7 +310,158 @@ export const GeneralManagerDashboard: React.FC = () => {
         )}
       </section>
 
-      {/* 5. ORGANISATIONAL ASSURANCE FUNNEL (Section 35) */}
+      {/* 5. EXECUTIVE GOOD BOOKS & AGENCY-WIDE OVERTIME INTELLIGENCE */}
+      {(() => {
+        const totalAgencyOtHours = overtimeLogs.reduce((sum, l) => sum + l.hoursLogged, 0);
+        const totalGoodBooksPts = overtimeLogs.reduce((sum, l) => sum + l.goodBooksPoints, 0);
+        const pre9amTotal = overtimeLogs.filter((l) => l.period === 'pre_9am').reduce((sum, l) => sum + l.hoursLogged, 0);
+        const post5pmTotal = overtimeLogs.filter((l) => l.period === 'post_5pm').reduce((sum, l) => sum + l.hoursLogged, 0);
+        const weekendTotal = overtimeLogs.filter((l) => l.period === 'weekend').reduce((sum, l) => sum + l.hoursLogged, 0);
+        const pendingLogs = overtimeLogs.filter((l) => l.status === 'pending_acknowledgment');
+
+        return (
+          <section className="p-6 rounded-2xl bg-surface/80 border border-border/70 space-y-5">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-amber-500" />
+                  <h2 className="text-lg font-bold text-text-primary tracking-tight flex items-center gap-2">
+                    <span>Agency Good Books &amp; Dedicated Overtime Ledger</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      Standard: 9:00 AM – 5:00 PM
+                    </span>
+                  </h2>
+                </div>
+                <p className="text-xs text-text-secondary leading-relaxed max-w-3xl mt-1">
+                  Executive oversight into extra discretionary effort across all teams. Track pre-9 AM dawn sprints and post-5 PM crunch deliveries that contribute directly to promotion files and executive appraisals.
+                </p>
+              </div>
+
+              {pendingLogs.length > 0 && (
+                <div className="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-mono text-xs font-bold shrink-0">
+                  {pendingLogs.length} Entries Awaiting Leadership Endorsement
+                </div>
+              )}
+            </div>
+
+            {/* High Level Macro Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+              <div className="p-3.5 rounded-xl bg-surface-elevated/60 border border-border/60">
+                <span className="text-[10px] font-mono uppercase text-text-tertiary">Total Discretionary OT</span>
+                <div className="text-xl font-extrabold font-mono text-amber-500 mt-1">
+                  {totalAgencyOtHours.toFixed(1)} <span className="text-xs font-normal text-text-tertiary">hrs</span>
+                </div>
+                <div className="text-[10px] text-text-tertiary font-mono mt-0.5">{overtimeLogs.length} recorded sprints</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-surface-elevated/60 border border-border/60">
+                <span className="text-[10px] font-mono uppercase text-text-tertiary flex items-center gap-1">
+                  <Sunrise className="w-3 h-3 text-amber-500" />
+                  <span>Pre-9 AM Dawn Sprints</span>
+                </span>
+                <div className="text-xl font-extrabold font-mono text-text-primary mt-1">
+                  {pre9amTotal.toFixed(1)} <span className="text-xs font-normal text-text-tertiary">hrs</span>
+                </div>
+                <div className="text-[10px] text-text-tertiary font-mono mt-0.5">Early prep before 9:00 AM</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-surface-elevated/60 border border-border/60">
+                <span className="text-[10px] font-mono uppercase text-text-tertiary flex items-center gap-1">
+                  <Sunset className="w-3 h-3 text-indigo-500" />
+                  <span>Post-5 PM Evening</span>
+                </span>
+                <div className="text-xl font-extrabold font-mono text-text-primary mt-1">
+                  {post5pmTotal.toFixed(1)} <span className="text-xs font-normal text-text-tertiary">hrs</span>
+                </div>
+                <div className="text-[10px] text-text-tertiary font-mono mt-0.5">Late deliveries past 5:00 PM</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/30">
+                <span className="text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>Agency Good Books Pool</span>
+                </span>
+                <div className="text-xl font-extrabold font-mono text-emerald-500 mt-1">
+                  +{totalGoodBooksPts} <span className="text-xs font-normal text-text-tertiary">pts</span>
+                </div>
+                <div className="text-[10px] text-text-tertiary font-mono mt-0.5">Recognized dedication</div>
+              </div>
+            </div>
+
+            {/* Overtime Ledger Records */}
+            <div className="space-y-3 pt-1">
+              <div className="text-xs font-mono uppercase font-bold text-text-tertiary">
+                Recent Task Overtime Logs &amp; Executive Endorsements ({overtimeLogs.length})
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 max-h-96 overflow-y-auto pr-1">
+                {overtimeLogs.map((log) => {
+                  const employee = users.find((u) => u.id === log.userId);
+                  const team = teams.find((t) => t.id === employee?.teamId);
+
+                  return (
+                    <SpotlightCard key={log.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-text-primary">
+                              {log.userName}
+                            </span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-surface-elevated text-text-tertiary border border-border">
+                              {team?.name || 'Agency Team'}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-text-tertiary font-mono mt-0.5">
+                            Task: [{log.jobId}] {log.jobTitle} · {log.brandName}
+                          </div>
+                        </div>
+
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                          +{log.hoursLogged}h ({log.period === 'pre_9am' ? 'Pre-9 AM' : log.period === 'post_5pm' ? 'Post-5 PM' : 'Weekend'})
+                        </span>
+                      </div>
+
+                      {/* Material Note */}
+                      <div className="p-2.5 rounded-lg bg-surface-elevated/70 border border-border/80 text-xs space-y-1">
+                        <span className="text-[9px] uppercase font-mono font-bold text-text-tertiary block">
+                          Employee Material &amp; Milestone Context:
+                        </span>
+                        <p className="text-text-secondary leading-relaxed italic text-[11px]">
+                          &ldquo;{log.materialNote}&rdquo;
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-border/60 text-xs">
+                        <div className="text-[10px] font-mono text-text-tertiary">
+                          {log.date} · {log.startTime}–{log.endTime} · <strong className="text-emerald-500">+{log.goodBooksPoints} pts</strong>
+                        </div>
+
+                        {log.status === 'pending_acknowledgment' ? (
+                          <button
+                            type="button"
+                            onClick={() => acknowledgeOvertime(log.id)}
+                            className="px-3 py-1 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <ThumbsUp className="w-3.5 h-3.5" />
+                            <span>Executive Endorse</span>
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Endorsed by {log.acknowledgedByName || 'Executive'}</span>
+                          </div>
+                        )}
+                      </div>
+                    </SpotlightCard>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* 6. ORGANISATIONAL ASSURANCE FUNNEL (Section 35) */}
       <section className="p-6 rounded-2xl bg-surface/80 border border-border/70 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

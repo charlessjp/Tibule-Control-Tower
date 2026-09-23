@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Job } from '../../types';
 import { X, Send, ArrowRight, ShieldCheck } from 'lucide-react';
 import { PriorityBadge } from '../common/PriorityBadge';
+import { formatSeniority } from '../../utils/formatters';
 
 interface TrafficDispatchModalProps {
   job: Job | null;
@@ -118,7 +119,7 @@ export const TrafficDispatchModal: React.FC<TrafficDispatchModalProps> = ({ job,
                       </div>
                       <div>
                         <div className="font-bold text-xs">{mgr.name}</div>
-                        <div className="text-[11px] text-text-tertiary">{mgr.jobTitle} • {mgr.seniority ? mgr.seniority.toUpperCase() : 'DIRECTOR'}</div>
+                        <div className="text-[11px] text-text-tertiary">{mgr.jobTitle} • {mgr.seniority ? formatSeniority(mgr.seniority).toUpperCase() : 'DIRECTOR'}</div>
                       </div>
                     </div>
                     {isSelected && (

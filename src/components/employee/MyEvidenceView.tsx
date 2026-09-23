@@ -20,7 +20,10 @@ import {
   Filter,
   CheckCircle,
   Clock,
-  Star
+  Star,
+  Sunrise,
+  Sunset,
+  ThumbsUp
 } from 'lucide-react';
 
 export const MyEvidenceView: React.FC = () => {
@@ -32,7 +35,10 @@ export const MyEvidenceView: React.FC = () => {
     setSelectedJobId,
     selectedJobId,
     setShowBuildCaseModal,
-    setActiveView
+    setActiveView,
+    getUserOvertimeSummary,
+    acknowledgeOvertime,
+    openLogOvertimeModal
   } = useApp();
 
   const isManagement =
@@ -308,7 +314,183 @@ export const MyEvidenceView: React.FC = () => {
         </div>
       </div>
 
-      {/* 5. Peer Commendations */}
+      {/* 5. Good Books & Dedicated Overtime Evidence */}
+      {(() => {
+        const otSummary = getUserOvertimeSummary(inspectedUser.id);
+        return (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-amber-500" />
+                  <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+                    <span>Good Books Dossier: Dedicated Overtime Evidence</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      Standard: 9:00 AM – 5:00 PM
+                    </span>
+                  </h2>
+                </div>
+                <p className="text-xs text-text-tertiary mt-0.5">
+                  Pre-9 AM dawn patrol, post-5 PM evening crunches, and weekend sprints logged against active deliverables. Verified material for salary appraisals and promotion dossiers.
+                </p>
+              </div>
+
+              {isViewingSelf && (
+                <button
+                  type="button"
+                  onClick={() => openLogOvertimeModal()}
+                  className="px-3.5 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto"
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Log Overtime on Task</span>
+                </button>
+              )}
+            </div>
+
+            {/* Metric Summary Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              <div className="p-3.5 rounded-xl border border-border bg-surface">
+                <div className="text-[10px] uppercase font-mono text-text-tertiary">Total Overtime</div>
+                <div className="text-xl font-bold font-mono text-amber-500 mt-1">
+                  {otSummary.totalHours} <span className="text-xs font-normal text-text-tertiary">hrs</span>
+                </div>
+                <div className="text-[11px] text-text-tertiary mt-0.5">{otSummary.count} logged entries</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-border bg-surface">
+                <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center gap-1">
+                  <Sunrise className="w-3 h-3 text-amber-500" />
+                  <span>Pre-9:00 AM</span>
+                </div>
+                <div className="text-xl font-bold font-mono text-text-primary mt-1">
+                  {otSummary.pre9amHours} <span className="text-xs font-normal text-text-tertiary">hrs</span>
+                </div>
+                <div className="text-[11px] text-text-tertiary mt-0.5">Dawn sprint (+25% pts)</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-border bg-surface">
+                <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center gap-1">
+                  <Sunset className="w-3 h-3 text-indigo-500" />
+                  <span>Post-5:00 PM</span>
+                </div>
+                <div className="text-xl font-bold font-mono text-text-primary mt-1">
+                  {otSummary.post5pmHours} <span className="text-xs font-normal text-text-tertiary">hrs</span>
+                </div>
+                <div className="text-[11px] text-text-tertiary mt-0.5">Evening crunch (+10% pts)</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-border bg-surface">
+                <div className="text-[10px] uppercase font-mono text-text-tertiary">Weekend Sprints</div>
+                <div className="text-xl font-bold font-mono text-purple-500 mt-1">
+                  {otSummary.weekendHours} <span className="text-xs font-normal text-text-tertiary">hrs</span>
+                </div>
+                <div className="text-[11px] text-text-tertiary mt-0.5">Pitch crunches (+50% pts)</div>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 col-span-2 lg:col-span-1">
+                <div className="text-[10px] uppercase font-mono text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>Good Books Score</span>
+                </div>
+                <div className="text-xl font-bold font-mono text-emerald-500 mt-1">
+                  +{otSummary.goodBooksPoints} <span className="text-xs font-normal text-text-tertiary">pts</span>
+                </div>
+                <div className="text-[11px] text-text-tertiary mt-0.5">
+                  {otSummary.acknowledgedCount} endorsed by leadership
+                </div>
+              </div>
+            </div>
+
+            {/* Overtime Records Cards */}
+            {otSummary.logs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {otSummary.logs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="p-4 rounded-xl border border-border bg-surface hover:border-border-hover transition-all flex flex-col justify-between gap-3"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono text-xs font-bold" style={{ color: 'var(--color-brand)' }}>
+                              {log.jobId}
+                            </span>
+                            <span className="font-semibold text-xs text-text-primary">
+                              {log.jobTitle}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-text-tertiary font-mono mt-0.5">
+                            Client / Brand: {log.brandName} · {log.date} ({log.startTime}–{log.endTime})
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
+                          {log.hoursLogged}h · {log.period === 'pre_9am' ? 'Pre-9 AM' : log.period === 'post_5pm' ? 'Post-5 PM' : 'Weekend'}
+                        </span>
+                      </div>
+
+                      {/* Substantive Material Note */}
+                      <div className="p-3 rounded-xl bg-surface-elevated/70 border border-border text-xs space-y-1">
+                        <span className="text-[10px] uppercase font-mono font-bold text-text-tertiary block">
+                          Employee Material &amp; Impact Evidence:
+                        </span>
+                        <p className="text-text-secondary leading-relaxed italic">
+                          &ldquo;{log.materialNote}&rdquo;
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Acknowledgment / Endorsement Footer */}
+                    <div className="pt-2 border-t border-border flex items-center justify-between">
+                      <span className="text-[11px] font-mono font-bold text-emerald-500 flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>+{log.goodBooksPoints} Good Books Points</span>
+                      </span>
+
+                      {log.status === 'pending_acknowledgment' ? (
+                        isManagement ? (
+                          <button
+                            type="button"
+                            onClick={() => acknowledgeOvertime(log.id)}
+                            className="px-3 py-1 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <ThumbsUp className="w-3.5 h-3.5" />
+                            <span>Endorse for Good Books</span>
+                          </button>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-lg bg-surface-elevated text-text-tertiary text-[11px] border border-border">
+                            Pending Leadership Endorsement
+                          </span>
+                        )
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>
+                            {log.status === 'acknowledged_by_gm' ? 'General Manager Endorsed' : 'Studio Manager Endorsed'}
+                            {log.acknowledgedByName ? ` (${log.acknowledgedByName})` : ''}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 rounded-2xl border border-border bg-surface text-center space-y-2">
+                <Clock className="w-8 h-8 text-text-tertiary mx-auto opacity-50" />
+                <div className="text-xs font-semibold text-text-secondary">
+                  No overtime logged yet for this team member.
+                </div>
+                <p className="text-[11px] text-text-tertiary max-w-md mx-auto">
+                  Work done before 9:00 AM or after 5:00 PM can be logged with substantive evidence notes to feed directly into Manager and General Manager progression decisions.
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* 6. Peer Commendations */}
       <div className="space-y-3.5">
         <div className="flex items-center gap-2">
           <Award className="w-4 h-4 text-amber-500" />

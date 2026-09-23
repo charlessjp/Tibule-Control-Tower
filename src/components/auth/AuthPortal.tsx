@@ -4,11 +4,15 @@ import { AgencyDepartment, SeniorityLevel, UserRole, User } from '../../types';
 import {
   AGENCY_DEPARTMENT_CONFIG,
   registerNewUser,
-  loginUser
+  loginUser,
+  AUTHORIZED_DOMAINS,
+  isAuthorizedCorporateEmail,
+  generateCorporateOtp,
+  verifyCorporateOtp
 } from '../../utils/authStorage';
-import { formatReadable } from '../../utils/formatters';
 import {
   Shield,
+  ShieldCheck,
   Lock,
   Mail,
   User as UserIcon,
@@ -22,11 +26,17 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Layers,
   Award,
-  ChevronRight,
   Compass,
-  ArrowLeft
+  KeyRound,
+  Send,
+  HelpCircle,
+  ExternalLink,
+  Info,
+  Globe,
+  RefreshCw,
+  Check,
+  X
 } from 'lucide-react';
 
 interface AuthPortalProps {
@@ -45,11 +55,20 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
   const { users, setUsers, setCurrentUser, setIsAuthenticated } = useApp();
 
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
+  const [loginMethod, setLoginMethod] = useState<'otp' | 'password'>('otp');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showZeroTrustInfo, setShowZeroTrustInfo] = useState(false);
 
-  // Login form state
+  // OTP Login state
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [activeOtpCode, setActiveOtpCode] = useState<string | null>(null);
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
+
+  // Password Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -64,6 +83,17 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
   const [regCustomTitle, setRegCustomTitle] = useState('');
   const [regManagerId, setRegManagerId] = useState<string>('');
   const [regCapacity, setRegCapacity] = useState<number>(40);
+
+  // Email domain check helpers
+  const regEmailDomainValid = useMemo(() => {
+    if (!regEmail.trim() || !regEmail.includes('@')) return null;
+    return isAuthorizedCorporateEmail(regEmail);
+  }, [regEmail]);
+
+  const otpEmailDomainValid = useMemo(() => {
+    if (!otpEmail.trim() || !otpEmail.includes('@')) return null;
+    return isAuthorizedCorporateEmail(otpEmail);
+  }, [otpEmail]);
 
   // Department roles definition
   const departmentRoles = useMemo(() => {
@@ -90,14 +120,13 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
       return director ? [director, ...(gm ? [gm] : [])] : gm ? [gm] : [];
     }
 
-    // Specialists, juniors, NSS: can report to team leads or director
     const leads = deptUsers.filter(
       (u) => u.role === 'team_lead' || u.role === 'director' || u.role === 'manager'
     );
     return leads.length > 0 ? leads : gm ? [gm] : [];
   }, [users, regDepartment, selectedRoleDef]);
 
-  // Update default title and manager when department or seniority changes
+  // Department and seniority switchers
   const handleDepartmentChange = (dept: AgencyDepartment) => {
     setRegDepartment(dept);
     const roles = AGENCY_DEPARTMENT_CONFIG[dept].roles;
@@ -116,6 +145,20 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
     }
   };
 
+  // Helper to append domain suffix
+  const applyDomainSuffix = (target: 'otp' | 'register' | 'login', domain: string) => {
+    if (target === 'otp') {
+      const prefix = otpEmail.includes('@') ? otpEmail.split('@')[0] : otpEmail;
+      setOtpEmail(`${prefix || 'user'}@${domain}`);
+    } else if (target === 'register') {
+      const prefix = regEmail.includes('@') ? regEmail.split('@')[0] : regEmail;
+      setRegEmail(`${prefix || 'user'}@${domain}`);
+    } else if (target === 'login') {
+      const prefix = loginEmail.includes('@') ? loginEmail.split('@')[0] : loginEmail;
+      setLoginEmail(`${prefix || 'user'}@${domain}`);
+    }
+  };
+
   // Quick Persona Sign-in
   const handleDemoSignIn = (user: User) => {
     setErrorMessage(null);
@@ -126,7 +169,6 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     } else {
-      // Fallback direct set
       setCurrentUser(user);
       setIsAuthenticated(true);
       if (onSuccess) onSuccess();
@@ -134,17 +176,82 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
     }
   };
 
-  // Submit Login
+  // Request One-Time Passkey
+  const handleRequestOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setIsRequestingOtp(true);
+
+    const emailNorm = otpEmail.trim().toLowerCase();
+    if (!emailNorm) {
+      setErrorMessage('Please enter your company email address.');
+      setIsRequestingOtp(false);
+      return;
+    }
+
+    if (!isAuthorizedCorporateEmail(emailNorm)) {
+      setErrorMessage(
+        'Access denied: Only official @tibule.com and @afriqintel.com addresses are permitted.'
+      );
+      setIsRequestingOtp(false);
+      return;
+    }
+
+    const res = generateCorporateOtp(emailNorm);
+    setIsRequestingOtp(false);
+
+    if (res.success && res.code) {
+      setOtpSent(true);
+      setActiveOtpCode(res.code);
+      setSuccessMessage(
+        `Cloudflare Access passkey dispatched to ${emailNorm}! For immediate verification, use passkey: ${res.code}`
+      );
+    } else {
+      setErrorMessage(res.error || 'Failed to dispatch passkey.');
+    }
+  };
+
+  // Verify One-Time Passkey
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!otpCode.trim()) {
+      setErrorMessage('Please enter the 6-digit passcode.');
+      return;
+    }
+
+    const res = verifyCorporateOtp(otpEmail.trim(), otpCode.trim());
+    if (res.success && res.user) {
+      setCurrentUser(res.user);
+      setIsAuthenticated(true);
+      if (onSuccess) onSuccess();
+      if (onClose) onClose();
+    } else {
+      setErrorMessage(res.error || 'Passkey verification failed.');
+    }
+  };
+
+  // Submit Password Login
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!loginEmail.trim() || !loginPassword) {
-      setErrorMessage('Please enter both your work email and password.');
+    const emailNorm = loginEmail.trim().toLowerCase();
+    if (!emailNorm || !loginPassword) {
+      setErrorMessage('Please enter both your corporate email and password.');
       return;
     }
 
-    const res = loginUser(loginEmail, loginPassword, rememberMe);
+    if (!isAuthorizedCorporateEmail(emailNorm)) {
+      setErrorMessage(
+        'Access denied: Only accounts with @tibule.com or @afriqintel.com are authorized to access this platform.'
+      );
+      return;
+    }
+
+    const res = loginUser(emailNorm, loginPassword, rememberMe);
     if (res.success && res.user) {
       setCurrentUser(res.user);
       setIsAuthenticated(true);
@@ -164,14 +271,25 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
       setErrorMessage('Please provide your full official name.');
       return;
     }
-    if (!regEmail.trim() || !regEmail.includes('@')) {
-      setErrorMessage('Please provide a valid work email address.');
+
+    const emailNorm = regEmail.trim().toLowerCase();
+    if (!emailNorm || !emailNorm.includes('@')) {
+      setErrorMessage('Please provide a valid company email address.');
       return;
     }
+
+    if (!isAuthorizedCorporateEmail(emailNorm)) {
+      setErrorMessage(
+        'Registration restricted: You must register with an official @tibule.com or @afriqintel.com email address.'
+      );
+      return;
+    }
+
     if (regPassword.length < 6) {
       setErrorMessage('Password must be at least 6 characters long.');
       return;
     }
+
     if (regPassword !== regConfirmPassword) {
       setErrorMessage('Passwords do not match. Please verify.');
       return;
@@ -183,7 +301,7 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
 
     const res = registerNewUser({
       name: regName.trim(),
-      email: regEmail.trim().toLowerCase(),
+      email: emailNorm,
       password: regPassword,
       department: regDepartment,
       seniority: regSeniority,
@@ -194,7 +312,7 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
     });
 
     if (res.success && res.user) {
-      setSuccessMessage(`Account created successfully! Welcome to Tibule Studio, ${res.user.name}.`);
+      setSuccessMessage(`Account created successfully! Welcome to the agency squad, ${res.user.name}.`);
       setUsers([res.user, ...users]);
       setCurrentUser(res.user);
       setIsAuthenticated(true);
@@ -224,7 +342,7 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md font-black text-lg"
+                className="w-11 h-11 rounded-xl flex items-center justify-center shadow-md font-black text-xl shrink-0"
                 style={{
                   backgroundColor: 'var(--color-brand)',
                   color: 'var(--color-brand-contrast)'
@@ -233,32 +351,64 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
                 T
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="font-bold text-lg text-text-primary tracking-tight">
-                    Tibule Creative Agency OS
+                    Tibule Control Tower
                   </h1>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    Ghana Studio Auth
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    Zero Trust Protected
                   </span>
                 </div>
                 <p className="text-xs text-text-tertiary">
-                  Operational Workspace • Deliverable Escalation • Studio Capacity Engine
+                  Ghana Studio Operations • Deliverable Escalation • Workload Capacity OS
                 </p>
               </div>
             </div>
 
-            {isModal && onClose && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={onClose}
-                className="p-2 rounded-lg border border-border hover:bg-surface text-text-tertiary hover:text-text-primary transition-colors cursor-pointer text-xs"
+                type="button"
+                onClick={() => setShowZeroTrustInfo(!showZeroTrustInfo)}
+                className="p-1.5 sm:px-2.5 sm:py-1 rounded-lg border border-border bg-surface hover:bg-surface-elevated text-text-secondary hover:text-text-primary transition-colors text-xs flex items-center gap-1.5 cursor-pointer"
+                title="View Cloudflare Access specifications"
               >
-                Close
+                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Access Specs</span>
               </button>
-            )}
+
+              {isModal && onClose && (
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-lg border border-border hover:bg-surface text-text-tertiary hover:text-text-primary transition-colors cursor-pointer text-xs"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Corporate Domain Whitelist Pill Banner */}
+          <div className="mt-4 p-2.5 rounded-xl bg-surface border border-border/80 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs text-text-secondary">
+              <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span className="font-medium text-text-primary">Authorized Corporate Domains:</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {AUTHORIZED_DOMAINS.map((domain) => (
+                <span
+                  key={domain}
+                  className="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1"
+                >
+                  <Check className="w-3 h-3" />
+                  @{domain}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="flex items-center p-1 mt-6 rounded-xl bg-surface border border-border max-w-sm">
+          <div className="flex items-center p-1 mt-4 rounded-xl bg-surface border border-border max-w-sm">
             <button
               onClick={() => {
                 setMode('login');
@@ -293,6 +443,37 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
           </div>
         </div>
 
+        {/* Cloudflare Zero Trust Architecture Modal / Info Drawer */}
+        {showZeroTrustInfo && (
+          <div className="mx-6 mt-4 p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/30 text-xs text-text-secondary space-y-2 animate-in fade-in">
+            <div className="flex items-center justify-between text-cyan-300 font-bold">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                Cloudflare Zero Trust Configuration Details
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowZeroTrustInfo(false)}
+                className="text-text-tertiary hover:text-text-primary"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="leading-relaxed">
+              <strong>Cost: $0/month (Free Tier up to 50 active seats).</strong> Unauthorized users and public search engine bots are blocked at the Cloudflare edge before reaching the container.
+            </p>
+            <div className="bg-surface p-2.5 rounded-lg border border-border font-mono text-[11px] space-y-1">
+              <div className="text-emerald-400 font-semibold">// Cloudflare Access Rule:</div>
+              <div>Action: <span className="text-text-primary font-bold">Allow</span></div>
+              <div>Include: Emails ending in <span className="text-emerald-300">@tibule.com</span> OR <span className="text-emerald-300">@afriqintel.com</span></div>
+              <div>Method: <span className="text-text-primary">One-Time PIN (OTP) email code</span></div>
+            </div>
+            <div className="text-[11px] text-text-tertiary pt-1">
+              Detailed step-by-step instructions saved in <code className="text-text-primary bg-surface px-1 py-0.5 rounded">/CLOUDFLARE_ZERO_TRUST_SETUP.md</code>
+            </div>
+          </div>
+        )}
+
         {/* Alerts / Feedback */}
         {errorMessage && (
           <div className="mx-6 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2 animate-in fade-in">
@@ -311,76 +492,254 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
         <div className={`p-6 sm:p-8 space-y-6 ${isModal ? 'overflow-y-auto' : ''}`}>
           {mode === 'login' ? (
             <div className="space-y-6">
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" /> Agency Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="e.g. kwame.mensah@tibule.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-elevated text-sm text-text-primary focus:outline-none focus:border-[var(--color-brand)] transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5" /> Studio Passcode
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-[11px] text-text-tertiary hover:text-text-primary flex items-center gap-1"
-                    >
-                      {showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      <span>{showPassword ? 'Hide' : 'Show'}</span>
-                    </button>
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Enter password (default demo: tibule2026)"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-elevated text-sm text-text-primary focus:outline-none focus:border-[var(--color-brand)] transition-colors"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="rounded border-border text-[var(--color-brand)] focus:ring-0"
-                    />
-                    <span>Remember active session on this device</span>
-                  </label>
-                </div>
-
+              {/* Login Sub-methods: Cloudflare Email OTP vs Staff Password */}
+              <div className="flex items-center gap-2 p-1 rounded-xl bg-surface border border-border">
                 <button
-                  type="submit"
-                  className="w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:opacity-90"
-                  style={{
-                    backgroundColor: 'var(--color-brand)',
-                    color: 'var(--color-brand-contrast)'
+                  type="button"
+                  onClick={() => {
+                    setLoginMethod('otp');
+                    setErrorMessage(null);
                   }}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    loginMethod === 'otp'
+                      ? 'bg-surface-elevated text-emerald-400 shadow-xs border border-emerald-500/20'
+                      : 'text-text-tertiary hover:text-text-secondary'
+                  }`}
                 >
-                  <span>Authenticate &amp; Enter Studio</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Cloudflare Passkey (OTP)</span>
                 </button>
-              </form>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMethod('password');
+                    setErrorMessage(null);
+                  }}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    loginMethod === 'password'
+                      ? 'bg-surface-elevated text-text-primary shadow-xs'
+                      : 'text-text-tertiary hover:text-text-secondary'
+                  }`}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Staff Password</span>
+                </button>
+              </div>
 
-              {/* Quick Persona Access Drawer */}
+              {/* METHOD 1: Cloudflare OTP Passcode Login */}
+              {loginMethod === 'otp' ? (
+                <div className="space-y-4">
+                  {!otpSent ? (
+                    <form onSubmit={handleRequestOtp} className="space-y-4">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 text-emerald-400" /> Work Email Address
+                          </label>
+                          <span className="text-[10px] text-text-tertiary">
+                            @tibule.com or @afriqintel.com
+                          </span>
+                        </div>
+                        <input
+                          type="email"
+                          required
+                          value={otpEmail}
+                          onChange={(e) => setOtpEmail(e.target.value)}
+                          placeholder="e.g. kwame.mensah@tibule.com or tariq.afriq@afriqintel.com"
+                          className={`w-full px-3.5 py-2.5 rounded-xl border bg-surface-elevated text-sm text-text-primary focus:outline-none transition-colors ${
+                            otpEmailDomainValid === false
+                              ? 'border-rose-500/60 focus:border-rose-500'
+                              : otpEmailDomainValid === true
+                              ? 'border-emerald-500/60 focus:border-emerald-500'
+                              : 'border-border focus:border-[var(--color-brand)]'
+                          }`}
+                        />
+
+                        {/* Quick domain buttons */}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <span className="text-[10px] text-text-tertiary">Quick Domain:</span>
+                          <button
+                            type="button"
+                            onClick={() => applyDomainSuffix('otp', 'tibule.com')}
+                            className="px-2 py-0.5 rounded text-[10px] font-mono border border-border bg-surface hover:bg-surface-elevated text-emerald-400 transition-colors cursor-pointer"
+                          >
+                            + @tibule.com
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => applyDomainSuffix('otp', 'afriqintel.com')}
+                            className="px-2 py-0.5 rounded text-[10px] font-mono border border-border bg-surface hover:bg-surface-elevated text-cyan-400 transition-colors cursor-pointer"
+                          >
+                            + @afriqintel.com
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isRequestingOtp}
+                        className="w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:opacity-90 bg-emerald-600 hover:bg-emerald-500 text-white"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>{isRequestingOtp ? 'Dispatching Passkey...' : 'Send Access Passcode'}</span>
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleVerifyOtp} className="space-y-4 animate-in fade-in">
+                      <div className="p-3 rounded-xl bg-surface border border-emerald-500/30 flex items-center justify-between">
+                        <div className="text-xs">
+                          <span className="text-text-tertiary block">Sent passkey to:</span>
+                          <span className="font-bold text-text-primary font-mono">{otpEmail}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOtpSent(false);
+                            setOtpCode('');
+                            setActiveOtpCode(null);
+                          }}
+                          className="text-[11px] text-text-tertiary hover:text-text-primary flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3" /> Change Email
+                        </button>
+                      </div>
+
+                      {/* Immediate passkey helper box */}
+                      {activeOtpCode && (
+                        <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <span className="text-[10px] uppercase font-mono text-emerald-400 block font-semibold">
+                              One-Time Passcode Generated:
+                            </span>
+                            <span className="font-mono text-lg font-black tracking-widest text-emerald-300">
+                              {activeOtpCode}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setOtpCode(activeOtpCode)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors cursor-pointer"
+                          >
+                            Fill Passcode
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
+                          <KeyRound className="w-3.5 h-3.5 text-emerald-400" /> Enter 6-Digit Passcode
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          required
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value)}
+                          placeholder="e.g. 774920"
+                          className="w-full px-3.5 py-3 rounded-xl border border-border bg-surface-elevated text-center font-mono text-xl tracking-widest text-text-primary focus:outline-none focus:border-emerald-500 transition-colors"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:opacity-90 bg-emerald-600 hover:bg-emerald-500 text-white"
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>Verify &amp; Enter Studio</span>
+                      </button>
+                    </form>
+                  )}
+                </div>
+              ) : (
+                /* METHOD 2: Password Login */
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5" /> Corporate Email Address
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="e.g. kwame.mensah@tibule.com"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-elevated text-sm text-text-primary focus:outline-none focus:border-[var(--color-brand)] transition-colors"
+                    />
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-text-tertiary">Quick Domain:</span>
+                      <button
+                        type="button"
+                        onClick={() => applyDomainSuffix('login', 'tibule.com')}
+                        className="px-2 py-0.5 rounded text-[10px] font-mono border border-border bg-surface hover:bg-surface-elevated text-emerald-400 transition-colors cursor-pointer"
+                      >
+                        + @tibule.com
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyDomainSuffix('login', 'afriqintel.com')}
+                        className="px-2 py-0.5 rounded text-[10px] font-mono border border-border bg-surface hover:bg-surface-elevated text-cyan-400 transition-colors cursor-pointer"
+                      >
+                        + @afriqintel.com
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-text-secondary uppercase tracking-wider flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5" /> Studio Passcode
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-[11px] text-text-tertiary hover:text-text-primary flex items-center gap-1"
+                      >
+                        {showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        <span>{showPassword ? 'Hide' : 'Show'}</span>
+                      </button>
+                    </div>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="Enter password (default demo: tibule2026)"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-elevated text-sm text-text-primary focus:outline-none focus:border-[var(--color-brand)] transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="rounded border-border text-[var(--color-brand)] focus:ring-0"
+                      />
+                      <span>Remember active session on this device</span>
+                    </label>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer hover:opacity-90"
+                    style={{
+                      backgroundColor: 'var(--color-brand)',
+                      color: 'var(--color-brand-contrast)'
+                    }}
+                  >
+                    <span>Authenticate &amp; Enter Studio</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </form>
+              )}
+
+              {/* Quick Persona Fast Switch Drawer */}
               <div className="pt-5 border-t border-border space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    Demo Persona Fast Switch
+                    Verified Squad Persona Switch
                   </span>
                   <span className="text-[10px] text-text-tertiary">
                     Instant role verification
@@ -410,6 +769,11 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
                       badgeColor: 'bg-blue-500/15 text-blue-400 border-blue-500/30'
                     },
                     {
+                      user: users.find((u) => u.email.endsWith('@afriqintel.com')),
+                      deptTag: 'AfriqIntel Admin',
+                      badgeColor: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
+                    },
+                    {
                       user: users.find((u) => u.id === 'usr-sarah-jenkins'),
                       deptTag: 'Senior Creative Lead',
                       badgeColor: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30'
@@ -420,13 +784,8 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
                       badgeColor: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                     },
                     {
-                      user: users.find((u) => u.id === 'usr-liam-oconnor'),
-                      deptTag: 'Account Executive',
-                      badgeColor: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
-                    },
-                    {
                       user: users.find((u) => u.id === 'usr-kofi-boateng'),
-                      deptTag: 'Creative NSS / Intern',
+                      deptTag: 'Creative NSS/Intern',
                       badgeColor: 'bg-teal-500/15 text-teal-400 border-teal-500/30'
                     }
                   ]
@@ -434,6 +793,7 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
                     .map(({ user, deptTag, badgeColor }) => (
                       <button
                         key={user!.id}
+                        type="button"
                         onClick={() => handleDemoSignIn(user!)}
                         className="p-2.5 rounded-xl border border-border bg-surface hover:bg-surface-elevated hover:border-text-secondary transition-all text-left flex items-center justify-between group cursor-pointer"
                       >
@@ -441,8 +801,8 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
                           <div className="font-bold text-xs text-text-primary group-hover:text-[var(--color-brand)] truncate">
                             {user!.name}
                           </div>
-                          <div className="text-[11px] text-text-tertiary truncate">
-                            {user!.jobTitle}
+                          <div className="text-[11px] text-text-tertiary font-mono truncate">
+                            {user!.email}
                           </div>
                         </div>
                         <span className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase border shrink-0 ${badgeColor}`}>
@@ -454,13 +814,18 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
               </div>
             </div>
           ) : (
-            /* Registration Form */
+            /* REGISTRATION FORM */
             <form onSubmit={handleRegisterSubmit} className="space-y-6">
-              {/* Step 1: Credentials */}
+              {/* Step 1: Official Identity & Credentials */}
               <div className="space-y-3">
-                <div className="text-xs font-bold text-text-tertiary uppercase tracking-wider flex items-center gap-1.5 pb-1 border-b border-border">
-                  <UserIcon className="w-3.5 h-3.5 text-[var(--color-brand)]" />
-                  1. Official Identity &amp; Credentials
+                <div className="text-xs font-bold text-text-tertiary uppercase tracking-wider flex items-center justify-between pb-1 border-b border-border">
+                  <span className="flex items-center gap-1.5">
+                    <UserIcon className="w-3.5 h-3.5 text-[var(--color-brand)]" />
+                    1. Official Identity &amp; Corporate Email
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-mono">
+                    @tibule.com | @afriqintel.com
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -479,17 +844,54 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-text-secondary">
-                      Work Email *
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-text-secondary">
+                        Corporate Email *
+                      </label>
+                      {regEmailDomainValid === true && (
+                        <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
+                          <Check className="w-3 h-3" /> Valid Domain
+                        </span>
+                      )}
+                      {regEmailDomainValid === false && (
+                        <span className="text-[10px] text-rose-400 font-semibold flex items-center gap-0.5">
+                          <X className="w-3 h-3" /> Invalid Domain
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="email"
                       required
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
-                      placeholder="kwame.adjei@agency.tibule"
-                      className="w-full px-3 py-2 rounded-xl border border-border bg-surface-elevated text-xs text-text-primary focus:outline-none focus:border-[var(--color-brand)]"
+                      placeholder="name@tibule.com"
+                      className={`w-full px-3 py-2 rounded-xl border bg-surface-elevated text-xs text-text-primary focus:outline-none ${
+                        regEmailDomainValid === false
+                          ? 'border-rose-500/60 focus:border-rose-500'
+                          : regEmailDomainValid === true
+                          ? 'border-emerald-500/60 focus:border-emerald-500'
+                          : 'border-border focus:border-[var(--color-brand)]'
+                      }`}
                     />
+
+                    {/* Suffix chips */}
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <span className="text-[10px] text-text-tertiary">Domain:</span>
+                      <button
+                        type="button"
+                        onClick={() => applyDomainSuffix('register', 'tibule.com')}
+                        className="px-2 py-0.5 rounded text-[10px] font-mono border border-border bg-surface hover:bg-surface-elevated text-emerald-400 transition-colors cursor-pointer"
+                      >
+                        @tibule.com
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyDomainSuffix('register', 'afriqintel.com')}
+                        className="px-2 py-0.5 rounded text-[10px] font-mono border border-border bg-surface hover:bg-surface-elevated text-cyan-400 transition-colors cursor-pointer"
+                      >
+                        @afriqintel.com
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -570,8 +972,10 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
                     <Award className="w-3.5 h-3.5 text-[var(--color-brand)]" />
                     3. Hierarchy &amp; Seniority Tier
                   </span>
-                  <span className="text-[10px] text-text-tertiary lowercase">
-                    {regDepartment === 'creative' ? 'director → senior lead → specialist → junior → nss' : 'department hierarchy ladder'}
+                  <span className="text-[10px] text-text-tertiary">
+                    {regDepartment === 'creative'
+                      ? 'Director → Senior Lead → Specialist → Junior → NSS'
+                      : 'Department Hierarchy Ladder'}
                   </span>
                 </div>
 

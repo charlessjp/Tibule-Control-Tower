@@ -12,6 +12,125 @@ export type SeniorityLevel = 'junior' | 'mid' | 'senior' | 'lead' | 'director' |
 
 export type AgencyDepartment = 'creative' | 'traffic' | 'client_services';
 
+export type ReworkClassification = 'correction' | 'rework' | 'scope_change';
+
+export type RevertCategory = 
+  | 'client_scope_shift'
+  | 'creative_misinterpretation'
+  | 'technical_dieline_adjustment'
+  | 'stakeholder_subjective_preference'
+  | 'other';
+
+export type BlockerType =
+  | 'awaiting_client_input'
+  | 'awaiting_internal_input'
+  | 'awaiting_asset'
+  | 'awaiting_approval'
+  | 'technical_blocker'
+  | 'resource_conflict'
+  | 'scope_clarification'
+  | 'dependency'
+  | 'other';
+
+export interface BlockerRecord {
+  type: BlockerType;
+  description: string;
+  blockedSince?: string;
+  blockedByUserId?: string;
+  blockedByUserName?: string;
+  resolvedAt?: string;
+  loggedAt?: string;
+  loggedBy?: string;
+  dependency?: string;
+}
+
+export type OperationalEventType =
+  | 'assigned'
+  | 'started'
+  | 'paused'
+  | 'blocked'
+  | 'unblocked'
+  | 'submitted_for_review'
+  | 'manager_feedback'
+  | 'resubmitted'
+  | 'approved_internal'
+  | 'sent_to_client'
+  | 'client_revert'
+  | 'reassigned'
+  | 'scope_changed'
+  | 'deadline_changed'
+  | 'completed'
+  | 'cycle_started'
+  | 'allocation_overridden'
+  | 'assignment_changed'
+  | 'quality_review_completed'
+  | 'client_submitted'
+  | 'client_revert_received'
+  | 'blocker_logged'
+  | 'blocker_resolved';
+
+export interface OperationalEvent {
+  id: string;
+  jobId: string;
+  jobTitle?: string;
+  taskId?: string;
+  cycleNumber?: number;
+  eventType: OperationalEventType;
+  actorId: string;
+  actorName: string;
+  actorRole: string;
+  timestamp: string;
+  summary: string;
+  details?: string;
+  impact?: 'neutral' | 'congested' | 'blocked';
+  reworkClassification?: ReworkClassification;
+  revertCategory?: RevertCategory;
+  hoursImpact?: number;
+}
+
+export interface WorkCycle {
+  id: string;
+  jobId: string;
+  taskId?: string;
+  cycleNumber: number;
+  title: string;
+  cycleType: 'initial_production' | 'internal_revision' | 'client_revert_revision';
+  reworkClassification?: ReworkClassification;
+  revertCategory?: RevertCategory;
+  standardAllocation: number; // Benchmark effort
+  managerAllocation: number;  // Manager planned effort
+  actualEffort: number;       // Direct work logged
+  reworkEffort: number;       // Extra effort from revisions
+  startedAt: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+  completedAt?: string;
+  feedbackNotes?: string;
+  reviewerId?: string;
+  reviewerName?: string;
+  assigneeId?: string;
+  status: 'active' | 'in_review' | 'approved' | 'superseded';
+}
+
+export interface RevertEscalationConfig {
+  maxRevertThreshold: number; // Default 3
+  maxReworkHoursThreshold: number; // e.g. 15h
+  deadlineImpactDaysThreshold: number; // e.g. 2 days
+}
+
+export interface UserAvailability {
+  contractedHoursPerWeek: number; // Default 40
+  leaveHours: number;             // e.g. Vacation / sick
+  trainingHours: number;          // e.g. Workshops
+  meetingsHours: number;          // Non-production meetings
+  nonProductionHours: number;     // Admin / mentoring
+  availableProductionHours: number; // Contracted - Deductions
+  // Manager specific review capacity
+  reviewCommitmentHours?: number;
+  managementMeetingsHours?: number;
+  availableReviewHours?: number;
+}
+
 export type AccountState = 'invited' | 'pending_setup' | 'active' | 'suspended' | 'deactivated';
 
 export interface User {
@@ -31,6 +150,7 @@ export interface User {
   lastLogin: string;
   skillProfile: string[];
   capacityHoursPerWeek: number;
+  availability?: UserAvailability;
 }
 
 export interface StoredAccount {
@@ -175,6 +295,19 @@ export interface Job {
   reassignmentHistory?: JobReassignment[];
   isAtRisk?: boolean;
 
+  // V2 Hierarchy & Effort Breakdown
+  parentJobId?: string;
+  tasksCount?: number;
+  workCycles?: WorkCycle[];
+  activeCycleNumber?: number;
+  standardAllocationHours?: number;
+  managerAllocationHours?: number;
+  managerAllocationReason?: string;
+  actualEffortHours?: number;
+  reworkEffortHours?: number;
+  blockerDetail?: BlockerRecord;
+  revertEscalationConfig?: RevertEscalationConfig;
+
   // Agency Workflow Fields
   workflowStage?: WorkflowStage;
   standardTaskType?: StandardTaskType;
@@ -310,18 +443,42 @@ export interface ExceptionItem {
   timestamp: string;
 }
 
+export interface CapacityBreakdownItem {
+  jobId: string;
+  jobTitle: string;
+  type: 'base_production' | 'rework' | 'client_revert' | 'review_commitment';
+  hours: number;
+}
+
 export interface EmployeeCapacityCalculation {
   userId: string;
   name: string;
   jobTitle: string;
   teamId: string;
-  capacityHoursPerWeek: number;
+  // Availability Model
+  contractedHours: number;
+  availableHours: number; // Contracted - (leave + training + meetings + admin)
+  leaveHours: number;
+  trainingHours: number;
+  meetingsHours: number;
+  nonProductionHours: number;
+
+  // Workload Model
   assignedHours: number;
-  capacityPercent: number;
+  baseProductionHours: number;
+  reworkHours: number;
+  reviewCommitmentHours: number;
+  capacityPercent: number; // assignedHours / availableHours * 100
+  capacityPressureHours: number; // Max(0, assignedHours - availableHours)
+  
+  // Counts & States
   activeJobsCount: number;
   dueSoonCount: number;
   blockedCount: number;
   trafficState: TrafficState;
+
+  // Detailed Explainability Items
+  breakdown: CapacityBreakdownItem[];
 }
 
 export interface MetricTraceInfo {
@@ -471,4 +628,30 @@ export interface EfficiencyLeaderboardEntry {
   points: number;
   activeStreak: number;
   eligibleRewardTier?: string;
+}
+
+export type OvertimePeriod = 'pre_9am' | 'post_5pm' | 'weekend_crunch';
+
+export interface OvertimeLog {
+  id: string;
+  userId: string;
+  userName: string;
+  userRole?: string;
+  department?: AgencyDepartment;
+  jobId: string;
+  jobTitle: string;
+  brandName?: string;
+  period: OvertimePeriod;
+  date: string; // YYYY-MM-DD
+  startTime: string; // e.g. "07:00" or "18:00"
+  endTime: string; // e.g. "09:00" or "21:00"
+  hoursLogged: number; // e.g. 2.0
+  materialNote: string; // e.g. "Finalized 4K audio sync and color grading before 10 AM showcase"
+  goodBooksPoints: number; // e.g. 25
+  status: 'pending_acknowledgment' | 'acknowledged_by_manager' | 'acknowledged_by_gm';
+  acknowledgedBy?: string;
+  acknowledgedByName?: string;
+  acknowledgedAt?: string;
+  acknowledgmentNote?: string;
+  createdAt: string;
 }
