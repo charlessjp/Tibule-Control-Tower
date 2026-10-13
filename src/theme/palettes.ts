@@ -39,122 +39,122 @@ export const PALETTES: PaletteScheme[] = [
     id: 'pure',
     name: 'Pure',
     tagline: 'Apple × Linear Editorial Minimal',
-    philosophy: 'Minimal, premium, editorial software. Neutral foundation with quiet confidence and restrained emphasis.',
-    swatches: ['#03C1D6', '#FF355C', '#9CFE02', '#FDDE03', '#512D6E'],
+    philosophy: 'Minimal, disciplined, editorial software. Monochromatic architecture with quiet confidence, titanium neutrals, and restrained emphasis.',
+    swatches: ['#F4F4F5', '#A1A1AA', '#71717A', '#3F3F46', '#18181B'],
     light: {
       bgBase: '#FFFFFF',
-      bgSurface: '#F7F7F8',
-      bgSurfaceElevated: '#EFEFF1',
-      bgSurfaceMuted: '#F3F3F5',
-      bgSurfaceHover: '#E9E9ED',
-      border: '#E2E2E7',
-      borderSubtle: '#D3D3DB',
-      accentPrimary: '#0298A8',
-      accentSecondary: '#017C8A',
+      bgSurface: '#F8F9FA',
+      bgSurfaceElevated: '#F1F3F5',
+      bgSurfaceMuted: '#F4F5F7',
+      bgSurfaceHover: '#E9ECEF',
+      border: '#E2E4E8',
+      borderSubtle: '#ECEEF1',
+      accentPrimary: '#18181B',
+      accentSecondary: '#27272A',
       accentContrast: '#FFFFFF',
-      textPrimary: '#171719',
-      textSecondary: '#575761',
-      textTertiary: '#858591',
-      glowPrimary: 'rgba(3, 193, 214, 0.22)',
-      glowSecondary: 'rgba(255, 53, 92, 0.12)',
+      textPrimary: '#09090B',
+      textSecondary: '#64748B',
+      textTertiary: '#94A3B8',
+      glowPrimary: 'rgba(24, 24, 27, 0.08)',
+      glowSecondary: 'rgba(100, 116, 139, 0.06)',
       semantic: {
-        success: '#62A800',
-        warning: '#B89900',
-        critical: '#FF355C',
-        info: '#0298A8',
-        strategic: '#512D6E'
+        success: '#16A34A',
+        warning: '#D97706',
+        critical: '#DC2626',
+        info: '#475569',
+        strategic: '#334155'
       },
-      charts: ['#0298A8', '#62A800', '#512D6E', '#B89900', '#FF355C']
+      charts: ['#2563EB', '#7C3AED', '#059669', '#D97706', '#0D9488']
     },
     dark: {
       bgBase: '#09090B',
-      bgSurface: '#111114',
+      bgSurface: '#121215',
       bgSurfaceElevated: '#18181C',
       bgSurfaceMuted: '#0E0E12',
-      bgSurfaceHover: '#202026',
-      border: '#222227',
-      borderSubtle: '#2E2E35',
-      accentPrimary: '#03C1D6',
-      accentSecondary: '#029CB0',
-      accentContrast: '#041C22',
-      textPrimary: '#F5F5F5',
-      textSecondary: '#9E9EA7',
-      textTertiary: '#6C6C75',
-      glowPrimary: 'rgba(3, 193, 214, 0.35)',
-      glowSecondary: 'rgba(255, 53, 92, 0.18)',
+      bgSurfaceHover: '#222228',
+      border: '#24242A',
+      borderSubtle: '#2E2E36',
+      accentPrimary: '#F4F4F5',
+      accentSecondary: '#E4E4E7',
+      accentContrast: '#09090B',
+      textPrimary: '#F4F4F5',
+      textSecondary: '#A1A1AA',
+      textTertiary: '#71717A',
+      glowPrimary: 'rgba(244, 244, 245, 0.15)',
+      glowSecondary: 'rgba(161, 161, 170, 0.10)',
       semantic: {
-        success: '#9CFE02',
-        warning: '#FDDE03',
-        critical: '#FF355C',
-        info: '#03C1D6',
-        strategic: '#8E5CB8'
+        success: '#22C55E',
+        warning: '#F59E0B',
+        critical: '#EF4444',
+        info: '#94A3B8',
+        strategic: '#CBD5E1'
       },
-      charts: ['#03C1D6', '#9CFE02', '#8E5CB8', '#FDDE03', '#FF355C']
+      charts: ['#38BDF8', '#A78BFA', '#34D399', '#FBBF24', '#2DD4BF']
     }
   },
   {
     id: 'signal',
     name: 'Signal',
     tagline: 'High-Energy Operational Intervention',
-    philosophy: 'Dominant Coral (#FF355C). Live traffic, operational urgency, rapid triage, and intervention metrics.',
-    swatches: ['#FF355C', '#03C1D6', '#9CFE02', '#FDDE03', '#512D6E'],
+    philosophy: 'Dominant Coral-Crimson. Live traffic, operational urgency, rapid triage, and intervention metrics calibrated into a harmonious crimson-slate spectrum.',
+    swatches: ['#E11D48', '#F43F5E', '#FB7185', '#FDA4AF', '#FFE4E6'],
     light: {
-      bgBase: '#FFF9FA',
+      bgBase: '#FFFBFB',
       bgSurface: '#FFFFFF',
-      bgSurfaceElevated: '#FFF1F4',
-      bgSurfaceMuted: '#FFE8EC',
-      bgSurfaceHover: '#FFE0E6',
-      border: '#FCD9E0',
-      borderSubtle: '#F7B5C3',
-      accentPrimary: '#FF355C',
-      accentSecondary: '#E01E43',
+      bgSurfaceElevated: '#FFF5F6',
+      bgSurfaceMuted: '#FFEBEF',
+      bgSurfaceHover: '#FFE2E8',
+      border: '#FCD8E0',
+      borderSubtle: '#F7C0CD',
+      accentPrimary: '#E11D48',
+      accentSecondary: '#BE123C',
       accentContrast: '#FFFFFF',
-      textPrimary: '#161216',
-      textSecondary: '#58444B',
-      textTertiary: '#896F78',
-      glowPrimary: 'rgba(255, 53, 92, 0.30)',
-      glowSecondary: 'rgba(3, 193, 214, 0.16)',
+      textPrimary: '#1E1215',
+      textSecondary: '#5E444B',
+      textTertiary: '#8E7078',
+      glowPrimary: 'rgba(225, 29, 72, 0.16)',
+      glowSecondary: 'rgba(244, 63, 94, 0.10)',
       semantic: {
-        success: '#62A800',
-        warning: '#B89900',
-        critical: '#FF355C',
-        info: '#0298A8',
-        strategic: '#512D6E'
+        success: '#16A34A',
+        warning: '#D97706',
+        critical: '#E11D48',
+        info: '#475569',
+        strategic: '#881337'
       },
-      charts: ['#FF355C', '#0298A8', '#62A800', '#B89900', '#512D6E']
+      charts: ['#0891B2', '#7C3AED', '#059669', '#2563EB', '#C026D3']
     },
     dark: {
-      bgBase: '#100A0D',
-      bgSurface: '#181014',
-      bgSurfaceElevated: '#21151A',
-      bgSurfaceMuted: '#140D10',
-      bgSurfaceHover: '#2B1B22',
-      border: '#361D26',
-      borderSubtle: '#4E2A36',
+      bgBase: '#0F090B',
+      bgSurface: '#160E12',
+      bgSurfaceElevated: '#201419',
+      bgSurfaceMuted: '#120B0F',
+      bgSurfaceHover: '#2A1B22',
+      border: '#331B24',
+      borderSubtle: '#482533',
       accentPrimary: '#FF355C',
       accentSecondary: '#E01E43',
       accentContrast: '#FFFFFF',
       textPrimary: '#FFF0F3',
       textSecondary: '#B89CA4',
       textTertiary: '#856872',
-      glowPrimary: 'rgba(255, 53, 92, 0.45)',
-      glowSecondary: 'rgba(3, 193, 214, 0.22)',
+      glowPrimary: 'rgba(255, 53, 92, 0.28)',
+      glowSecondary: 'rgba(251, 113, 133, 0.16)',
       semantic: {
-        success: '#9CFE02',
-        warning: '#FDDE03',
+        success: '#22C55E',
+        warning: '#F59E0B',
         critical: '#FF355C',
-        info: '#03C1D6',
-        strategic: '#8E5CB8'
+        info: '#FDA4AF',
+        strategic: '#F43F5E'
       },
-      charts: ['#FF355C', '#03C1D6', '#9CFE02', '#FDDE03', '#8E5CB8']
+      charts: ['#22D3EE', '#A78BFA', '#34D399', '#60A5FA', '#F472B6']
     }
   },
   {
     id: 'lime',
     name: 'Lime',
-    tagline: 'Creative Velocity & Optimistic Momentum',
-    philosophy: 'Dominant Acid Lime (#9CFE02). Energetic, modern, experimental, and tailored for creative velocity.',
-    swatches: ['#9CFE02', '#10E7B2', '#FF355C', '#FDDE03', '#44E575'],
+    tagline: 'Creative Velocity & Kinetic Focus',
+    philosophy: 'Dominant Acid Spring Lime. Energetic, modern, and tailored for creative velocity, paired with grounding forest-slate neutrals.',
+    swatches: ['#84CC16', '#A3E635', '#BEF264', '#65A30D', '#3F6212'],
     light: {
       bgBase: '#FAFCF6',
       bgSurface: '#FFFFFF',
@@ -163,22 +163,22 @@ export const PALETTES: PaletteScheme[] = [
       bgSurfaceHover: '#DDEECB',
       border: '#DFEBD2',
       borderSubtle: '#C6DBB2',
-      accentPrimary: '#72C800',
-      accentSecondary: '#5DA300',
+      accentPrimary: '#65A30D',
+      accentSecondary: '#4D7C0F',
       accentContrast: '#FFFFFF',
       textPrimary: '#111510',
       textSecondary: '#455240',
       textTertiary: '#73836D',
-      glowPrimary: 'rgba(114, 200, 0, 0.32)',
-      glowSecondary: 'rgba(5, 150, 105, 0.18)',
+      glowPrimary: 'rgba(101, 163, 13, 0.18)',
+      glowSecondary: 'rgba(132, 204, 22, 0.12)',
       semantic: {
-        success: '#62A800',
-        warning: '#B89900',
-        critical: '#FF355C',
-        info: '#059669',
-        strategic: '#2D5A27'
+        success: '#16A34A',
+        warning: '#D97706',
+        critical: '#DC2626',
+        info: '#475569',
+        strategic: '#3F6212'
       },
-      charts: ['#72C800', '#059669', '#FF355C', '#B89900', '#2D5A27']
+      charts: ['#7C3AED', '#0284C7', '#D97706', '#4D7C0F', '#C026D3']
     },
     dark: {
       bgBase: '#090D08',
@@ -194,24 +194,24 @@ export const PALETTES: PaletteScheme[] = [
       textPrimary: '#F6FEF2',
       textSecondary: '#A5BE9E',
       textTertiary: '#6C8566',
-      glowPrimary: 'rgba(156, 254, 2, 0.45)',
-      glowSecondary: 'rgba(16, 231, 178, 0.20)',
+      glowPrimary: 'rgba(156, 254, 2, 0.28)',
+      glowSecondary: 'rgba(132, 204, 22, 0.16)',
       semantic: {
         success: '#9CFE02',
-        warning: '#FDDE03',
-        critical: '#FF355C',
-        info: '#10E7B2',
-        strategic: '#44E575'
+        warning: '#F59E0B',
+        critical: '#EF4444',
+        info: '#A3E635',
+        strategic: '#4D7C0F'
       },
-      charts: ['#9CFE02', '#10E7B2', '#FF355C', '#FDDE03', '#44E575']
+      charts: ['#A78BFA', '#38BDF8', '#FBBF24', '#84CC16', '#E879F9']
     }
   },
   {
     id: 'violet',
     name: 'Violet',
-    tagline: 'Boardroom Intelligence & Strategic Authority',
-    philosophy: 'Dominant Deep Violet (#512D6E). Executive, analytical, sophisticated governance and progression intelligence.',
-    swatches: ['#512D6E', '#03C1D6', '#9CFE02', '#FDDE03', '#FF355C'],
+    tagline: 'Boardroom Intelligence & Strategic Governance',
+    philosophy: 'Dominant Deep Violet & Indigo. Executive, analytical, and sophisticated governance with a cohesive plum and indigo hierarchy.',
+    swatches: ['#7C3AED', '#8B5CF6', '#A78BFA', '#C4B5FD', '#4C1D95'],
     light: {
       bgBase: '#FAF8FC',
       bgSurface: '#FFFFFF',
@@ -220,22 +220,22 @@ export const PALETTES: PaletteScheme[] = [
       bgSurfaceHover: '#E4DAEC',
       border: '#E8DFEE',
       borderSubtle: '#D5C4E0',
-      accentPrimary: '#512D6E',
-      accentSecondary: '#3B1F51',
+      accentPrimary: '#6D28D9',
+      accentSecondary: '#5B21B6',
       accentContrast: '#FFFFFF',
       textPrimary: '#190F24',
       textSecondary: '#534063',
       textTertiary: '#826D94',
-      glowPrimary: 'rgba(81, 45, 110, 0.28)',
-      glowSecondary: 'rgba(3, 193, 214, 0.16)',
+      glowPrimary: 'rgba(109, 40, 217, 0.18)',
+      glowSecondary: 'rgba(124, 58, 237, 0.12)',
       semantic: {
-        success: '#62A800',
-        warning: '#B89900',
-        critical: '#FF355C',
-        info: '#0298A8',
-        strategic: '#512D6E'
+        success: '#16A34A',
+        warning: '#D97706',
+        critical: '#DC2626',
+        info: '#475569',
+        strategic: '#6D28D9'
       },
-      charts: ['#512D6E', '#0298A8', '#62A800', '#B89900', '#FF355C']
+      charts: ['#D97706', '#6D28D9', '#059669', '#0891B2', '#2563EB']
     },
     dark: {
       bgBase: '#0D0910',
@@ -245,30 +245,30 @@ export const PALETTES: PaletteScheme[] = [
       bgSurfaceHover: '#281E2E',
       border: '#302038',
       borderSubtle: '#452E52',
-      accentPrimary: '#9E67C9',
-      accentSecondary: '#874FBA',
-      accentContrast: '#FFFFFF',
+      accentPrimary: '#A78BFA',
+      accentSecondary: '#8B5CF6',
+      accentContrast: '#0D0910',
       textPrimary: '#F9F4FC',
       textSecondary: '#B49FBF',
       textTertiary: '#7E698A',
-      glowPrimary: 'rgba(158, 103, 201, 0.38)',
-      glowSecondary: 'rgba(81, 45, 110, 0.25)',
+      glowPrimary: 'rgba(167, 139, 250, 0.28)',
+      glowSecondary: 'rgba(124, 58, 237, 0.18)',
       semantic: {
-        success: '#9CFE02',
-        warning: '#FDDE03',
-        critical: '#FF355C',
-        info: '#03C1D6',
-        strategic: '#9E67C9'
+        success: '#22C55E',
+        warning: '#F59E0B',
+        critical: '#EF4444',
+        info: '#C4B5FD',
+        strategic: '#8B5CF6'
       },
-      charts: ['#9E67C9', '#03C1D6', '#9CFE02', '#FDDE03', '#FF355C']
+      charts: ['#FBBF24', '#A78BFA', '#34D399', '#22D3EE', '#60A5FA']
     }
   },
   {
     id: 'cyan',
     name: 'Cyan',
-    tagline: 'Control Tower & Live Operational Control',
-    philosophy: 'Dominant Cyan (#03C1D6). Information flow, systems clarity, queues, capacity, and live operational metrics.',
-    swatches: ['#03C1D6', '#9CFE02', '#FF355C', '#512D6E', '#FDDE03'],
+    tagline: 'Control Tower & Live Operational Clarity',
+    philosophy: 'Dominant Precision Cyan. Information flow, systems clarity, live telemetry, and dispatch velocity across ocean-steel tones.',
+    swatches: ['#0891B2', '#06B6D4', '#22D3EE', '#67E8F9', '#155E75'],
     light: {
       bgBase: '#F6FCFD',
       bgSurface: '#FFFFFF',
@@ -277,22 +277,22 @@ export const PALETTES: PaletteScheme[] = [
       bgSurfaceHover: '#D4EFF3',
       border: '#CFECF1',
       borderSubtle: '#B0DFE7',
-      accentPrimary: '#0298A8',
-      accentSecondary: '#017B88',
-      accentContrast: '#041C22',
+      accentPrimary: '#0891B2',
+      accentSecondary: '#0E7490',
+      accentContrast: '#FFFFFF',
       textPrimary: '#0D1719',
       textSecondary: '#354C52',
       textTertiary: '#627D85',
-      glowPrimary: 'rgba(3, 193, 214, 0.30)',
-      glowSecondary: 'rgba(255, 53, 92, 0.16)',
+      glowPrimary: 'rgba(8, 145, 178, 0.18)',
+      glowSecondary: 'rgba(6, 182, 212, 0.12)',
       semantic: {
-        success: '#62A800',
-        warning: '#B89900',
-        critical: '#FF355C',
-        info: '#0298A8',
-        strategic: '#512D6E'
+        success: '#16A34A',
+        warning: '#D97706',
+        critical: '#DC2626',
+        info: '#0891B2',
+        strategic: '#155E75'
       },
-      charts: ['#0298A8', '#62A800', '#FF355C', '#512D6E', '#B89900']
+      charts: ['#EA580C', '#7C3AED', '#059669', '#0891B2', '#D97706']
     },
     dark: {
       bgBase: '#071013',
@@ -308,19 +308,18 @@ export const PALETTES: PaletteScheme[] = [
       textPrimary: '#F0FBFC',
       textSecondary: '#8DB1BC',
       textTertiary: '#567A85',
-      glowPrimary: 'rgba(3, 193, 214, 0.42)',
-      glowSecondary: 'rgba(255, 53, 92, 0.22)',
+      glowPrimary: 'rgba(3, 193, 214, 0.30)',
+      glowSecondary: 'rgba(6, 182, 212, 0.18)',
       semantic: {
-        success: '#9CFE02',
-        warning: '#FDDE03',
-        critical: '#FF355C',
+        success: '#22C55E',
+        warning: '#F59E0B',
+        critical: '#EF4444',
         info: '#03C1D6',
-        strategic: '#8E5CB8'
+        strategic: '#0891B2'
       },
-      charts: ['#03C1D6', '#9CFE02', '#FF355C', '#8E5CB8', '#FDDE03']
+      charts: ['#FB923C', '#A78BFA', '#34D399', '#06B6D4', '#FBBF24']
     }
   }
 ];
 
 export const DEFAULT_PALETTE_ID = 'pure';
-

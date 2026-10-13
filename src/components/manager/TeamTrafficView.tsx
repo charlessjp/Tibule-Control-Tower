@@ -30,13 +30,15 @@ export const TeamTrafficView: React.FC = () => {
 
   const isDark = theme === 'dark';
   const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
+  const isTraffic = currentUser.role === 'traffic_manager';
+  const canViewAllTeams = isGM || isTraffic;
   const userTeam = teams.find((t) => t.id === currentUser.teamId) || teams[0];
 
   const [filterState, setFilterState] = useState<string>('all');
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<string>('all');
 
-  // Managers are strictly locked to their own team; GMs have full cross-team capacity
-  const effectiveTeamFilter = isGM ? selectedTeamFilter : (currentUser.teamId || 'team-creative');
+  // Discipline Leads and Creative Director are strictly locked to their own team; GMs and Traffic have cross-team dispatch
+  const effectiveTeamFilter = canViewAllTeams ? selectedTeamFilter : (currentUser.teamId || 'team-creative');
 
   const filteredUsers = users.filter((u) => {
     if (effectiveTeamFilter !== 'all' && u.teamId !== effectiveTeamFilter) return false;
@@ -53,21 +55,21 @@ export const TeamTrafficView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">
-            {isGM ? 'Studio Capacity & Workload' : `${userTeam?.name || 'Team'} Capacity & Workload`}
+            {canViewAllTeams ? 'Studio Capacity & Workload' : `${userTeam?.name || 'Team'} Capacity & Workload`}
           </h1>
           <p className="text-xs mt-1 text-text-tertiary">
-            {isGM
-              ? 'Check studio hours, balance project assignments, and inspect workloads across all agency teams.'
-              : `Check team hours, balance project assignments, and keep workloads healthy for ${userTeam?.name || 'your assigned team'}.`}
+            {canViewAllTeams
+              ? 'Monitor individual bandwidth, balance workload allocations, and prevent burnout across all agency teams.'
+              : `Monitor member bandwidth, balance workload allocations, and prevent burnout for ${userTeam?.name || 'your assigned team'}.`}
           </p>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          {isGM ? (
+          {canViewAllTeams ? (
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-mono uppercase tracking-wider text-text-tertiary">
-                GM Scope:
+                {isGM ? 'GM Scope:' : 'Traffic Scope:'}
               </span>
               <select
                 value={selectedTeamFilter}
@@ -95,12 +97,12 @@ export const TeamTrafficView: React.FC = () => {
                 borderColor: 'var(--color-border)',
                 color: 'var(--color-text-secondary)'
               }}
-              title="Restricted: Managers can only view their own team. Cross-team filtering belongs strictly to the General Manager."
+              title="Restricted: Discipline leads and directors can only view their own team. Cross-team filtering belongs strictly to General Management and Studio Traffic."
             >
               <Lock className="w-3.5 h-3.5 text-text-tertiary" />
               <span>Team: {userTeam?.name || 'Your Team'}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded border text-text-tertiary bg-surface-elevated border-border font-normal">
-                Locked
+              <span className="text-[10px] text-text-tertiary font-mono font-normal">
+                · Locked
               </span>
             </div>
           )}
@@ -165,8 +167,8 @@ export const TeamTrafficView: React.FC = () => {
                         {member.name}
                       </span>
                       <SeniorityBadge seniority={member.seniority || 'mid'} size="xs" />
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-surface-elevated text-text-secondary border border-border-subtle">
-                        {team?.name}
+                      <span className="text-[11px] font-mono font-bold text-text-tertiary uppercase tracking-wider">
+                        / {team?.name}
                       </span>
                     </div>
                     <div className="text-xs text-text-secondary">
@@ -181,7 +183,7 @@ export const TeamTrafficView: React.FC = () => {
                     percent={cap.capacityPercent}
                     hoursCommitted={cap.assignedHours}
                     hoursContracted={cap.capacityHoursPerWeek}
-                    label="Operational Load"
+                    label="Workload Capacity"
                     size="sm"
                   />
                 </div>
@@ -194,9 +196,9 @@ export const TeamTrafficView: React.FC = () => {
                         openReportModal(member.id);
                       }}
                       title={`Generate performance report for ${member.name}`}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition-all cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border bg-surface-elevated text-text-secondary hover:text-text-primary hover:bg-surface-hover text-xs font-semibold transition-all cursor-pointer"
                     >
-                      <FileDown className="w-3.5 h-3.5 text-emerald-500" />
+                      <FileDown className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
                       <span className="hidden sm:inline">PDF Dossier</span>
                     </button>
                   )}

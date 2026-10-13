@@ -16,7 +16,8 @@ import {
   ArrowRight,
   RefreshCw,
   FileCheck,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
 
 export const JobDetailDrawer: React.FC = () => {
@@ -34,7 +35,9 @@ export const JobDetailDrawer: React.FC = () => {
     resolveBlocker,
     addComment,
     setMetricTraceModal,
-    theme
+    theme,
+    openLogDeliveryImpactModal,
+    deliveryImpactLogs
   } = useApp();
   const isDark = theme === 'dark';
 
@@ -87,11 +90,11 @@ export const JobDetailDrawer: React.FC = () => {
   }[job.priority] || 'badge-priority-medium';
 
   const complexityBadgeClasses = {
-    extreme: 'bg-[var(--color-critical)]/10 text-[var(--color-critical)] border-[var(--color-critical)]/30',
-    high: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)] border-[var(--color-warning)]/30',
-    medium: 'bg-[var(--color-brand)]/15 text-[var(--color-brand)] border-[var(--color-brand)]/40',
-    low: 'bg-[var(--color-success)]/10 text-[var(--color-success)] border-[var(--color-success)]/30'
-  }[job.complexity] || 'bg-[var(--color-brand)]/15 text-[var(--color-brand)] border-[var(--color-brand)]/40';
+    extreme: 'text-[var(--color-critical)]',
+    high: 'text-[var(--color-warning)]',
+    medium: 'text-[var(--color-brand)]',
+    low: 'text-[var(--color-success)]'
+  }[job.complexity] || 'text-[var(--color-brand)]';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
@@ -114,20 +117,20 @@ export const JobDetailDrawer: React.FC = () => {
         >
           <div className="flex items-center gap-3">
             <span
-              className="font-mono text-xs font-bold px-2.5 py-1 rounded border"
+              className="font-mono text-sm font-bold tracking-tight"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--color-brand) 12%, transparent)',
-                borderColor: 'var(--color-brand)',
                 color: 'var(--color-brand)'
               }}
             >
               {job.id}
             </span>
+            <span className="text-border text-xs">/</span>
             <div className="flex items-center gap-2">
-              <span className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded border ${priorityBadgeClasses}`}>
+              <span className={`text-[11px] uppercase font-mono font-bold ${priorityBadgeClasses}`}>
                 {job.priority} Priority
               </span>
-              <span className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded border ${complexityBadgeClasses}`}>
+              <span className="text-border text-xs">·</span>
+              <span className={`text-[11px] uppercase font-mono font-bold ${complexityBadgeClasses}`}>
                 {job.complexity} Complexity
               </span>
             </div>

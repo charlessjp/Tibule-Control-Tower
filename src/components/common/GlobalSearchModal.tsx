@@ -25,59 +25,84 @@ export const GlobalSearchModal: React.FC = () => {
     cases,
     setSelectedJobId,
     setSelectedEmployeeId,
-    setActiveView
+    setActiveView,
+    currentUser
   } = useApp();
 
   const [query, setQuery] = useState('');
 
   const filteredResults = useMemo(() => {
+    const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
+    const isTraffic = currentUser.role === 'traffic_manager';
+    const isDisciplineLead = currentUser.role === 'manager' || currentUser.role === 'director' || currentUser.role === 'team_lead';
+
+    // Scoped pools based on user role and team
+    const baseJobs = (isGM || isTraffic)
+      ? jobs
+      : jobs.filter((j) => j.teamId === currentUser.teamId);
+
+    const baseUsers = (isGM || isTraffic)
+      ? users
+      : users.filter((u) => u.teamId === currentUser.teamId);
+
+    const baseTeams = (isGM || isTraffic)
+      ? teams
+      : teams.filter((t) => t.id === currentUser.teamId);
+
+    const baseCases = isGM
+      ? cases
+      : isDisciplineLead
+      ? cases.filter((c) => c.teamId === currentUser.teamId)
+      : cases.filter((c) => c.employeeId === currentUser.id);
+
     const q = query.trim().toLowerCase();
     if (!q) {
       return {
         quickCommands: [
-          { label: '/ overloaded teams', desc: 'Jump to traffic map with capacity filters', action: () => { setActiveView('live_traffic'); setIsCommandBarOpen(false); } },
+          { label: '/ visual analytics', desc: 'Inspect agency, department, and staff telemetry', action: () => { setActiveView('visual_analytics'); setIsCommandBarOpen(false); } },
+          { label: '/ overloaded teams', desc: 'Jump to traffic map with capacity filters', action: () => { setActiveView('team_traffic'); setIsCommandBarOpen(false); } },
           { label: '/ work due tomorrow', desc: 'Filter high-urgency deliverables', action: () => { setActiveView('all_work'); setIsCommandBarOpen(false); } },
           { label: '/ blocked jobs', desc: 'Inspect jobs delayed by dependencies', action: () => { setActiveView('all_work'); setIsCommandBarOpen(false); } },
           { label: '/ progression reviews', desc: 'Review submitted role & salary cases', action: () => { setActiveView('cases'); setIsCommandBarOpen(false); } },
         ],
-        jobs: jobs.slice(0, 3),
-        users: users.slice(0, 3),
-        teams: teams.slice(0, 2),
-        cases: cases.slice(0, 2)
+        jobs: baseJobs.slice(0, 3),
+        users: baseUsers.slice(0, 3),
+        teams: baseTeams.slice(0, 2),
+        cases: baseCases.slice(0, 2)
       };
     }
 
-    let jobList = jobs;
-    let userList = users;
-    let teamList = teams;
-    let caseList = cases;
+    let jobList = baseJobs;
+    let userList = baseUsers;
+    let teamList = baseTeams;
+    let caseList = baseCases;
 
     if (q.startsWith('job:')) {
       const sub = q.replace('job:', '').trim();
-      jobList = jobs.filter((j) => j.id.toLowerCase().includes(sub) || j.title.toLowerCase().includes(sub));
+      jobList = baseJobs.filter((j) => j.id.toLowerCase().includes(sub) || j.title.toLowerCase().includes(sub));
       return { quickCommands: [], jobs: jobList, users: [], teams: [], cases: [] };
     }
 
     if (q.startsWith('employee:') || q.startsWith('user:')) {
       const sub = q.replace(/^(employee|user):/, '').trim();
-      userList = users.filter((u) => u.name.toLowerCase().includes(sub) || u.email.toLowerCase().includes(sub));
+      userList = baseUsers.filter((u) => u.name.toLowerCase().includes(sub) || u.email.toLowerCase().includes(sub));
       return { quickCommands: [], jobs: [], users: userList, teams: [], cases: [] };
     }
 
     if (q.startsWith('team:')) {
       const sub = q.replace('team:', '').trim();
-      teamList = teams.filter((t) => t.name.toLowerCase().includes(sub));
+      teamList = baseTeams.filter((t) => t.name.toLowerCase().includes(sub));
       return { quickCommands: [], jobs: [], users: [], teams: teamList, cases: [] };
     }
 
     if (q.startsWith('case:')) {
       const sub = q.replace('case:', '').trim();
-      caseList = cases.filter((c) => c.id.toLowerCase().includes(sub) || c.title.toLowerCase().includes(sub) || c.employeeName.toLowerCase().includes(sub));
+      caseList = baseCases.filter((c) => c.id.toLowerCase().includes(sub) || c.title.toLowerCase().includes(sub) || c.employeeName.toLowerCase().includes(sub));
       return { quickCommands: [], jobs: [], users: [], teams: [], cases: caseList };
     }
 
-    // Generic search across all collections
-    const matchedJobs = jobs.filter(
+    // Generic search across all permitted collections
+    const matchedJobs = baseJobs.filter(
       (j) =>
         j.id.toLowerCase().includes(q) ||
         j.title.toLowerCase().includes(q) ||
@@ -85,26 +110,36 @@ export const GlobalSearchModal: React.FC = () => {
         j.category.toLowerCase().includes(q)
     );
 
-    const matchedUsers = users.filter(
+    const matchedUsers = baseUsers.filter(
       (u) =>
         u.name.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
         u.jobTitle.toLowerCase().includes(q)
     );
 
-    const matchedTeams = teams.filter(
+    const matchedTeams = baseTeams.filter(
       (t) => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
     );
 
-    const matchedCases = cases.filter(
+    const matchedCases = baseCases.filter(
       (c) =>
         c.id.toLowerCase().includes(q) ||
         c.title.toLowerCase().includes(q) ||
         c.employeeName.toLowerCase().includes(q)
     );
 
+    const extraCommands = [];
+    if ('visual analytics'.includes(q) || 'telemetry'.includes(q) || 'charts'.includes(q) || 'stats'.includes(q) || 'output e'.includes(q)) {
+      extraCommands.push({
+        label: 'Open Visual Analytics',
+        desc: 'Inspect agency, department, and staff visual analytics',
+        action: () => { setActiveView('visual_analytics'); setIsCommandBarOpen(false); }
+      });
+    }
+
     return {
       quickCommands: [
+        ...extraCommands,
         { label: `/ filter "${query}" in jobs`, desc: `Search job titles and specifications`, action: () => { setActiveView('all_work'); setIsCommandBarOpen(false); } }
       ],
       jobs: matchedJobs.slice(0, 4),
@@ -112,18 +147,18 @@ export const GlobalSearchModal: React.FC = () => {
       teams: matchedTeams.slice(0, 3),
       cases: matchedCases.slice(0, 3)
     };
-  }, [query, jobs, users, teams, cases, setActiveView, setIsCommandBarOpen]);
+  }, [query, jobs, users, teams, cases, setActiveView, setIsCommandBarOpen, currentUser]);
 
   if (!isCommandBarOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/70 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-md">
       <div
         id="global-search-container"
-        className="w-full max-w-2xl rounded-xl bg-surface border border-border shadow-2xl overflow-hidden text-text-primary animate-in fade-in zoom-in-95 duration-100"
+        className="w-full max-w-2xl rounded-2xl overflow-hidden text-text-primary animate-in fade-in zoom-in-95 duration-150 liquid-glass-elevated"
       >
         {/* Input bar */}
-        <div className="p-3.5 border-b border-border flex items-center gap-3 bg-surface-elevated/40">
+        <div className="p-4 border-b border-border/70 flex items-center gap-3 bg-surface-elevated/30">
           <Search className="w-5 h-5 text-text-tertiary shrink-0 ml-1" />
           <input
             id="global-search-input"
@@ -239,8 +274,8 @@ export const GlobalSearchModal: React.FC = () => {
                         <span>{job.estimatedHours}h estimated</span>
                       </div>
                     </div>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-surface border border-border text-text-tertiary shrink-0">
-                      Open
+                    <span className="text-xs font-mono text-text-tertiary group-hover:text-[var(--color-brand)] transition-colors shrink-0">
+                      Open →
                     </span>
                   </button>
                 ))}
@@ -276,8 +311,8 @@ export const GlobalSearchModal: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-surface border border-border text-text-tertiary shrink-0">
-                      Profile
+                    <span className="text-xs font-mono text-text-tertiary group-hover:text-[var(--color-brand)] transition-colors shrink-0">
+                      Profile →
                     </span>
                   </button>
                 ))}
@@ -311,8 +346,8 @@ export const GlobalSearchModal: React.FC = () => {
                         {c.employeeName} • Status: {formatStatus(c.status)}
                       </div>
                     </div>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-surface border border-border text-text-tertiary shrink-0">
-                      View
+                    <span className="text-xs font-mono text-text-tertiary group-hover:text-[var(--color-brand)] transition-colors shrink-0">
+                      View →
                     </span>
                   </button>
                 ))}

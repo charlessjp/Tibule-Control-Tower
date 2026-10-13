@@ -19,15 +19,43 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
   contextTitle = 'Systemic Operational Pulse',
   scopeSubtitle = 'Real-time throughput metrics across Tibule teams'
 }) => {
-  const { setMetricTraceModal } = useApp();
+  const { setMetricTraceModal, jobs, users, employeeCapacities } = useApp();
+
+  // 1. Intake Rate: Real deliverable allocation tracking
+  const totalJobsCount = jobs.length || 1;
+  const assignedJobsCount = jobs.filter(j => j.status !== 'unassigned' && !!j.assigneeId).length;
+  const triageQueueCount = jobs.filter(j => j.status === 'unassigned' || !j.assigneeId).length;
+  const allocationRatePercent = Math.round((assignedJobsCount / totalJobsCount) * 100);
+
+  // 2. Active Runway: Real committed hours against baseline contracted capacity
+  const committedEffortHours: number = (
+    Object.values(employeeCapacities) as Array<{ assignedHours?: number } | undefined>
+  ).reduce((acc: number, c) => acc + (c?.assignedHours || 0), 0);
+  const totalCapacityThreshold: number = users.reduce(
+    (acc: number, u) => acc + (u.capacityHoursPerWeek || 38),
+    0
+  );
+  const runwaySaturationPercent = Math.min(
+    100,
+    Math.round((committedEffortHours / (totalCapacityThreshold || 1)) * 100)
+  );
+  const reserveCushionPercent = Math.max(0, 100 - runwaySaturationPercent);
+  const reserveCushionHours = Math.max(0, totalCapacityThreshold - committedEffortHours);
+
+  // 3. Dependency Friction: Actual blocked deliverables in workflow
+  const blockedJobs = jobs.filter(j => j.status === 'blocked' || !!j.blockedSince);
+  const blockedCount = blockedJobs.length;
+
+  // 4. Delivery Integrity: Actual milestone SLA fulfillment
+  const onScheduleJobs = jobs.filter(
+    j => !j.isAtRisk && (j.status === 'completed' || new Date(j.dueDate).getTime() >= Date.now())
+  );
+  const deliveryIntegrityPercent = Math.round((onScheduleJobs.length / totalJobsCount) * 100);
+  const completedJobsCount = jobs.filter(j => j.status === 'completed').length;
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border p-5 transition-all"
-      style={{
-        backgroundColor: 'var(--color-surface)',
-        borderColor: 'var(--color-border)'
-      }}
+      className="relative overflow-hidden rounded-2xl p-5 transition-all liquid-glass-panel"
     >
       {/* Subtle Top Ambient Theme Line */}
       <div
@@ -48,7 +76,7 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
         </div>
 
         <div className="text-[11px] font-mono text-text-tertiary">
-          Cadence: <span className="font-semibold" style={{ color: 'var(--color-brand)' }}>Live Metrics</span> (Audit Verified)
+          Cadence: <span className="font-semibold" style={{ color: 'var(--color-brand)' }}>Live Metrics</span>
         </div>
       </div>
 
@@ -59,13 +87,13 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
           onClick={() => {
             setMetricTraceModal({
               name: 'Intake Velocity & Allocation Integrity',
-              value: '98.6% Allocated',
+              value: `${allocationRatePercent}% Allocated`,
               summary: 'Jobs entering Tibule workflow that have assigned owners and bounded effort envelopes.',
-              methodology: 'Total created jobs against active assignments. Zero jobs remain orphaned beyond 4 hours.',
+              methodology: 'Total created jobs against active assignments. Extracted from live deliverable status logs.',
               datapoints: [
-                { label: 'Total Ingested Jobs', count: 248, description: 'Client & internal deliverables' },
-                { label: 'Directly Allocated', count: 242, description: 'Matched with team capability' },
-                { label: 'Awaiting Triage', count: 6, description: 'In manager staging queue' }
+                { label: 'Total Ingested Jobs', count: totalJobsCount, description: 'Client & internal deliverables' },
+                { label: 'Directly Allocated', count: assignedJobsCount, description: 'Assigned to qualified creative staff' },
+                { label: 'Awaiting Triage', count: triageQueueCount, description: 'In Traffic intake queue' }
               ]
             });
           }}
@@ -82,13 +110,13 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold font-mono tracking-tight text-text-primary">
-              248
+              {totalJobsCount}
             </span>
-            <span className="text-xs text-text-secondary font-mono">work units</span>
+            <span className="text-xs text-text-secondary font-mono">deliverables</span>
           </div>
           <div className="text-[11px] text-text-secondary mt-1 flex items-center gap-1 font-medium">
-            <span className="text-emerald-500">● 98.6% assigned</span>
-            <span className="text-text-tertiary font-normal">· &lt;4h triage SLA</span>
+            <span className="text-emerald-500">● {allocationRatePercent}% assigned</span>
+            <span className="text-text-tertiary font-normal">· {triageQueueCount} queued</span>
           </div>
         </div>
 
@@ -97,13 +125,13 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
           onClick={() => {
             setMetricTraceModal({
               name: 'Workforce Runway Saturation',
-              value: '74% Optimal',
-              summary: 'Ratio of committed deliverable hours to baseline contracted sprint capacity.',
-              methodology: 'Measured continuously. Teams operating between 65% and 82% provide sufficient creative cushion.',
+              value: `${runwaySaturationPercent}% Optimal`,
+              summary: 'Ratio of committed deliverable hours to baseline contracted studio capacity.',
+              methodology: 'Computed by summing active assigned hours across all staff against contracted capacity.',
               datapoints: [
-                { label: 'Committed Deliverable Effort', count: '1,420 hrs', description: 'Assigned active job backlog' },
-                { label: 'Total Team Capacity Threshold', count: '1,918 hrs', description: 'Across active operational teams' },
-                { label: 'Buffer Reserve Cushion', count: '498 hrs (26%)', description: 'Prevents burnout and absorbs spikes' }
+                { label: 'Committed Deliverable Effort', count: `${committedEffortHours} hrs`, description: 'Assigned active job backlog' },
+                { label: 'Total Team Capacity Threshold', count: `${totalCapacityThreshold} hrs`, description: 'Across all active team members' },
+                { label: 'Buffer Reserve Cushion', count: `${reserveCushionHours} hrs (${reserveCushionPercent}%)`, description: 'Absorbs rush revisions and scope spikes' }
               ]
             });
           }}
@@ -123,7 +151,7 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
               className="text-2xl font-bold font-mono tracking-tight"
               style={{ color: 'var(--color-brand)' }}
             >
-              74%
+              {runwaySaturationPercent}%
             </span>
             <span className="text-xs text-text-secondary font-mono">saturation</span>
           </div>
@@ -136,12 +164,12 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
             }}
           >
             <div
-              className="h-full rounded-full"
-              style={{ width: '74%', backgroundColor: 'var(--color-brand)' }}
+              className="h-full rounded-full transition-all duration-300"
+              style={{ width: `${runwaySaturationPercent}%`, backgroundColor: 'var(--color-brand)' }}
             />
           </div>
           <div className="text-[10px] text-text-tertiary mt-1 font-mono">
-            26% reserve cushion available
+            {reserveCushionPercent}% reserve cushion ({reserveCushionHours}h)
           </div>
         </div>
 
@@ -150,13 +178,12 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
           onClick={() => {
             setMetricTraceModal({
               name: 'Inter-Team Dependency Friction',
-              value: '19 Blocked Items',
+              value: `${blockedCount} Blocked Items`,
               summary: 'Deliverables awaiting third-party signoff, client assets, or legal clearance.',
               methodology: 'The system protects worker performance by pausing SLA clock during external blocks.',
               datapoints: [
-                { label: 'Client Asset Deliverables', count: 9, description: 'Logos, guidelines, brand fonts' },
-                { label: 'Legal / Trademark Clearances', count: 6, description: 'Third-party copyright validation' },
-                { label: 'Technical API Integration', count: 4, description: 'Awaiting client backend access' }
+                { label: 'Active Blocked Deliverables', count: blockedCount, description: 'Marked blocked awaiting dependencies' },
+                { label: 'Clear Flow Rate', count: `${Math.round(((totalJobsCount - blockedCount) / totalJobsCount) * 100)}%`, description: 'Deliverables progressing without impediment' }
               ]
             });
           }}
@@ -173,7 +200,7 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold font-mono tracking-tight text-text-primary">
-              19
+              {blockedCount}
             </span>
             <span className="text-xs text-text-secondary font-mono">held in buffer</span>
           </div>
@@ -188,13 +215,13 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
           onClick={() => {
             setMetricTraceModal({
               name: 'Delivery Integrity & Non-Surveillance Assurance',
-              value: '91.2% On-Time',
+              value: `${deliveryIntegrityPercent}% On-Time`,
               summary: 'Objective completion without rework, measured strictly by deliverable handoffs.',
-              methodology: 'No surveillance or keystroke tracking is used. Measured strictly by verified state transitions.',
+              methodology: 'Calculated directly from deliverable milestone deadlines and completed signoff logs.',
               datapoints: [
-                { label: 'Completed Within Sprint Window', count: '1,102 deliverables', description: 'Empirically verified' },
-                { label: 'Authorized Schedule Extensions', count: '82 deliverables', description: 'Agreed scope change' },
-                { label: 'Quality Disputes / Defect Rate', count: '0.4% total', description: 'Industry benchmark: 3.8%' }
+                { label: 'On-Schedule Deliverables', count: `${onScheduleJobs.length} deliverables`, description: 'Tracking within deadline' },
+                { label: 'Completed Deliverables', count: `${completedJobsCount} deliverables`, description: 'Fully delivered and signed off' },
+                { label: 'SLA Adherence Index', count: `${deliveryIntegrityPercent}%`, description: 'On-time milestone yield' }
               ]
             });
           }}
@@ -211,9 +238,9 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold font-mono tracking-tight text-text-primary">
-              91.2%
+              {deliveryIntegrityPercent}%
             </span>
-            <span className="text-xs text-text-secondary font-mono">verified</span>
+            <span className="text-xs text-text-secondary font-mono">on-schedule</span>
           </div>
           <div className="text-[11px] text-text-secondary mt-1 flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />

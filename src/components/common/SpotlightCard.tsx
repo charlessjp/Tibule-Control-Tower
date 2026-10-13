@@ -68,9 +68,11 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
         color: 'var(--color-text-primary)',
         boxShadow: isHovered
           ? (isDark
-              ? '0 0 32px -4px var(--color-halo-glow, rgba(3,193,214,0.4)), 0 0 12px -2px var(--color-brand), 0 12px 28px -6px rgba(0, 0, 0, 0.5)'
-              : '0 0 24px -2px var(--color-halo-glow, rgba(3,193,214,0.25)), 0 0 10px -2px var(--color-brand), 0 8px 22px -4px rgba(0, 0, 0, 0.12)')
-          : undefined,
+              ? '0 0 32px -4px var(--color-halo-glow, rgba(3,193,214,0.4)), 0 0 12px -2px var(--color-brand), 0 12px 28px -6px rgba(0, 0, 0, 0.5), inset 0 1px 1.5px 0 rgba(255,255,255,0.15)'
+              : '0 0 24px -2px var(--color-halo-glow, rgba(3,193,214,0.25)), 0 0 10px -2px var(--color-brand), 0 8px 22px -4px rgba(0, 0, 0, 0.12), inset 0 1px 1.5px 0 rgba(255,255,255,0.7)')
+          : (isDark
+              ? 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.05)'
+              : 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.5)'),
         ['--inner-radius' as any]: `${innerRadius}px`,
         ...style
       }}

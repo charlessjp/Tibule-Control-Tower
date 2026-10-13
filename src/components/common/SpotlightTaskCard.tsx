@@ -10,6 +10,7 @@ import {
   ArrowRight,
   FolderGit2
 } from 'lucide-react';
+import { PriorityBadge } from './PriorityBadge';
 
 interface SpotlightTaskCardProps {
   job: Job;
@@ -122,72 +123,30 @@ export const SpotlightTaskCard: React.FC<SpotlightTaskCardProps> = ({
 
       {/* Card Content Surface */}
       <div className="relative z-10 space-y-3.5">
-        {/* Top Badges */}
+        {/* Top Indicators (Zero-Pill Typography) */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span
-              className="px-2 py-0.5 rounded-md font-mono text-[11px] font-bold"
-              style={{
-                backgroundColor: 'var(--color-surface-elevated)',
-                color: 'var(--color-brand)',
-                border: '1px solid var(--color-border-subtle)'
-              }}
-            >
+            <span className="font-mono text-xs font-bold tracking-tight" style={{ color: 'var(--color-brand)' }}>
               {job.id}
             </span>
-
-            <span
-              className={`px-2 py-0.5 rounded-md text-[10px] font-semibold font-mono uppercase inline-flex items-center gap-1 ${
-                job.priority === 'urgent'
-                  ? 'badge-priority-urgent'
-                  : job.priority === 'high'
-                  ? 'badge-priority-high'
-                  : job.priority === 'medium'
-                  ? 'badge-priority-medium'
-                  : 'badge-priority-low'
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  job.priority === 'urgent'
-                    ? 'bg-[var(--color-critical)] animate-pulse'
-                    : job.priority === 'high'
-                    ? 'bg-[var(--color-warning)]'
-                    : job.priority === 'medium'
-                    ? 'bg-[var(--color-brand)]'
-                    : 'bg-[var(--color-text-tertiary)]'
-                }`}
-              />
-              <span className="capitalize font-sans">{job.priority}</span>
-            </span>
+            <span className="text-border text-xs">/</span>
+            <PriorityBadge priority={job.priority} size="xs" />
           </div>
 
           <span
-            className="px-2 py-0.5 rounded-md text-[10px] font-semibold inline-flex items-center gap-1 border"
-            style={
-              isCompleted
-                ? {
-                    backgroundColor: 'color-mix(in srgb, var(--color-success) 14%, transparent)',
-                    color: 'var(--color-success)',
-                    borderColor: 'color-mix(in srgb, var(--color-success) 35%, transparent)'
-                  }
+            className="text-[11px] font-bold inline-flex items-center gap-1.5"
+            style={{
+              color: isCompleted
+                ? 'var(--color-success)'
                 : isBlocked
-                ? {
-                    backgroundColor: 'color-mix(in srgb, var(--color-critical) 14%, transparent)',
-                    color: 'var(--color-critical)',
-                    borderColor: 'color-mix(in srgb, var(--color-critical) 35%, transparent)'
-                  }
-                : {
-                    backgroundColor: 'color-mix(in srgb, var(--color-brand) 15%, transparent)',
-                    color: 'var(--color-brand)',
-                    borderColor: 'color-mix(in srgb, var(--color-brand) 38%, transparent)'
-                  }
-            }
+                ? 'var(--color-critical)'
+                : 'var(--color-brand)'
+            }}
           >
             {isCompleted ? (
-              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             ) : isBlocked ? (
-              <AlertCircle className="w-3 h-3 text-rose-500" />
+              <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
             ) : (
               <Circle className="w-2 h-2 text-[var(--color-brand)] fill-current" />
             )}

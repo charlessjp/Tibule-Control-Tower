@@ -51,10 +51,10 @@ export const OutputBSummaryMatrix: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">
-            Workload &amp; Capacity Overview
+            Stream Workload &amp; Hours Matrix
           </h1>
           <p className="text-xs mt-1 text-text-secondary">
-            Workload distribution, scheduled vs. logged hours, and health across work streams.
+            Compare planned vs actual logged hours, delivery variance, and active blocker rates across each agency work stream.
           </p>
         </div>
 

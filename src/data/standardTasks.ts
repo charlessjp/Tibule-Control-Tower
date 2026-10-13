@@ -4,9 +4,9 @@ export interface StandardTaskDefinition {
   type: StandardTaskType;
   category: string;
   description: string;
-  deliverablesSummary: string[];
-  benchmarks: Record<SeniorityLevel, number>; // hours
+  benchmarks: Partial<Record<SeniorityLevel, number>>; // hours
   complexityHint: 'low' | 'medium' | 'high' | 'extreme';
+  seniorityHours?: Record<string, number>;
 }
 
 export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDefinition> = {
@@ -14,12 +14,6 @@ export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDef
     type: 'TVC',
     category: 'Production',
     description: 'Television Commercial & Video Campaign. Concept storyboarding, animatic styling, visual scripts, voiceover direction, and post-production oversight.',
-    deliverablesSummary: [
-      'Treatment & Visual Script (30s / 15s cuts)',
-      'High-fidelity Storyboard Frames & Key Art',
-      'Animatic & Timing Pass',
-      'Audio & Color Grade Signoff Kit'
-    ],
     benchmarks: {
       nss_intern: 45,
       junior: 40,
@@ -34,11 +28,6 @@ export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDef
     type: 'Content Ideation',
     category: 'Strategy & Creative',
     description: 'Campaign proposition discovery, angle development, creative territory decks, and hook concepts.',
-    deliverablesSummary: [
-      '3 Strategic Creative Territories',
-      'Headline & Tagline Mechanics',
-      'Cultural Hook Rationale & Reference Decks'
-    ],
     benchmarks: {
       nss_intern: 28,
       junior: 24,
@@ -53,12 +42,6 @@ export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDef
     type: 'Logo Work',
     category: 'Visual Identity',
     description: 'Brand mark exploration, vector geometry construction, monogram craft, clearspace lockups, and favicon kits.',
-    deliverablesSummary: [
-      'Initial Vector Concepts (3 routes)',
-      'Refined Primary Mark & Secondary Lockups',
-      'Vector Master Files (SVG, EPS, PNG)',
-      'Clearspace & Minimum Sizing Rule Sheet'
-    ],
     benchmarks: {
       nss_intern: 24,
       junior: 20,
@@ -73,12 +56,6 @@ export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDef
     type: 'Brand Identity',
     category: 'Brand Architecture',
     description: 'Holistic brand design system: design tokens, color palette contrast ratios, typography scale, photographic art direction, and style guide PDF.',
-    deliverablesSummary: [
-      'Design Token Specifications',
-      'Color Palette & Contrast Matrices',
-      'Typography Hierarchy Matrix',
-      'Comprehensive Brand Guidelines Book'
-    ],
     benchmarks: {
       nss_intern: 40,
       junior: 36,
@@ -93,12 +70,6 @@ export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDef
     type: 'Social Media Campaign',
     category: 'Digital & Content',
     description: 'Multi-platform social suite: feed hero assets, story motion clips, carousel storytelling, and localized templates.',
-    deliverablesSummary: [
-      'Feed Carousel Series (5-8 slides)',
-      'Stories Motion Graphics (9:16 format)',
-      'Static Display Retargeting Ad Suite',
-      'Editable Figma/Canva Client Template Kit'
-    ],
     benchmarks: {
       nss_intern: 20,
       junior: 18,
@@ -113,11 +84,6 @@ export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDef
     type: 'OOH Billboard',
     category: 'Print & Large Format',
     description: 'Out-Of-Home high impact billboards, transit wraps, digital bus shelter displays, and pre-press production artwork.',
-    deliverablesSummary: [
-      'High-resolution Master Artwork (48-sheet / Mega-site)',
-      'Bus Shelter Digital Screen Animations',
-      'Pre-press Color Calibration & Bleed Proofs'
-    ],
     benchmarks: {
       nss_intern: 18,
       junior: 16,
@@ -132,11 +98,6 @@ export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDef
     type: 'Packaging Design',
     category: 'Industrial & Packaging',
     description: 'Physical packaging architecture, technical dieline layouts, foil/varnish finish specs, and 3D pack renders.',
-    deliverablesSummary: [
-      'CAD Dieline Artwork & Typography Layout',
-      'Substrate & Special Finish Callout Legend',
-      'High-res 3D CGI Pack Renders (E-comm ready)'
-    ],
     benchmarks: {
       nss_intern: 32,
       junior: 28,
@@ -151,11 +112,6 @@ export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDef
     type: 'UI/UX Prototype',
     category: 'Digital Product',
     description: 'Interactive component states, responsive layouts, micro-interaction motion specs, and developer handoff documentation.',
-    deliverablesSummary: [
-      'Interactive Figma Click-through Prototype',
-      'Desktop & Mobile Breakpoint System',
-      'Component Library & State Documentation'
-    ],
     benchmarks: {
       nss_intern: 36,
       junior: 32,
@@ -170,9 +126,6 @@ export const STANDARD_TASK_DEFINITIONS: Record<StandardTaskType, StandardTaskDef
     type: 'Custom Deliverable',
     category: 'Custom Scope',
     description: 'Ad-hoc agency engagement with custom deliverable parameters defined between Client Service and Traffic.',
-    deliverablesSummary: [
-      'Tailored Deliverable Package per Brief'
-    ],
     benchmarks: {
       nss_intern: 22,
       junior: 20,
@@ -193,37 +146,68 @@ export function getStandardTaskBenchmarkHours(
   seniority: SeniorityLevel = 'mid'
 ): number {
   const task = STANDARD_TASK_DEFINITIONS[taskType] || STANDARD_TASK_DEFINITIONS['Custom Deliverable'];
+  if (task.benchmarks[seniority] !== undefined) {
+    return task.benchmarks[seniority]!;
+  }
+  // Fallback mappings for Creative-specific roles
+  if (seniority === 'associate_director') return task.benchmarks.director ?? 6;
+  if (seniority === 'art_director') return task.benchmarks.lead ?? 10;
+  if (seniority === 'specialist') return task.benchmarks.mid ?? 16;
+  if (seniority === 'nsp_intern') return task.benchmarks.nss_intern ?? 24;
   return task.benchmarks[seniority] ?? 16;
 }
 
 /**
- * Human-readable seniority display labels
+ * Human-readable seniority display labels across Creative and standard agency departments
  */
 export const SENIORITY_LABELS: Record<SeniorityLevel, { label: string; badgeColor: string; description: string }> = {
+  // Creative Department hierarchy
+  director: {
+    label: 'Director',
+    badgeColor: 'badge-seniority-director',
+    description: 'Executive authority. High-leverage directional oversight.'
+  },
+  associate_director: {
+    label: 'Associate Director',
+    badgeColor: 'badge-seniority-associate',
+    description: 'Senior creative management, creative strategy stewardship, and multi-squad direction.'
+  },
+  art_director: {
+    label: 'Art Director',
+    badgeColor: 'badge-seniority-lead',
+    description: 'Squad leadership, visual craftsmanship, artistic guidance, and squad review sign-off.'
+  },
+  specialist: {
+    label: 'Specialist',
+    badgeColor: 'badge-seniority-mid',
+    description: 'Core hands-on creative execution across design and copy craft disciplines.'
+  },
   junior: {
     label: 'Junior',
     badgeColor: 'badge-seniority-junior',
     description: 'Developing practitioner. Requires foundational time allocation and structured reviews.'
   },
-  mid: {
-    label: 'Mid-Weight',
-    badgeColor: 'badge-seniority-mid',
-    description: 'Independent producer. Reliable execution at standard velocity benchmarks.'
+  nsp_intern: {
+    label: 'NSP/Intern',
+    badgeColor: 'badge-seniority-junior',
+    description: 'National Service Personnel (NSP) / intern undergoing creative studio mentorship.'
+  },
+
+  // Standard Department hierarchy (Traffic, Client Services)
+  lead: {
+    label: 'Lead / Principal',
+    badgeColor: 'badge-seniority-lead',
+    description: 'Strategic lead. Rapid conceptualization and cross-team direction.'
   },
   senior: {
     label: 'Senior',
     badgeColor: 'badge-seniority-senior',
     description: 'Experienced master. High-velocity execution with minimal oversight.'
   },
-  lead: {
-    label: 'Lead / Principal',
-    badgeColor: 'badge-seniority-lead',
-    description: 'Strategic lead. Rapid conceptualization and cross-team direction.'
-  },
-  director: {
-    label: 'Director',
-    badgeColor: 'badge-seniority-director',
-    description: 'Executive authority. High-leverage directional oversight.'
+  mid: {
+    label: 'Mid-Weight',
+    badgeColor: 'badge-seniority-mid',
+    description: 'Independent producer. Reliable execution at standard velocity benchmarks.'
   },
   nss_intern: {
     label: 'NSS/Intern',

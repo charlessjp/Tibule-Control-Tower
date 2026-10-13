@@ -11,6 +11,8 @@ import {
   HelpCircle,
   Sparkles
 } from 'lucide-react';
+import { PriorityBadge } from './PriorityBadge';
+import { WorkflowStatusBadge } from './WorkflowStatusBadge';
 
 interface SpotlightTaskRowProps {
   job: Job;
@@ -149,90 +151,61 @@ export const SpotlightTaskRow: React.FC<SpotlightTaskRowProps> = ({
         {/* Left Column: ID, Title, Project, Blocker */}
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            {/* Task ID Pill */}
+            {/* Task ID (Unboxed Mono) */}
             <span
-              className="px-2 py-0.5 rounded-md font-mono text-[11px] font-bold tracking-wide"
+              className="font-mono text-xs font-bold tracking-tight shrink-0"
               style={{
-                backgroundColor: 'var(--color-brand-muted)',
                 color: 'var(--color-brand)'
               }}
             >
               {job.id}
             </span>
 
-            {/* Priority Indicator Pill */}
-            <span
-              className={`px-2 py-0.5 rounded-md text-[11px] font-semibold font-mono uppercase inline-flex items-center gap-1.5 ${
-                job.priority === 'urgent'
-                  ? 'badge-priority-urgent'
-                  : job.priority === 'high'
-                  ? 'badge-priority-high'
-                  : job.priority === 'medium'
-                  ? 'badge-priority-medium'
-                  : 'badge-priority-low'
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  job.priority === 'urgent'
-                    ? 'bg-[var(--color-critical)] animate-pulse'
-                    : job.priority === 'high'
-                    ? 'bg-[var(--color-warning)]'
-                    : job.priority === 'medium'
-                    ? 'bg-[var(--color-brand)]'
-                    : 'bg-[var(--color-text-tertiary)]'
-                }`}
-              />
-              <span className="capitalize font-sans">{job.priority}</span>
-            </span>
+            <span className="text-border text-xs">/</span>
 
-            {/* Status Pill */}
+            {/* Priority Indicator */}
+            <PriorityBadge priority={job.priority} size="xs" />
+
+            <span className="text-border text-xs">/</span>
+
+            {/* Status Indicator */}
             <span
-              className="px-2 py-0.5 rounded-md text-[11px] font-semibold inline-flex items-center gap-1.5 border"
-              style={
-                isCompleted
-                  ? {
-                      backgroundColor: 'color-mix(in srgb, var(--color-success) 14%, transparent)',
-                      color: 'var(--color-success)',
-                      borderColor: 'color-mix(in srgb, var(--color-success) 35%, transparent)'
-                    }
+              className="text-[11px] font-bold inline-flex items-center gap-1.5"
+              style={{
+                color: isCompleted
+                  ? 'var(--color-success)'
                   : isBlocked
-                  ? {
-                      backgroundColor: 'color-mix(in srgb, var(--color-critical) 14%, transparent)',
-                      color: 'var(--color-critical)',
-                      borderColor: 'color-mix(in srgb, var(--color-critical) 35%, transparent)'
-                    }
+                  ? 'var(--color-critical)'
                   : job.status === 'in_progress'
-                  ? {
-                      backgroundColor: 'color-mix(in srgb, var(--color-brand) 15%, transparent)',
-                      color: 'var(--color-brand)',
-                      borderColor: 'color-mix(in srgb, var(--color-brand) 38%, transparent)'
-                    }
-                  : {
-                      backgroundColor: 'var(--color-surface-elevated)',
-                      color: 'var(--color-text-secondary)',
-                      borderColor: 'var(--color-border)'
-                    }
-              }
+                  ? 'var(--color-brand)'
+                  : 'var(--color-text-secondary)'
+              }}
             >
               {isCompleted ? (
-                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               ) : isBlocked ? (
-                <AlertCircle className="w-3 h-3 text-rose-500" />
+                <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
               ) : job.status === 'in_progress' ? (
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand)] animate-ping" />
               ) : (
-                <Circle className="w-2.5 h-2.5 text-text-tertiary" />
+                <Circle className="w-2 h-2 text-text-tertiary" />
               )}
               <span>{formatStatus(job.status)}</span>
             </span>
 
-            {/* Client Project Tag */}
-            <span
-              className="text-xs font-medium px-2 py-0.5 rounded-md bg-surface-elevated text-text-secondary border border-border/70"
-            >
+            <span className="text-border text-xs">·</span>
+
+            {/* Client Project */}
+            <span className="text-xs text-text-secondary font-medium">
               {job.clientProject}
             </span>
+
+            {job.workflowStage && (
+              <>
+                <span className="text-border text-xs">·</span>
+                <WorkflowStatusBadge stage={job.workflowStage} size="sm" />
+              </>
+            )}
           </div>
 
           {/* Task Title */}

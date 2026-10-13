@@ -50,31 +50,41 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
         defaultCapacity: 40
       },
       {
-        seniority: 'senior',
+        seniority: 'associate_director',
+        role: 'director',
+        seniorityLabel: 'Associate Director',
+        defaultTitle: 'Associate Creative Director',
+        titleOptions: ['Associate Creative Director', 'Associate Design Director', 'Associate Content Director'],
+        description: 'Senior creative management, concept supervision, and multi-squad creative alignment.',
+        defaultCapacity: 40
+      },
+      {
+        seniority: 'art_director',
         role: 'team_lead',
-        seniorityLabel: 'Senior (Brand Team Lead)',
-        defaultTitle: 'Senior Art Director & Brand Lead',
+        seniorityLabel: 'Art Director',
+        defaultTitle: 'Art Director',
         titleOptions: [
+          'Art Director',
           'Senior Art Director & Brand Lead',
-          'Senior Brand Designer & Team Lead',
-          'Senior Copywriter & Concept Lead'
+          'Lead Art Director',
+          'Concept Art Director'
         ],
-        description: 'Brand squad leadership, strategic execution, and mentorship for squad designers.',
+        description: 'Squad leadership, visual craftsmanship, artistic guidance, and squad review sign-off.',
         defaultCapacity: 38
       },
       {
-        seniority: 'mid',
+        seniority: 'specialist',
         role: 'employee',
         seniorityLabel: 'Specialist',
         defaultTitle: 'Specialist',
         titleOptions: [
-          'Graphic Designer',
           'Motion & Digital Designer',
           'Brand Identity Designer',
+          'Graphic Designer',
           'Copywriter & Content Specialist',
           'UI/UX & Product Designer'
         ],
-        description: 'Core hands-on creative execution.',
+        description: 'Core hands-on creative execution across design and copy craft disciplines.',
         defaultCapacity: 40
       },
       {
@@ -92,12 +102,12 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
         defaultCapacity: 38
       },
       {
-        seniority: 'nss_intern',
+        seniority: 'nsp_intern',
         role: 'employee',
-        seniorityLabel: 'NSS/Intern',
-        defaultTitle: 'NSS/Intern Assistant',
-        titleOptions: ['Creative NSS Assistant', 'Design Intern', 'Motion Graphic Intern'],
-        description: 'National Service Scheme or student intern undergoing creative studio mentorship.',
+        seniorityLabel: 'NSP/Intern',
+        defaultTitle: 'Creative NSP Assistant',
+        titleOptions: ['Creative NSP Assistant', 'Design Intern', 'Motion Graphic Intern', 'Creative NSS Assistant'],
+        description: 'National Service Personnel (NSP) or student intern undergoing creative studio mentorship.',
         defaultCapacity: 35
       }
     ]
@@ -156,52 +166,52 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
   },
   client_services: {
     name: 'Client Services',
-    description: 'Client relationship management, brief intake, scope management, and client sign-offs.',
-    headRoleLabel: 'Client Service Manager',
+    description: 'Department hierarchy: Director of Client Services → Senior Account Managers → Account Managers → Account Executives → Interns/NSS.',
+    headRoleLabel: 'Director of Client Services',
     roles: [
       {
-        seniority: 'lead',
-        role: 'manager',
-        seniorityLabel: 'Client Service Manager',
-        defaultTitle: 'Head of Client Service',
-        titleOptions: ['Head of Client Service', 'Client Service Director', 'Client Service Manager'],
-        description: 'Department leadership, commercial SLA governance, and agency-client stewardship.',
+        seniority: 'director',
+        role: 'director',
+        seniorityLabel: 'Director of Client Services',
+        defaultTitle: 'Director of Client Services',
+        titleOptions: ['Director of Client Services'],
+        description: 'Department leadership, overall performance, resource allocation, delivery health, utilization and management oversight.',
         defaultCapacity: 40
       },
       {
         seniority: 'senior',
         role: 'client_service',
-        seniorityLabel: 'Senior Account Lead',
-        defaultTitle: 'Senior Account Lead',
-        titleOptions: ['Senior Account Lead', 'Senior Account Manager', 'Brand Portfolio Lead'],
-        description: 'Brand squad leadership for client accounts, strategic briefs, and revenue retention.',
-        defaultCapacity: 38
+        seniorityLabel: 'Senior Account Manager',
+        defaultTitle: 'Senior Account Manager',
+        titleOptions: ['Senior Account Manager'],
+        description: 'Client-facing account leadership and oversight of Account Managers. Owns complex clients and executes specialist disciplines.',
+        defaultCapacity: 40
       },
       {
         seniority: 'mid',
         role: 'client_service',
-        seniorityLabel: 'Account Executive',
-        defaultTitle: 'Account Executive',
-        titleOptions: ['Account Executive', 'Client Service Executive', 'Brand Operations Specialist'],
-        description: 'Core client communication, debrief decks, and day-to-day client requests.',
+        seniorityLabel: 'Account Manager',
+        defaultTitle: 'Account Manager',
+        titleOptions: ['Account Manager'],
+        description: 'Client and brief ownership, workstream coordination, deadline management, and specialist discipline execution.',
         defaultCapacity: 40
       },
       {
         seniority: 'junior',
         role: 'client_service',
-        seniorityLabel: 'Junior Account Executive',
-        defaultTitle: 'Junior Account Executive',
-        titleOptions: ['Junior Account Executive', 'Client Service Associate'],
-        description: 'Client meeting agendas, minutes, contact reports, and deliverable handoffs.',
-        defaultCapacity: 38
+        seniorityLabel: 'Account Executive',
+        defaultTitle: 'Account Executive',
+        titleOptions: ['Account Executive'],
+        description: 'Supporting the delivery of client work, coordination, follow-ups, preparation of materials, and tracking capacity.',
+        defaultCapacity: 40
       },
       {
         seniority: 'nss_intern',
         role: 'client_service',
-        seniorityLabel: 'NSS/Intern',
-        defaultTitle: 'Client Service NSS Assistant',
-        titleOptions: ['Client Service NSS Assistant', 'Client Service Intern'],
-        description: 'National Service Scheme personnel supporting account dossiers and billing logs.',
+        seniorityLabel: 'Intern / National Service Personnel (NSS)',
+        defaultTitle: 'National Service Personnel (NSS)',
+        titleOptions: ['National Service Personnel (NSS)', 'Client Services Intern'],
+        description: 'Junior support and structured development pathway towards Account Executive supported by performance evidence.',
         defaultCapacity: 35
       }
     ]
@@ -251,7 +261,24 @@ export function loadStoredUsers(): User[] {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        const userMap = new Map<string, User>();
+        INITIAL_USERS.forEach((u) => userMap.set(u.id, u));
+        parsed.forEach((u: User) => {
+          const init = userMap.get(u.id);
+          if (init && (init.teamId === 'team-client-service' || init.department === 'client_services')) {
+            userMap.set(u.id, {
+              ...u,
+              jobTitle: init.jobTitle,
+              role: init.role,
+              seniority: init.seniority,
+              managerId: init.managerId,
+              status: init.status
+            });
+          } else {
+            userMap.set(u.id, u);
+          }
+        });
+        return Array.from(userMap.values());
       }
     }
   } catch (err) {

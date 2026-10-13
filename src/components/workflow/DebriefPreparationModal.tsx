@@ -32,7 +32,7 @@ export const DebriefPreparationModal: React.FC<DebriefPreparationModalProps> = (
     INITIAL_BRANDS[0];
 
   const [deckTitle, setDeckTitle] = useState(
-    job?.debriefMaterial?.deckTitle || `${job?.title || 'Deliverable'} — Agency Debrief Pack`
+    job?.debriefMaterial?.deckTitle || `${job?.title || 'Deliverable'} - Agency Debrief Pack`
   );
   const [deliverableSpecs, setDeliverableSpecs] = useState(
     job?.debriefMaterial?.deliverableSpecs ||
@@ -56,7 +56,7 @@ export const DebriefPreparationModal: React.FC<DebriefPreparationModalProps> = (
   React.useEffect(() => {
     if (job && isOpen) {
       setDeckTitle(
-        job.debriefMaterial?.deckTitle || `${job.title} — Agency Debrief Pack`
+        job.debriefMaterial?.deckTitle || `${job.title} - Agency Debrief Pack`
       );
       setDeliverableSpecs(
         job.debriefMaterial?.deliverableSpecs ||
@@ -129,23 +129,13 @@ export const DebriefPreparationModal: React.FC<DebriefPreparationModalProps> = (
         <div className="flex items-center justify-between p-5 border-b border-border bg-surface-elevated shrink-0">
           <div>
             <div className="flex items-center gap-2">
-              <span
-                className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border"
-                style={{
-                  backgroundColor: 'var(--color-brand-muted)',
-                  borderColor: 'var(--color-brand)',
-                  color: 'var(--color-brand)'
-                }}
-              >
-                Client Service • Debrief Preparation
-              </span>
+              <h2 className="text-base font-bold text-text-primary">
+                Prepare Team Debrief Material
+              </h2>
               <span className="text-xs font-mono font-bold text-text-tertiary">
-                {job.id}
+                • {job.id}
               </span>
             </div>
-            <h2 className="text-base font-bold mt-0.5">
-              Prepare Team Debrief Material
-            </h2>
             <p className="text-xs mt-0.5 text-text-tertiary">
               Assemble the debrief deck and deliverable specs for the {brand.name} team. Once marked ready, Traffic Manager Kwame Mensah will schedule the team debrief.
             </p>

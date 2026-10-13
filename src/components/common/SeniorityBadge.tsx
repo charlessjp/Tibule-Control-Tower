@@ -24,14 +24,20 @@ export const SeniorityBadge: React.FC<SeniorityBadgeProps> = ({
     switch (norm) {
       case 'junior':
       case 'nss_intern':
+      case 'nsp_intern':
         return 'badge-seniority-junior';
+      case 'specialist':
+      case 'mid':
+        return 'badge-seniority-mid';
       case 'senior':
         return 'badge-seniority-senior';
+      case 'art_director':
       case 'lead':
         return 'badge-seniority-lead';
+      case 'associate_director':
+        return 'badge-seniority-associate';
       case 'director':
         return 'badge-seniority-director';
-      case 'mid':
       default:
         return 'badge-seniority-mid';
     }
@@ -40,28 +46,35 @@ export const SeniorityBadge: React.FC<SeniorityBadgeProps> = ({
   const getDotClass = () => {
     switch (norm) {
       case 'junior':
+      case 'nss_intern':
+      case 'nsp_intern':
         return 'bg-[var(--color-success)]';
+      case 'specialist':
+      case 'mid':
+        return 'bg-[var(--color-brand)]';
       case 'senior':
         return 'bg-[var(--color-strategic)]';
+      case 'art_director':
       case 'lead':
         return 'bg-[var(--color-warning)]';
+      case 'associate_director':
+        return 'bg-[var(--color-strategic)]';
       case 'director':
         return 'bg-[var(--color-critical)]';
-      case 'mid':
       default:
         return 'bg-[var(--color-brand)]';
     }
   };
 
   const sizeClasses = {
-    xs: 'text-[9px] px-1.5 py-0.5 gap-1',
-    sm: 'text-[10px] px-2 py-0.5 gap-1.5',
-    md: 'text-xs px-2.5 py-1 gap-2'
+    xs: 'text-[10px] gap-1',
+    sm: 'text-[11px] gap-1.5',
+    md: 'text-xs gap-1.5'
   }[size];
 
   return (
     <span
-      className={`inline-flex items-center font-bold font-mono tracking-wide rounded-md border ${getBadgeClass()} ${sizeClasses} ${className}`}
+      className={`inline-flex items-center font-bold font-mono tracking-wider ${getBadgeClass()} ${sizeClasses} ${className}`}
       title={labelObj.description}
     >
       {showDot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${getDotClass()}`} />}

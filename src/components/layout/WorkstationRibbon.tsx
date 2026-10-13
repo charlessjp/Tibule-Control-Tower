@@ -33,9 +33,14 @@ export const WorkstationRibbon: React.FC = () => {
   const role = currentUser.role;
   const isGM = role === 'general_manager' || role === 'admin';
   const isTraffic = role === 'traffic_manager';
-  const isClientService = role === 'client_service';
-  const isDisciplineLead = role === 'manager' || role === 'director' || role === 'team_lead';
-  const isEmployee = role === 'employee';
+  const isClientService =
+    role === 'client_service' ||
+    currentUser.department === 'client_services' ||
+    currentUser.teamId === 'team-client-service';
+  const isDisciplineLead =
+    (role === 'manager' || role === 'director' || role === 'team_lead') &&
+    !isClientService;
+  const isEmployee = (!isGM && !isTraffic && !isClientService && !isDisciplineLead);
 
   const pendingGMReviewsCount = cases.filter((c) => c.status !== 'closed' && c.status !== 'draft').length;
   const pendingLeadReviewsCount = cases.filter(
@@ -94,19 +99,10 @@ export const WorkstationRibbon: React.FC = () => {
         badgeType: 'neutral'
       },
       {
-        id: 'executive_brief',
-        label: 'Executive Brief',
-        sublabel: 'Output C',
-        hotkey: '6',
-        icon: FileText,
-        badge: 'Memo',
-        badgeType: 'neutral'
-      },
-      {
         id: 'visual_analytics',
         label: 'Visual Analytics',
         sublabel: 'Output E',
-        hotkey: '7',
+        hotkey: '6',
         icon: BarChart3,
         badge: 'Live',
         badgeType: 'neutral'
@@ -114,7 +110,7 @@ export const WorkstationRibbon: React.FC = () => {
       {
         id: 'manager_tower',
         label: 'Governance & Risks',
-        hotkey: '8',
+        hotkey: '7',
         icon: AlertTriangle,
         badge: exceptions.length > 0 ? `${exceptions.length}` : null,
         badgeType: 'danger'
@@ -164,9 +160,18 @@ export const WorkstationRibbon: React.FC = () => {
         badgeType: 'neutral'
       },
       {
+        id: 'visual_analytics',
+        label: 'Visual Analytics',
+        sublabel: 'Output E',
+        hotkey: '6',
+        icon: BarChart3,
+        badge: 'Live',
+        badgeType: 'neutral'
+      },
+      {
         id: 'manager_tower',
         label: 'Exceptions & Blockers',
-        hotkey: '6',
+        hotkey: '7',
         icon: AlertTriangle,
         badge: exceptions.length > 0 ? `${exceptions.length}` : null,
         badgeType: 'danger'
@@ -200,20 +205,20 @@ export const WorkstationRibbon: React.FC = () => {
         badgeType: 'neutral'
       },
       {
-        id: 'executive_brief',
-        label: 'Account Brief',
-        sublabel: 'Output C',
+        id: 'all_work',
+        label: 'Client Deliverable Queue',
         hotkey: '4',
-        icon: FileText,
-        badge: 'Memo',
+        icon: CircleDot,
+        badge: `${jobs.filter((j) => j.status !== 'completed').length}`,
         badgeType: 'neutral'
       },
       {
-        id: 'all_work',
-        label: 'Client Deliverable Queue',
+        id: 'visual_analytics',
+        label: 'Visual Analytics',
+        sublabel: 'Output E',
         hotkey: '5',
-        icon: CircleDot,
-        badge: `${jobs.filter((j) => j.status !== 'completed').length}`,
+        icon: BarChart3,
+        badge: 'Live',
         badgeType: 'neutral'
       },
       {
@@ -276,9 +281,18 @@ export const WorkstationRibbon: React.FC = () => {
         badge: null
       },
       {
+        id: 'visual_analytics',
+        label: 'Visual Analytics',
+        sublabel: 'Output E',
+        hotkey: '7',
+        icon: BarChart3,
+        badge: 'Live',
+        badgeType: 'neutral'
+      },
+      {
         id: 'manager_tower',
         label: 'Exceptions & Risks',
-        hotkey: '7',
+        hotkey: '8',
         icon: AlertTriangle,
         badge: exceptions.length > 0 ? `${exceptions.length}` : null,
         badgeType: 'danger'
@@ -325,6 +339,15 @@ export const WorkstationRibbon: React.FC = () => {
         icon: CircleDot,
         badge: `${jobs.length}`,
         badgeType: 'neutral'
+      },
+      {
+        id: 'visual_analytics',
+        label: 'My Analytics',
+        sublabel: 'Personal Telemetry',
+        hotkey: '6',
+        icon: BarChart3,
+        badge: 'Live',
+        badgeType: 'neutral'
       }
     ];
   }
@@ -368,32 +391,22 @@ export const WorkstationRibbon: React.FC = () => {
               <span className="truncate">{item.label}</span>
 
               {item.sublabel && (
-                <span
-                  className="text-[9px] font-mono uppercase px-1 py-0.2 rounded"
-                  style={
-                    isActive
-                      ? {
-                          backgroundColor: 'var(--color-brand-muted)',
-                          color: 'var(--color-brand)'
-                        }
-                      : { opacity: 0.6 }
-                  }
-                >
-                  {item.sublabel}
+                <span className="text-[10px] font-mono text-text-tertiary">
+                  · {item.sublabel}
                 </span>
               )}
 
               {item.badge && (
                 <span
-                  className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold ${
+                  className={`text-[10px] font-mono font-bold ${
                     item.badgeType === 'danger'
-                      ? 'bg-rose-500/15 text-rose-500 border border-rose-500/30'
+                      ? 'text-rose-500'
                       : item.badgeType === 'amber'
-                      ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
-                      : 'bg-surface text-text-secondary border border-border'
+                      ? 'text-amber-500'
+                      : 'text-text-secondary'
                   }`}
                 >
-                  {item.badge}
+                  ({item.badge})
                 </span>
               )}
 

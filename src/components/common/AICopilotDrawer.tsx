@@ -58,23 +58,37 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({ isOpen, onClos
 
   // Construct dataset grounding context string
   const getGroundingContext = () => {
-    const totalJobs = jobs.length;
-    const blockedJobs = jobs.filter(j => j.status === 'blocked').map(j => `${j.id} (${j.title}): ${j.blockerReason || 'Unspecified'}`);
-    const atRiskJobs = jobs.filter(j => j.isAtRisk).map(j => `${j.id} (${j.title}) [Due: ${j.dueDate}]`);
-    const teamSummary = teams.map(t => {
-      const teamJobs = jobs.filter(j => j.teamId === t.id);
-      const totalHours = teamJobs.reduce((acc, j) => acc + j.actualHours, 0);
-      return `${t.name}: ${teamJobs.length} jobs, ${totalHours} logged hrs`;
-    }).join('; ');
+    const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
+    const isTraffic = currentUser.role === 'traffic_manager';
+    const isDisciplineLead = currentUser.role === 'manager' || currentUser.role === 'director' || currentUser.role === 'team_lead';
+
+    const scopedJobs = (isGM || isTraffic)
+      ? jobs
+      : jobs.filter(j => j.teamId === currentUser.teamId);
+
+    const scopedUsers = (isGM || isTraffic)
+      ? users
+      : users.filter(u => u.teamId === currentUser.teamId);
+
+    const totalJobs = scopedJobs.length;
+    const blockedJobs = scopedJobs.filter(j => j.status === 'blocked').map(j => `${j.id} (${j.title}): ${j.blockerReason || 'Unspecified'}`);
+    const atRiskJobs = scopedJobs.filter(j => j.isAtRisk).map(j => `${j.id} (${j.title}) [Due: ${j.dueDate}]`);
+    const teamSummary = teams
+      .filter(t => isGM || isTraffic || t.id === currentUser.teamId)
+      .map(t => {
+        const teamJobs = scopedJobs.filter(j => j.teamId === t.id);
+        const totalHours = teamJobs.reduce((acc, j) => acc + j.actualHours, 0);
+        return `${t.name}: ${teamJobs.length} jobs, ${totalHours} logged hrs`;
+      }).join('; ');
 
     return `Active User: ${currentUser.name} (Role: ${currentUser.role}, Team: ${currentUser.teamId || 'None'})
-Governance Rule: Managers are strictly limited to their own assigned team and must not filter by any other team. Agency-wide cross-team filtering and multi-team oversight belongs strictly to the General Manager.
-Active Jobs Count: ${totalJobs}
-Teams Overview: ${teamSummary}
+Governance Rule: Discipline leads, creative director, and team leads are strictly limited to their own assigned team and must never view workloads or deliverables outside their department. Agency-wide cross-team oversight belongs strictly to the General Manager and Studio Traffic.
+Active Scope Jobs Count: ${totalJobs}
+Department Overview: ${teamSummary}
 Blocked Jobs (${blockedJobs.length}): ${blockedJobs.slice(0, 5).join(' | ')}
 At Risk Jobs (${atRiskJobs.length}): ${atRiskJobs.slice(0, 5).join(' | ')}
 Exceptions Count: ${exceptions.length}
-Total Users: ${users.length}`;
+Permitted Users in Scope: ${scopedUsers.length}`;
   };
 
   const handleSendMessage = async (customPrompt?: string) => {
@@ -275,7 +289,7 @@ Total Users: ${users.length}`;
             <button
               key={idx}
               onClick={() => handleSendMessage(prompt)}
-              className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium border border-border bg-surface text-text-secondary hover:text-text-primary hover:border-[var(--color-brand)] transition-colors cursor-pointer"
+              className="shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium border border-border bg-surface text-text-secondary hover:text-text-primary hover:border-[var(--color-brand)] transition-colors cursor-pointer"
             >
               {prompt}
             </button>

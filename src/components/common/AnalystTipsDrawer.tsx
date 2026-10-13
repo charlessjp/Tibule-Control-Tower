@@ -220,10 +220,10 @@ export const AnalystTipsDrawer: React.FC<AnalystTipsDrawerProps> = ({ isOpen, on
                 borderColor: 'var(--color-border)'
               }}
             >
-              <li>Use the numeric keys <kbd className="px-1 py-0.5 rounded font-mono font-bold bg-black/20">1-8</kbd> to jump between the Master Table, Summary Matrix, and Executive Brief.</li>
+              <li>Use the numeric keys <kbd className="px-1 py-0.5 rounded font-mono font-bold bg-black/20">1-7</kbd> to jump between the Master Table, Summary Matrix, and Visual Analytics.</li>
               <li>Hovering over any metric reveals mathematical calculation trees and lineage trace logs.</li>
               <li>Open the bottom-right AI Copilot to question live dataset variance across teams in natural language.</li>
-              <li>Export print-ready Executive Briefs directly via Output C for leadership standups.</li>
+              <li>Export print-ready PDF reports and data sheets directly via the Quick Actions bar.</li>
             </ul>
           </div>
         </div>

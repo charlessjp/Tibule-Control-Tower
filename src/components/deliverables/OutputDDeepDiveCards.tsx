@@ -47,12 +47,22 @@ export const OutputDDeepDiveCards: React.FC = () => {
   const currentCard = entityCards[currentIndex] || entityCards[0];
 
   const handleNext = () => {
+    if (entityCards.length === 0) return;
     setCurrentIndex(prev => (prev + 1) % entityCards.length);
   };
 
   const handlePrev = () => {
+    if (entityCards.length === 0) return;
     setCurrentIndex(prev => (prev - 1 + entityCards.length) % entityCards.length);
   };
+
+  if (entityCards.length === 0) {
+    return (
+      <div className="p-8 text-center rounded-2xl border border-border bg-surface text-text-secondary">
+        <p className="text-sm font-semibold">No active deliverables available for deep-dive inspection.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -60,9 +70,9 @@ export const OutputDDeepDiveCards: React.FC = () => {
       <SpotlightCard className="p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-xl font-bold tracking-tight text-text-primary">Deliverable Deep-Dive Sheets</h1>
+            <h1 className="text-xl font-bold tracking-tight text-text-primary">Deliverable Deep-Dive Dossier</h1>
             <p className="text-xs text-text-secondary">
-              Detailed breakdown of deliverables, contributor notes, and milestone impact.
+              Individual deliverable dossiers detailing project scope, hours variance, contributor notes, and client milestone impact.
             </p>
           </div>
 

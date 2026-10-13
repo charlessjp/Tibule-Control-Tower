@@ -22,8 +22,30 @@ import {
   AlertCircle,
   Sunrise,
   Sunset,
-  FileDown
+  FileDown,
+  ShieldCheck,
+  HeartHandshake,
+  Cpu,
+  Layers,
+  Flame,
+  HelpCircle,
+  Send,
+  Lightbulb,
+  UserCheck,
+  AlertTriangle
 } from 'lucide-react';
+import { DebriefMeetingModal } from '../workflow/DebriefMeetingModal';
+import { CreativeStrategyModal } from '../workflow/CreativeStrategyModal';
+import { ManagerReviewModal } from '../workflow/ManagerReviewModal';
+import { DeliverableSubmissionModal } from '../workflow/DeliverableSubmissionModal';
+import { Job } from '../../types';
+import { VisualAnalyticsWidget } from '../deliverables/VisualAnalyticsWidget';
+import { HomeDateFilterBar } from '../common/HomeDateFilterBar';
+import {
+  isJobInCalendarPeriod,
+  isArchivedInCalendarPeriod,
+  convertArchivedTaskToJob
+} from '../../utils/calendarPeriodFilter';
 import controlTowerBannerImg from '../../assets/images/control_tower_banner_1789471153509.jpg';
 
 export const EmployeeDashboard: React.FC = () => {
@@ -34,22 +56,70 @@ export const EmployeeDashboard: React.FC = () => {
     setSelectedJobId,
     setActiveView,
     setShowBuildCaseModal,
-    openLogOvertimeModal,
-    getUserOvertimeSummary,
-    openReportModal
+    openLogContributionModal,
+    getUserContributionSummary,
+    respondToClarification,
+    openReportModal,
+    homeCalendarPeriod,
+    setHomeCalendarPeriod,
+    homeCustomDateRange,
+    setHomeCustomDateRange,
+    archivedTasks,
+    openLogDeliveryImpactModal,
+    deliveryImpactLogs
   } = useApp();
 
   const firstName = currentUser.name.split(' ')[0] || 'Sarah';
-  const overtimeSummary = getUserOvertimeSummary(currentUser.id);
+  const contribSummary = getUserContributionSummary(currentUser.id);
+  const [clarificationReplies, setClarificationReplies] = React.useState<Record<string, string>>({});
 
-  // My active deliverables
+  // Modal inspection states
+  const [selectedDebriefJob, setSelectedDebriefJob] = React.useState<Job | null>(null);
+  const [selectedBrainstormJob, setSelectedBrainstormJob] = React.useState<Job | null>(null);
+  const [selectedReviewJob, setSelectedReviewJob] = React.useState<Job | null>(null);
+  const [selectedSubmitJob, setSelectedSubmitJob] = React.useState<Job | null>(null);
+
+  // My deliverables across live and archives filtered by selected period
   const myJobs = jobs.filter((j) => j.assigneeId === currentUser.id);
-  const myActiveJobs = myJobs.filter((j) => j.status !== 'completed');
 
-  // Counts
-  const inProgressCount = myJobs.filter((j) => j.status === 'in_progress').length;
-  const blockedCount = myJobs.filter((j) => j.status === 'blocked').length;
-  const completedCount = myJobs.filter((j) => j.status === 'completed').length;
+  const periodMyJobs = React.useMemo(() => {
+    return myJobs.filter((j) => isJobInCalendarPeriod(j, homeCalendarPeriod, homeCustomDateRange));
+  }, [myJobs, homeCalendarPeriod, homeCustomDateRange]);
+
+  const periodMyArchived = React.useMemo(() => {
+    return (archivedTasks || []).filter(
+      (t) => (t.assigneeId === currentUser.id || t.assigneeName === currentUser.name) &&
+        isArchivedInCalendarPeriod(t, homeCalendarPeriod, homeCustomDateRange)
+    );
+  }, [archivedTasks, currentUser, homeCalendarPeriod, homeCustomDateRange]);
+
+  const myActiveJobs = periodMyJobs.filter((j) => j.status !== 'completed');
+
+  // Called Upon Meetings where currentUser is invited as creative specialist
+  const calledDebriefJobs = jobs.filter(
+    (j) =>
+      (j.workflowStage === 'debrief_ready' || j.workflowStage === 'debrief_meeting') &&
+      j.debriefMeeting?.attendees?.some((a) => a.userId === currentUser.id) &&
+      isJobInCalendarPeriod(j, homeCalendarPeriod, homeCustomDateRange)
+  );
+
+  const calledBrainstormJobs = jobs.filter(
+    (j) =>
+      j.workflowStage === 'creative_brainstorm' &&
+      (j.assigneeId === currentUser.id || j.debriefMeeting?.attendees?.some((a) => a.userId === currentUser.id)) &&
+      isJobInCalendarPeriod(j, homeCalendarPeriod, homeCustomDateRange)
+  );
+
+  const alignmentReviewJobs = jobs.filter(
+    (j) => j.workflowStage === 'internal_review' && j.assigneeId === currentUser.id &&
+      isJobInCalendarPeriod(j, homeCalendarPeriod, homeCustomDateRange)
+  );
+
+  // Counts scoped to selected period
+  const inProgressCount = periodMyJobs.filter((j) => j.status === 'in_progress').length;
+  const blockedCount = periodMyJobs.filter((j) => j.status === 'blocked').length;
+  const completedCount = periodMyJobs.filter((j) => j.status === 'completed').length + periodMyArchived.length;
+  const activePeriodCount = myActiveJobs.length;
 
   return (
     <div id="employee-dashboard-container" className="flex flex-col xl:flex-row gap-6 pb-12">
@@ -64,25 +134,33 @@ export const EmployeeDashboard: React.FC = () => {
               Good morning, {firstName}.
             </h1>
             <p className="text-xs sm:text-sm mt-1 text-text-tertiary">
-              Here is your daily task overview and team workload balance.
+              Your daily workspace: track active deliverables, log work evidence, and monitor your personal capacity.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <button
               onClick={() => openReportModal(currentUser.id)}
-              className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 cursor-pointer shadow-xs"
+              className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-border bg-surface-elevated text-text-primary hover:bg-surface-hover hover:border-brand-primary/40 cursor-pointer shadow-xs"
               title="Generate your personal PDF performance dossier"
             >
-              <FileDown className="w-3.5 h-3.5 text-emerald-500" />
+              <FileDown className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
               <span>My PDF Report</span>
             </button>
             <button
-              onClick={() => openLogOvertimeModal()}
+              onClick={() => openLogDeliveryImpactModal()}
               className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer shadow-xs"
+              title="Log delivery impediment or deadline delay factor"
             >
-              <Clock className="w-3.5 h-3.5 text-amber-500" />
-              <span>Log Overtime</span>
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Log Delivery Risk</span>
+            </button>
+            <button
+              onClick={() => openLogContributionModal()}
+              className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-border bg-surface-elevated hover:bg-surface text-text-primary cursor-pointer shadow-xs"
+            >
+              <Award className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
+              <span>Record Contribution</span>
             </button>
             <button
               onClick={() => setActiveView('my_work')}
@@ -98,13 +176,25 @@ export const EmployeeDashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Operating Date Horizon Filter */}
+        <HomeDateFilterBar
+          period={homeCalendarPeriod}
+          onPeriodChange={setHomeCalendarPeriod}
+          customRange={homeCustomDateRange}
+          onCustomRangeChange={setHomeCustomDateRange}
+          matchedCount={periodMyJobs.length}
+          archivedCount={periodMyArchived.length}
+          totalCount={myJobs.length}
+          label="My Operating Period"
+        />
+
         {/* 4 Clean Metric Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {/* Card 1: Due Today */}
+          {/* Card 1: Deliverables in Scope */}
           <SpotlightCard className="p-4 flex flex-col justify-between h-28">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold font-mono text-text-primary">
-                0
+                {activePeriodCount}
               </span>
               <div
                 className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -115,10 +205,10 @@ export const EmployeeDashboard: React.FC = () => {
             </div>
             <div>
               <div className="text-xs font-bold text-text-primary">
-                Due Today
+                Active in Period
               </div>
               <div className="text-[11px] mt-0.5 text-text-tertiary">
-                All clear for today
+                {activePeriodCount === 0 ? 'All clear in this period' : `${activePeriodCount} active task${activePeriodCount > 1 ? 's' : ''}`}
               </div>
             </div>
           </SpotlightCard>
@@ -149,10 +239,13 @@ export const EmployeeDashboard: React.FC = () => {
           {/* Card 3: Awaiting Input / Blocked */}
           <SpotlightCard className="p-4 flex flex-col justify-between h-28">
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold font-mono text-amber-500">
+              <span className="text-2xl font-bold font-mono" style={{ color: 'var(--color-warning)' }}>
                 {blockedCount}
               </span>
-              <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'var(--color-warning-muted)', color: 'var(--color-warning)' }}
+              >
                 <Hourglass className="w-4 h-4" />
               </div>
             </div>
@@ -169,10 +262,13 @@ export const EmployeeDashboard: React.FC = () => {
           {/* Card 4: Completed */}
           <SpotlightCard className="p-4 flex flex-col justify-between h-28">
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold font-mono text-emerald-500">
+              <span className="text-2xl font-bold font-mono" style={{ color: 'var(--color-success)' }}>
                 {completedCount}
               </span>
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: 'var(--color-success-muted)', color: 'var(--color-success)' }}
+              >
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
@@ -216,6 +312,224 @@ export const EmployeeDashboard: React.FC = () => {
           </div>
         </SpotlightCard>
 
+        {/* Called Upon Sessions: Debriefs, Brainstorms & Creative Alignment */}
+        {(calledDebriefJobs.length > 0 || calledBrainstormJobs.length > 0 || alignmentReviewJobs.length > 0) && (
+          <div
+            className="space-y-3 p-4 rounded-2xl border animate-in fade-in"
+            style={{
+              backgroundColor: 'var(--color-brand-muted)',
+              borderColor: 'color-mix(in srgb, var(--color-brand) 30%, transparent)'
+            }}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
+                <h2 className="text-sm font-bold text-text-primary">
+                  Called Stakeholder Sessions &amp; Calendar Invites
+                </h2>
+              </div>
+              <span className="text-[10px] font-mono flex items-center gap-1" style={{ color: 'var(--color-success)' }}>
+                ✓ Synced with Teams / Work Calendar
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Debrief Meetings */}
+              {calledDebriefJobs.map((job) => (
+                <div
+                  key={`debrief-${job.id}`}
+                  className="p-3.5 rounded-xl border border-border bg-surface space-y-2.5 shadow-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-[11px] font-mono font-bold uppercase tracking-wider"
+                      style={{ color: 'var(--color-brand)' }}
+                    >
+                      Called to Debrief Meeting
+                    </span>
+                    <span className="text-[11px] font-mono text-text-tertiary">{job.id}</span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xs font-bold text-text-primary leading-snug">{job.title}</h3>
+                    <p className="text-[11px] text-text-secondary mt-0.5">
+                      Client: <strong>{job.requestor}</strong> • Time: <strong>{job.debriefMeeting?.calendarEventTime || 'Today at 2:00 PM'}</strong>
+                    </p>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-surface-elevated border border-border text-[11px] space-y-0.5">
+                    <div className="text-text-tertiary">
+                      Called by: <strong className="text-text-primary">{job.debriefMeeting?.calledByName || 'Traffic Lead Kwame Mensah'}</strong>
+                    </div>
+                    <div className="font-semibold" style={{ color: 'var(--color-brand)' }}>
+                      Compulsory CS Submitter: {job.debriefMeeting?.compulsoryCsSubmitterName || 'Client Services Lead'}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedDebriefJob(job)}
+                    className="w-full py-1.5 px-3 rounded-lg font-bold text-xs transition-opacity hover:opacity-90 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                    style={{
+                      backgroundColor: 'var(--color-brand)',
+                      color: 'var(--color-brand-contrast)'
+                    }}
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>View Debrief Pack &amp; Agenda</span>
+                  </button>
+                </div>
+              ))}
+
+              {/* Creative Brainstorm & Strategy Sessions */}
+              {calledBrainstormJobs.map((job) => (
+                <div
+                  key={`brainstorm-${job.id}`}
+                  className="p-3.5 rounded-xl border border-border bg-surface space-y-2.5 shadow-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-[11px] font-mono font-bold uppercase tracking-wider"
+                      style={{ color: 'var(--color-strategic)' }}
+                    >
+                      Creative Strategy &amp; Brainstorm
+                    </span>
+                    <span className="text-[11px] font-mono text-text-tertiary">{job.id}</span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xs font-bold text-text-primary leading-snug">{job.title}</h3>
+                    <p className="text-[11px] text-text-secondary mt-0.5">
+                      Scope: <strong>{job.estimatedHours}h</strong> • Figure out creative approach with squad
+                    </p>
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-surface-elevated border border-border text-[11px] text-text-secondary">
+                    Same debrief squad (Compulsory CS + CD + Creative ICs) aligning on creative angle before production starts.
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedBrainstormJob(job)}
+                    className="w-full py-1.5 px-3 rounded-lg font-bold text-xs transition-opacity hover:opacity-90 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                    style={{
+                      backgroundColor: 'var(--color-brand)',
+                      color: 'var(--color-brand-contrast)'
+                    }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Join Strategy Brainstorm</span>
+                  </button>
+                </div>
+              ))}
+
+              {/* Internal Creative Alignment Sessions */}
+              {alignmentReviewJobs.map((job) => (
+                <div
+                  key={`align-${job.id}`}
+                  className="p-3.5 rounded-xl border border-border bg-surface space-y-2.5 shadow-xs"
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-[11px] font-mono font-bold uppercase tracking-wider text-text-secondary"
+                    >
+                      Creative Alignment Review (Live Sync)
+                    </span>
+                    <span className="text-[11px] font-mono text-text-tertiary">{job.id}</span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xs font-bold text-text-primary leading-snug">{job.title}</h3>
+                    <p className="text-[11px] text-text-secondary mt-0.5">
+                      Director/Senior review: Live meeting to bounce ideas and codify revisions together.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedReviewJob(job)}
+                    className="w-full py-1.5 px-3 rounded-lg border border-border bg-surface-elevated hover:bg-surface text-text-primary font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <UserCheck className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
+                    <span>View Alignment Session Notes</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Section: Active Logged Delivery Impediments & Deadline Risks */}
+        {(() => {
+          const myDeliveryImpacts = deliveryImpactLogs.filter(
+            (l) => l.loggedByUserId === currentUser.id || myJobs.some((j) => j.id === l.jobId)
+          );
+          if (myDeliveryImpacts.length === 0) return null;
+          const activeCount = myDeliveryImpacts.filter((l) => l.status === 'active' || l.status === 'acknowledged').length;
+          return (
+            <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span className="text-xs font-bold text-text-primary">
+                    My Logged Delivery Impediments ({myDeliveryImpacts.length})
+                  </span>
+                  {activeCount > 0 && (
+                    <span className="text-[11px] font-mono font-bold text-amber-500">
+                      · {activeCount} Active
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => openLogDeliveryImpactModal()}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-surface border border-border hover:bg-surface-elevated text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                >
+                  + Log Impediment
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                {myDeliveryImpacts.map((imp) => (
+                  <div
+                    key={imp.id}
+                    className="p-3 rounded-lg bg-surface border border-border/80 space-y-1.5 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[11px] text-text-primary flex items-center gap-1.5 truncate">
+                        <span>{imp.jobId ? `${imp.jobId} · ` : ''}{imp.jobTitle || 'Impediment'}</span>
+                      </span>
+                      <span
+                        className={`text-[11px] font-mono uppercase font-bold tracking-wider ${
+                          imp.status === 'resolved' || imp.status === 'mitigated'
+                            ? 'text-emerald-500'
+                            : imp.status === 'acknowledged'
+                            ? 'text-blue-400'
+                            : 'text-amber-500'
+                        }`}
+                      >
+                        {imp.status === 'acknowledged' ? 'Acknowledged' : imp.status}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-text-secondary leading-snug line-clamp-2">
+                      {imp.impactDescription}
+                    </p>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-text-tertiary pt-0.5">
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">
+                        +{imp.estimatedDelayHours || imp.estimatedDelayDays * 8}h extension ({imp.estimatedDelayDays}d)
+                      </span>
+                      {imp.proposedRevisedDueDate && (
+                        <span>Proposed: {new Date(imp.proposedRevisedDueDate).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                    {imp.acknowledgedBy && (
+                      <div className="text-[10px] text-text-tertiary italic">
+                        Lead Review: {imp.acknowledgedBy} {imp.resolutionNotes ? `("${imp.resolutionNotes}")` : ''}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Section: Today's Focus & Active Deliverables */}
         <div className="space-y-3.5">
           <div className="flex items-center justify-between">
@@ -237,134 +551,311 @@ export const EmployeeDashboard: React.FC = () => {
 
           {/* List of Tasks using the Spotlight Highlight */}
           <div className="space-y-2.5">
-            {myActiveJobs.map((job) => (
-              <SpotlightTaskRow
-                key={job.id}
-                job={job}
-                isSelected={selectedJobId === job.id}
-                onClick={() => setSelectedJobId(job.id)}
-              />
-            ))}
+            {myActiveJobs.length > 0 ? (
+              myActiveJobs.map((job) => (
+                <SpotlightTaskRow
+                  key={job.id}
+                  job={job}
+                  isSelected={selectedJobId === job.id}
+                  onClick={() => setSelectedJobId(job.id)}
+                />
+              ))
+            ) : (
+              <div className="p-6 rounded-xl border border-dashed border-border text-center space-y-1.5 bg-surface/50">
+                <Calendar className="w-5 h-5 mx-auto text-text-tertiary" />
+                <p className="text-xs font-semibold text-text-primary">
+                  No active deliverables in this calendar period
+                </p>
+                <p className="text-[11px] text-text-secondary">
+                  {periodMyArchived.length > 0
+                    ? `${periodMyArchived.length} archived deliverable(s) recorded for this period.`
+                    : 'Switch operating period or create a new task to get started.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Dedicated Overtime & Good Books Ledger */}
-        <SpotlightCard className="p-5 space-y-4 border-amber-500/20">
+        {/* Workload & Delivery Visual Analytics (Employee Persona Telemetry) */}
+        <VisualAnalyticsWidget
+          scope="employee"
+          employeeId={currentUser.id}
+          title={`My Workload & Delivery Visual Analytics: ${firstName}`}
+          subtitle="Your personal deliverable hours distribution, quoting accuracy, and audited operational performance pillars."
+        />
+
+        {/* Strategic Recognition & Verified Impact */}
+        <SpotlightCard className="p-5 space-y-4 border-brand-primary/20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-brand-primary/15 text-brand-primary flex items-center justify-center">
                   <Award className="w-4 h-4" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
-                    <span>Good Books Material · Overtime Ledger</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                      Standard: 9:00 AM – 5:00 PM
+                    <span>Strategic Recognition</span>
+                    <span className="text-text-tertiary">·</span>
+                    <span className="text-[11px] font-mono text-brand-primary font-bold uppercase tracking-wider">
+                      Verified Impact
                     </span>
                   </h2>
                 </div>
               </div>
               <p className="text-xs text-text-secondary">
-                Verified hours logged before 9 AM or after 5 PM count towards your career progression and senior reviews.
+                Your contribution is visible: a verified record of impact, ownership, collaboration, and craft excellence across Tibule.
               </p>
             </div>
-            <button
-              onClick={() => openLogOvertimeModal()}
-              className="px-3 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto"
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                onClick={() => openLogContributionModal()}
+                className="px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover:opacity-95"
+                style={{
+                  backgroundColor: 'var(--color-brand)',
+                  color: 'var(--color-brand-contrast)',
+                  borderColor: 'var(--color-brand)'
+                }}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Log Contribution</span>
+              </button>
+              <button
+                onClick={() => setActiveView('evidence')}
+                className="px-3 py-1.5 rounded-xl border border-border bg-surface-tertiary/50 hover:bg-surface-tertiary text-text-secondary hover:text-text-primary text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>My Evidence</span>
+                <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Clarification Alert Banner (if manager requested details) */}
+          {contribSummary.clarificationCount > 0 && (
+            <div
+              className="p-3.5 rounded-xl border text-xs space-y-2 animate-fade-in"
+              style={{
+                backgroundColor: 'var(--color-warning-muted)',
+                borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)'
+              }}
             >
-              <Clock className="w-3.5 h-3.5 text-amber-500" />
-              <span>Log Task Overtime</span>
-            </button>
-          </div>
-
-          {/* Quick Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-xl bg-surface-elevated/50 border border-border">
-              <div className="text-[10px] uppercase font-mono text-text-tertiary">Total Overtime</div>
-              <div className="text-xl font-bold font-mono text-amber-500 mt-0.5">
-                {overtimeSummary.totalHours} <span className="text-xs font-normal text-text-tertiary">hrs</span>
+              <div className="flex items-center gap-2 font-bold" style={{ color: 'var(--color-warning)' }}>
+                <HelpCircle className="w-4 h-4 shrink-0" />
+                <span>Clarification Requested on {contribSummary.clarificationCount} Contribution(s)</span>
               </div>
-              <div className="text-[10px] text-text-tertiary mt-1">{overtimeSummary.count} entries logged</div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-surface-elevated/50 border border-border">
-              <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center gap-1">
-                <Sunrise className="w-3 h-3 text-amber-500" />
-                <span>Pre-9:00 AM</span>
-              </div>
-              <div className="text-xl font-bold font-mono text-text-primary mt-0.5">
-                {overtimeSummary.pre9amHours} <span className="text-xs font-normal text-text-tertiary">hrs</span>
-              </div>
-              <div className="text-[10px] text-text-tertiary mt-1">Dawn patrol</div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-surface-elevated/50 border border-border">
-              <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center gap-1">
-                <Sunset className="w-3 h-3 text-indigo-500" />
-                <span>Post-5:00 PM</span>
-              </div>
-              <div className="text-xl font-bold font-mono text-text-primary mt-0.5">
-                {overtimeSummary.post5pmHours} <span className="text-xs font-normal text-text-tertiary">hrs</span>
-              </div>
-              <div className="text-[10px] text-text-tertiary mt-1">Evening crunch</div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-surface-elevated/50 border border-border">
-              <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>Good Books Pts</span>
-              </div>
-              <div className="text-xl font-bold font-mono text-emerald-500 mt-0.5">
-                +{overtimeSummary.goodBooksPoints}
-              </div>
-              <div className="text-[10px] text-text-tertiary mt-1">
-                {overtimeSummary.acknowledgedCount} endorsed by mgmt
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Overtime Logs List */}
-          {overtimeSummary.logs.length > 0 ? (
-            <div className="space-y-2 pt-1">
-              <div className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">
-                Recent Overtime Evidence
-              </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {overtimeSummary.logs.slice(0, 3).map((log) => (
-                  <div
-                    key={log.id}
-                    className="p-3 rounded-xl bg-surface border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs"
-                  >
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-text-primary">
-                          [{log.jobId}] {log.jobTitle}
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                          {log.period === 'pre_9am' ? 'Pre-9 AM' : log.period === 'post_5pm' ? 'Post-5 PM' : 'Weekend'} ({log.hoursLogged}h)
-                        </span>
-                        <span className="text-[10px] text-text-tertiary font-mono">
-                          {log.date} · {log.startTime}–{log.endTime}
+              <p className="text-[11px] text-text-secondary">
+                Your manager asked for specific details on your submitted evidence before finalizing verification.
+              </p>
+              {contribSummary.contributions
+                .filter((c) => c.status === 'CLARIFICATION_REQUIRED')
+                .map((c) => {
+                  const latestClarification = c.clarifications?.[0];
+                  return (
+                    <div key={c.id} className="p-3 rounded-lg bg-surface border border-border space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-text-primary text-xs">"{c.title}"</span>
+                        <span className="text-[10px] font-mono" style={{ color: 'var(--color-warning)' }}>
+                          Question from {latestClarification?.requestedByName}
                         </span>
                       </div>
-                      <p className="text-[11px] text-text-secondary italic line-clamp-1">
-                        &ldquo;{log.materialNote}&rdquo;
+                      <p className="text-[11px] text-text-secondary italic bg-surface-elevated p-2 rounded border border-border">
+                        &ldquo;{latestClarification?.question}&rdquo;
                       </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={clarificationReplies[c.id] || ''}
+                          onChange={(e) => setClarificationReplies((prev) => ({ ...prev, [c.id]: e.target.value }))}
+                          placeholder="Provide the requested impact details..."
+                          className="flex-1 px-2.5 py-1.5 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-[var(--color-brand)]"
+                        />
+                        <button
+                          onClick={() => {
+                            const reply = clarificationReplies[c.id];
+                            if (reply?.trim()) {
+                              respondToClarification(c.id, reply.trim());
+                              setClarificationReplies((prev) => ({ ...prev, [c.id]: '' }));
+                            }
+                          }}
+                          className="px-3 py-1.5 text-xs font-bold rounded flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
+                          style={{
+                            backgroundColor: 'var(--color-brand)',
+                            color: 'var(--color-brand-contrast)'
+                          }}
+                        >
+                          <Send className="w-3 h-3" />
+                          <span>Submit Reply</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* Contribution Portfolio Overview */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+            <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border text-center">
+              <div className="text-[10px] uppercase font-mono text-text-tertiary">Verified</div>
+              <div className="text-lg font-bold font-mono mt-0.5" style={{ color: 'var(--color-success)' }}>
+                {contribSummary.verifiedCount}
+              </div>
+              <div className="text-[9px] text-text-tertiary mt-0.5">of {contribSummary.totalContributions} logged</div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border text-center">
+              <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-center gap-1">
+                <Sparkles className="w-2.5 h-2.5" style={{ color: 'var(--color-brand)' }} />
+                <span>Delivery</span>
+              </div>
+              <div className="text-lg font-bold font-mono text-text-primary mt-0.5">
+                {contribSummary.byCategory.exceptional_delivery}
+              </div>
+              <div className="text-[9px] text-text-tertiary mt-0.5">Milestone rescue</div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border text-center">
+              <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-center gap-1">
+                <ShieldCheck className="w-2.5 h-2.5" style={{ color: 'var(--color-success)' }} />
+                <span>Client</span>
+              </div>
+              <div className="text-lg font-bold font-mono text-text-primary mt-0.5">
+                {contribSummary.byCategory.client_impact}
+              </div>
+              <div className="text-[9px] text-text-tertiary mt-0.5">Protected SLA</div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border text-center">
+              <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-center gap-1">
+                <HeartHandshake className="w-2.5 h-2.5 text-text-secondary" />
+                <span>Collab</span>
+              </div>
+              <div className="text-lg font-bold font-mono text-text-primary mt-0.5">
+                {contribSummary.byCategory.collaboration}
+              </div>
+              <div className="text-[9px] text-text-tertiary mt-0.5">Cross-team help</div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border text-center">
+              <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-center gap-1">
+                <Award className="w-2.5 h-2.5" style={{ color: 'var(--color-brand)' }} />
+                <span>Craft</span>
+              </div>
+              <div className="text-lg font-bold font-mono text-text-primary mt-0.5">
+                {contribSummary.byCategory.craft_quality}
+              </div>
+              <div className="text-[9px] text-text-tertiary mt-0.5">Quality bar</div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border text-center">
+              <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-center gap-1">
+                <Cpu className="w-2.5 h-2.5 text-text-secondary" />
+                <span>Process</span>
+              </div>
+              <div className="text-lg font-bold font-mono text-text-primary mt-0.5">
+                {contribSummary.byCategory.process_improvement}
+              </div>
+              <div className="text-[9px] text-text-tertiary mt-0.5">Automations</div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-surface-elevated/60 border border-border text-center">
+              <div className="text-[10px] uppercase font-mono text-text-tertiary flex items-center justify-center gap-1">
+                <Flame className="w-2.5 h-2.5" style={{ color: 'var(--color-critical)' }} />
+                <span>Effort Context</span>
+              </div>
+              <div className="text-lg font-bold font-mono text-text-secondary mt-0.5">
+                {contribSummary.exceptionalEffortHours} <span className="text-[10px]">hrs</span>
+              </div>
+              <div className="text-[9px] text-text-tertiary mt-0.5">Extra crunch effort</div>
+            </div>
+          </div>
+
+          {/* Recent Contributions List */}
+          {contribSummary.contributions.length > 0 ? (
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-text-secondary uppercase tracking-wider">
+                <span>Recent Contribution Evidence</span>
+                <span className="text-[10px] text-text-tertiary lowercase font-normal">
+                  {contribSummary.recognisedCount} recognised with commendations
+                </span>
+              </div>
+              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                {contribSummary.contributions.slice(0, 4).map((c) => (
+                  <div
+                    key={c.id}
+                    className="p-3.5 rounded-xl bg-surface border border-border hover:border-brand-primary/30 transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-3 text-xs"
+                  >
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-text-primary">
+                          {c.title}
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-surface-tertiary text-text-secondary border border-border capitalize">
+                          {c.category.replace('_', ' ')}
+                        </span>
+                        {c.relatedJobTitle && (
+                          <span className="text-[10px] text-text-tertiary truncate max-w-xs font-mono">
+                            [{c.relatedJobId}] {c.relatedJobTitle}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-text-tertiary font-mono">
+                          {c.contributionDate}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-text-secondary leading-snug">
+                        {c.description}
+                      </p>
+
+                      <div className="text-[11px] text-text-primary bg-surface-tertiary/40 px-2.5 py-1 rounded-md border border-border/50">
+                        <strong className="text-brand-primary font-semibold">Impact: </strong>
+                        <span>{c.impactStatement}</span>
+                      </div>
+
+                      {c.recognitionNote && (
+                        <div
+                          className="text-[11px] p-2 rounded-md border italic"
+                          style={{
+                            backgroundColor: 'var(--color-success-muted)',
+                            borderColor: 'color-mix(in srgb, var(--color-success) 20%, transparent)',
+                            color: 'var(--color-success)'
+                          }}
+                        >
+                          &ldquo;{c.recognitionNote}&rdquo; - {c.recognisedByName || c.verifiedByName || 'Leadership'}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                        +{log.goodBooksPoints} pts
-                      </span>
-                      {log.status === 'pending_acknowledgment' ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-surface-elevated text-text-tertiary border border-border">
-                          Pending Review
+                    <div className="flex items-center gap-2 self-start shrink-0 pt-0.5">
+                      {c.status === 'RECOGNISED' && (
+                        <span
+                          className="text-[11px] font-mono font-bold flex items-center gap-1"
+                          style={{ color: 'var(--color-success)' }}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Recognised</span>
                         </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Endorsed</span>
+                      )}
+                      {c.status === 'VERIFIED' && (
+                        <span
+                          className="text-[11px] font-mono font-medium flex items-center gap-1"
+                          style={{ color: 'var(--color-brand)' }}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Verified</span>
+                        </span>
+                      )}
+                      {c.status === 'SUBMITTED' && (
+                        <span className="text-[11px] font-mono font-medium text-text-tertiary">
+                          In Review
+                        </span>
+                      )}
+                      {c.status === 'CLARIFICATION_REQUIRED' && (
+                        <span
+                          className="text-[11px] font-mono font-medium flex items-center gap-1"
+                          style={{ color: 'var(--color-warning)' }}
+                        >
+                          <HelpCircle className="w-3.5 h-3.5" />
+                          <span>Clarification Needed</span>
                         </span>
                       )}
                     </div>
@@ -373,8 +864,10 @@ export const EmployeeDashboard: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="text-center py-4 text-xs text-text-tertiary">
-              No overtime entries logged yet. Working early or late? Log your material contribution to add to your Good Books.
+            <div className="text-center py-6 text-xs text-text-tertiary bg-surface-elevated/40 rounded-xl border border-dashed border-border">
+              <Award className="w-6 h-6 text-text-tertiary mx-auto mb-1.5 opacity-60" />
+              <p className="font-medium text-text-secondary">No contributions recorded yet</p>
+              <p className="text-[11px] mt-0.5">Solved a delivery problem, assisted a peer, or automated a workflow? Record your verified contribution.</p>
             </div>
           )}
         </SpotlightCard>
@@ -382,26 +875,32 @@ export const EmployeeDashboard: React.FC = () => {
         {/* Quick Actions (Employee Friendly) */}
         <div className="space-y-3.5">
           <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-500" />
+            <Zap className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
             <h2 className="text-sm font-bold text-text-primary">
               Quick Actions
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <button
-              onClick={() => openLogOvertimeModal()}
-              className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50 hover:bg-amber-500/10 text-left flex items-center gap-3 transition-all duration-200 cursor-pointer group"
+              onClick={() => openLogContributionModal()}
+              className="p-3.5 rounded-xl border border-border bg-surface-elevated hover:bg-surface hover:border-[var(--color-brand)] text-left flex items-center gap-3 transition-all duration-200 cursor-pointer group"
             >
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <Clock className="w-4 h-4" />
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
+                style={{
+                  backgroundColor: 'var(--color-brand-muted)',
+                  color: 'var(--color-brand)'
+                }}
+              >
+                <Award className="w-4 h-4" />
               </div>
               <div>
                 <div className="text-xs font-bold text-text-primary">
-                  Log Dedicated Overtime
+                  Record Contribution
                 </div>
                 <div className="text-[11px] text-text-tertiary">
-                  Pre-9 AM or Post-5 PM work
+                  Deliveries, Impact, Craft &amp; Sprints
                 </div>
               </div>
             </button>
@@ -468,7 +967,7 @@ export const EmployeeDashboard: React.FC = () => {
         </div>
 
         {/* Atmospheric Banner */}
-        <div className="relative rounded-2xl overflow-hidden border border-border h-28 flex items-center justify-between px-8 text-white shadow-md">
+        <div className="relative rounded-2xl overflow-hidden border border-border min-h-[7rem] flex items-center justify-between px-4 sm:px-8 py-3 text-white shadow-md">
           <img
             src={controlTowerBannerImg}
             alt="Tibule Mountain Panorama"
@@ -546,7 +1045,7 @@ export const EmployeeDashboard: React.FC = () => {
 
           <div className="space-y-3 text-xs">
             <div className="flex items-start gap-2.5">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+              <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: 'var(--color-success)' }} />
               <div>
                 <p className="text-text-secondary">
                   <strong className="text-text-primary">Alex Rivera</strong> submitted Q3 Brand Assets for review.
@@ -583,6 +1082,31 @@ export const EmployeeDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modals for Inspecting Called Sessions */}
+      <DebriefMeetingModal
+        job={selectedDebriefJob}
+        isOpen={!!selectedDebriefJob}
+        onClose={() => setSelectedDebriefJob(null)}
+      />
+
+      <CreativeStrategyModal
+        job={selectedBrainstormJob}
+        isOpen={!!selectedBrainstormJob}
+        onClose={() => setSelectedBrainstormJob(null)}
+      />
+
+      <ManagerReviewModal
+        job={selectedReviewJob}
+        isOpen={!!selectedReviewJob}
+        onClose={() => setSelectedReviewJob(null)}
+      />
+
+      <DeliverableSubmissionModal
+        job={selectedSubmitJob}
+        isOpen={!!selectedSubmitJob}
+        onClose={() => setSelectedSubmitJob(null)}
+      />
     </div>
   );
 };

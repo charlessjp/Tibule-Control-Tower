@@ -76,19 +76,7 @@ export const SeniorityAssignmentModal: React.FC<SeniorityAssignmentModalProps> =
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border bg-surface-elevated">
           <div>
-            <div className="flex items-center gap-2">
-              <span
-                className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border"
-                style={{
-                  backgroundColor: 'var(--color-brand-muted)',
-                  borderColor: 'var(--color-brand)',
-                  color: 'var(--color-brand)'
-                }}
-              >
-                Discipline Assignment & Timeline Prescribing
-              </span>
-              <h2 className="text-base font-bold">Assign Staff & Set Seniority Timeline</h2>
-            </div>
+            <h2 className="text-base font-bold text-text-primary">Assign Staff &amp; Set Seniority Timeline</h2>
             <p className="text-xs mt-1 text-text-tertiary">
               Prescribing deliverable hours mapped to standard task archetype [{standardTask}] and staff seniority.
             </p>

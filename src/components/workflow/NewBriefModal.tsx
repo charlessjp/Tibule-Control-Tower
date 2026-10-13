@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { StandardTaskType, Priority } from '../../types';
 import { STANDARD_TASK_DEFINITIONS, getStandardTaskBenchmarkHours } from '../../data/standardTasks';
-import { X, Sparkles, Clock, CheckCircle2 } from 'lucide-react';
+import { X, Sparkles, Clock, ShieldAlert } from 'lucide-react';
 
 interface NewBriefModalProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface NewBriefModalProps {
 }
 
 export const NewBriefModal: React.FC<NewBriefModalProps> = ({ isOpen, onClose }) => {
-  const { submitBrief } = useApp();
+  const { submitBrief, currentUser } = useApp();
 
   const [title, setTitle] = useState('');
   const [requestor, setRequestor] = useState('Zenith Global Group');
@@ -23,6 +23,30 @@ export const NewBriefModal: React.FC<NewBriefModalProps> = ({ isOpen, onClose })
   );
 
   if (!isOpen) return null;
+
+  if (currentUser.role !== 'client_service') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-surface text-text-primary shadow-2xl p-6 space-y-4">
+          <div className="flex items-center gap-3 text-amber-500">
+            <ShieldAlert className="w-6 h-6" />
+            <h3 className="font-bold text-base">Restricted Action</h3>
+          </div>
+          <p className="text-xs text-text-secondary leading-relaxed">
+            Brief creation is restricted exclusively to <strong>Client Services</strong> representatives. Please coordinate with an Account Manager in Client Services to ingest new campaign briefs.
+          </p>
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-xs font-semibold border border-border bg-surface-elevated text-text-primary hover:bg-surface cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const currentDef = STANDARD_TASK_DEFINITIONS[standardTaskType];
   const defaultBenchmarkHours = getStandardTaskBenchmarkHours(standardTaskType, 'mid');
@@ -68,7 +92,7 @@ export const NewBriefModal: React.FC<NewBriefModalProps> = ({ isOpen, onClose })
               <h2 className="text-base font-bold text-text-primary">Submit Standard Client Brief</h2>
             </div>
             <p className="text-xs mt-1 text-text-tertiary">
-              Brief routes to Traffic Manager Kwame Mensah for studio review and manager dispatch.
+              Logged by Client Service Lead {currentUser.name}. Ingested brief routes to Traffic Manager Kwame Mensah for debrief coordination and studio dispatch.
             </p>
           </div>
           <button
@@ -241,24 +265,6 @@ export const NewBriefModal: React.FC<NewBriefModalProps> = ({ isOpen, onClose })
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-text-primary text-xs outline-hidden focus:border-[var(--color-brand)]"
             />
-          </div>
-
-          {/* Expected Deliverables Checklist */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5 text-text-tertiary">
-              Standard Package Deliverables Included:
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {currentDef.deliverablesSummary.map((deliv, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2 p-2 rounded-lg text-xs bg-surface border border-border"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span className="truncate text-text-primary">{deliv}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Footer Actions */}

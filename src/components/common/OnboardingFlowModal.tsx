@@ -93,8 +93,8 @@ export const OnboardingFlowModal: React.FC<OnboardingFlowModalProps> = ({ isOpen
         {step === 1 && (
           <div className="p-6 space-y-6">
             <div className="space-y-2">
-              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-primary/10 text-brand-primary">
-                Welcome to Tibule
+              <span className="text-xs font-mono font-bold tracking-wider uppercase" style={{ color: 'var(--color-brand)' }}>
+                System Induction
               </span>
               <h2 className="text-xl font-bold text-text-primary">
                 Welcome to Tibule Control Tower

@@ -997,8 +997,8 @@ export const AuthPortal: React.FC<AuthPortalProps> = ({
                             <span className="font-bold text-xs text-text-primary">
                               {roleDef.seniorityLabel}
                             </span>
-                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-surface-elevated border border-border text-text-tertiary">
-                              {roleDef.defaultCapacity}h/wk
+                            <span className="text-[10px] font-mono text-text-tertiary">
+                              · {roleDef.defaultCapacity}h/wk
                             </span>
                           </div>
                           <p className="text-[11px] text-text-secondary">

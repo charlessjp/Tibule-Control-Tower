@@ -24,7 +24,9 @@ import {
   Sunset,
   Sparkles,
   Award,
-  ThumbsUp
+  ThumbsUp,
+  Lock,
+  AlertTriangle
 } from 'lucide-react';
 
 export const OperationalInspector: React.FC = () => {
@@ -51,7 +53,10 @@ export const OperationalInspector: React.FC = () => {
     overtimeLogs,
     acknowledgeOvertime,
     openLogOvertimeModal,
-    getUserOvertimeSummary
+    getUserOvertimeSummary,
+    deliveryImpactLogs,
+    openLogDeliveryImpactModal,
+    acknowledgeDeliveryImpact
   } = useApp();
 
   const isDark = theme === 'dark';
@@ -64,6 +69,15 @@ export const OperationalInspector: React.FC = () => {
   // Priority to Job inspection if a job is selected, else Employee
   const activeJob = jobs.find((j) => j.id === selectedJobId);
   const activeEmployee = users.find((u) => u.id === selectedEmployeeId);
+
+  const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
+  const isTraffic = currentUser.role === 'traffic_manager';
+  const canInspectActiveEmployee =
+    !activeEmployee ||
+    isGM ||
+    isTraffic ||
+    activeEmployee.id === currentUser.id ||
+    activeEmployee.teamId === currentUser.teamId;
 
   if (!activeJob && !activeEmployee) return null;
 
@@ -89,15 +103,22 @@ export const OperationalInspector: React.FC = () => {
   };
 
   return (
-    <aside
-      id="operational-inspector-panel"
-      className="w-full lg:w-96 shrink-0 border-l h-full flex flex-col z-30 transition-all duration-200 overflow-hidden"
-      style={{
-        backgroundColor: 'var(--color-surface)',
-        borderColor: 'var(--color-border)',
-        color: 'var(--color-text-primary)'
-      }}
-    >
+    <>
+      {/* Mobile/Tablet Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden"
+        onClick={handleClose}
+        aria-hidden="true"
+      />
+      <aside
+        id="operational-inspector-panel"
+        className="fixed inset-y-0 right-0 w-full sm:w-[420px] max-w-full h-full z-50 shadow-2xl flex flex-col transition-all duration-200 lg:static lg:w-96 lg:shadow-none lg:z-30 lg:h-full lg:shrink-0 lg:border-l overflow-hidden"
+        style={{
+          backgroundColor: 'var(--color-surface)',
+          borderColor: 'var(--color-border)',
+          color: 'var(--color-text-primary)'
+        }}
+      >
       {/* Inspector Top Bar */}
       <div
         className="p-4 border-b flex items-center justify-between"
@@ -173,14 +194,25 @@ export const OperationalInspector: React.FC = () => {
 
               {/* Blocker alert if active */}
               {activeJob.status === 'blocked' && (
-                <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-700 dark:text-purple-300 space-y-2">
+                <div
+                  className="p-3 rounded-lg border space-y-2"
+                  style={{
+                    backgroundColor: 'var(--color-critical-muted)',
+                    borderColor: 'color-mix(in srgb, var(--color-critical) 30%, transparent)',
+                    color: 'var(--color-critical)'
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <span className="font-bold flex items-center gap-1 uppercase tracking-wider text-[10px]">
                       <ShieldAlert className="w-3.5 h-3.5" /> Dependency Hold
                     </span>
                     <button
                       onClick={() => resolveBlocker(activeJob.id)}
-                      className="px-2 py-0.5 rounded bg-purple-600 hover:bg-purple-700 text-white font-semibold text-[10px] transition-colors"
+                      className="px-2 py-0.5 rounded font-semibold text-[10px] transition-opacity hover:opacity-90 cursor-pointer shadow-xs"
+                      style={{
+                        backgroundColor: 'var(--color-brand)',
+                        color: 'var(--color-brand-contrast)'
+                      }}
                     >
                       Unblock
                     </button>
@@ -193,8 +225,12 @@ export const OperationalInspector: React.FC = () => {
 
               {/* Inline Blocker Form */}
               {showBlockerInput && (
-                <form onSubmit={handleConfirmBlocker} className="p-3 rounded-lg bg-surface border border-rose-500/30 space-y-2">
-                  <span className="font-bold text-rose-500 text-[10px] uppercase">
+                <form
+                  onSubmit={handleConfirmBlocker}
+                  className="p-3 rounded-lg bg-surface border space-y-2"
+                  style={{ borderColor: 'color-mix(in srgb, var(--color-critical) 30%, transparent)' }}
+                >
+                  <span className="font-bold text-[10px] uppercase" style={{ color: 'var(--color-critical)' }}>
                     Declare External Dependency Blocker
                   </span>
                   <input
@@ -209,13 +245,17 @@ export const OperationalInspector: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowBlockerInput(false)}
-                      className="px-2 py-1 text-[11px] text-text-tertiary"
+                      className="px-2 py-1 text-[11px] text-text-tertiary cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-2.5 py-1 rounded bg-rose-600 text-white text-[11px] font-semibold"
+                      className="px-2.5 py-1 rounded text-[11px] font-semibold cursor-pointer shadow-xs"
+                      style={{
+                        backgroundColor: 'var(--color-critical)',
+                        color: 'white'
+                      }}
                     >
                       Apply Hold
                     </button>
@@ -256,12 +296,19 @@ export const OperationalInspector: React.FC = () => {
 
               {/* Client Revert Alert in Inspector */}
               {activeJob.clientRevertInfo && (
-                <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-[11px] space-y-1">
-                  <div className="flex items-center justify-between font-bold text-rose-500">
+                <div
+                  className="p-2.5 rounded-lg border text-[11px] space-y-1"
+                  style={{
+                    backgroundColor: 'var(--color-critical-muted)',
+                    borderColor: 'color-mix(in srgb, var(--color-critical) 30%, transparent)',
+                    color: 'var(--color-critical)'
+                  }}
+                >
+                  <div className="flex items-center justify-between font-bold" style={{ color: 'var(--color-critical)' }}>
                     <span>CLIENT REVERT #{activeJob.clientRevertInfo.revertCount}</span>
                     {activeJob.clientRevertInfo.conflictDetected && (
-                      <span className="px-1.5 py-0.2 rounded bg-rose-600 text-white text-[9px] uppercase font-bold">
-                        Conflict
+                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider opacity-90">
+                        · Conflict Active
                       </span>
                     )}
                   </div>
@@ -306,6 +353,68 @@ export const OperationalInspector: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {/* Delivery Impediments & Deadline Risks */}
+            {(() => {
+              const jobImpacts = deliveryImpactLogs.filter((l) => l.jobId === activeJob.id);
+
+              return (
+                <div className="p-3 rounded-xl border border-border/80 bg-surface-elevated/40 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[10px] text-text-tertiary">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Delivery Risks &amp; Impediments ({jobImpacts.length})</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openLogDeliveryImpactModal(activeJob.id)}
+                      className="px-2 py-0.5 rounded text-[10px] font-semibold border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors cursor-pointer"
+                    >
+                      + Log Risk
+                    </button>
+                  </div>
+
+                  {jobImpacts.length === 0 ? (
+                    <p className="text-[11px] text-text-tertiary">
+                      No delivery impediments recorded for this task. Staff or leads can log asset delays or scope creep.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {jobImpacts.map((imp) => (
+                        <div
+                          key={imp.id}
+                          className="p-2.5 rounded-lg bg-surface border border-border/70 space-y-1 text-[11px]"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-text-primary">
+                              {imp.loggedByName} ({imp.loggedBySeniority || 'specialist'})
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                              +{imp.estimatedDelayHours || imp.estimatedDelayDays * 8}h extension ({imp.estimatedDelayDays}d)
+                            </span>
+                          </div>
+                          <p className="text-text-secondary leading-snug">
+                            {imp.impactDescription}
+                          </p>
+                          <div className="flex items-center justify-between text-[10px] text-text-tertiary pt-0.5">
+                            <span className="uppercase font-mono font-bold">{imp.status}</span>
+                            {imp.status === 'active' && (
+                              <button
+                                type="button"
+                                onClick={() => acknowledgeDeliveryImpact(imp.id)}
+                                className="text-blue-500 hover:underline cursor-pointer"
+                              >
+                                Acknowledge ➔
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Assignee Card */}
             <div className="p-3 rounded-xl bg-surface-elevated/50 border border-border/60 flex items-center justify-between">
@@ -357,24 +466,39 @@ export const OperationalInspector: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!commentInput.trim()}
-                  className="px-3 py-2 rounded-lg bg-brand-primary hover:bg-brand-primary-hover disabled:opacity-40 text-white font-semibold transition-colors"
+                  className="px-3 py-2 rounded-lg disabled:opacity-40 font-semibold transition-colors cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--color-brand)',
+                    color: 'var(--color-brand-contrast)'
+                  }}
                 >
                   <Send className="w-3.5 h-3.5" />
                 </button>
               </form>
             </div>
 
-            {/* Overtime & Good Books on this Task */}
-            <div className="p-3 rounded-xl bg-surface-elevated/70 border border-amber-500/30 space-y-2.5">
+            {/* Overtime & Strategic Recognition on this Task */}
+            <div
+              className="p-3 rounded-xl border space-y-2.5"
+              style={{
+                backgroundColor: 'var(--color-warning-muted)',
+                borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)'
+              }}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs font-bold text-text-primary">Task Overtime &amp; Good Books</span>
+                  <Clock className="w-4 h-4" style={{ color: 'var(--color-warning)' }} />
+                  <span className="text-xs font-bold text-text-primary">Task Overtime &amp; Strategic Recognition</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => openLogOvertimeModal(activeJob.id)}
-                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors cursor-pointer"
+                  className="px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--color-brand-muted)',
+                    borderColor: 'var(--color-brand)',
+                    color: 'var(--color-brand)'
+                  }}
                 >
                   + Log Overtime
                 </button>
@@ -391,7 +515,7 @@ export const OperationalInspector: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-text-primary">{log.userName}</span>
-                          <span className="font-mono text-[10px] font-bold text-amber-500">
+                          <span className="font-mono text-[10px] font-bold" style={{ color: 'var(--color-warning)' }}>
                             +{log.hoursLogged}h ({log.period === 'pre_9am' ? 'Pre-9 AM' : log.period === 'post_5pm' ? 'Post-5 PM' : 'Weekend'})
                           </span>
                         </div>
@@ -399,24 +523,29 @@ export const OperationalInspector: React.FC = () => {
                           &ldquo;{log.materialNote}&rdquo;
                         </p>
                         <div className="flex items-center justify-between pt-1 border-t border-border/40">
-                          <span className="text-[9px] font-mono text-emerald-500 font-bold">
-                            +{log.goodBooksPoints} Good Books pts
+                          <span className="text-[9px] font-mono font-bold" style={{ color: 'var(--color-success)' }}>
+                            +{log.recognitionPoints} Recognition pts
                           </span>
                           {log.status === 'pending_acknowledgment' ? (
                             (currentUser.role === 'general_manager' || currentUser.role.includes('manager') || currentUser.role === 'admin') ? (
                               <button
                                 type="button"
                                 onClick={() => acknowledgeOvertime(log.id)}
-                                className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                className="px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors border"
+                                style={{
+                                  backgroundColor: 'var(--color-success-muted)',
+                                  borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)',
+                                  color: 'var(--color-success)'
+                                }}
                               >
                                 <ThumbsUp className="w-3 h-3" />
-                                <span>Endorse to Good Books</span>
+                                <span>Endorse Recognition</span>
                               </button>
                             ) : (
                               <span className="text-[9px] text-text-tertiary font-mono">Pending Endorsement</span>
                             )
                           ) : (
-                            <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                            <span className="text-[9px] font-medium flex items-center gap-1" style={{ color: 'var(--color-success)' }}>
                               <CheckCircle2 className="w-3 h-3" />
                               <span>{log.status === 'acknowledged_by_gm' ? 'GM Endorsed' : 'Manager Endorsed'}</span>
                             </span>
@@ -436,6 +565,17 @@ export const OperationalInspector: React.FC = () => {
 
         {/* If Employee selected */}
         {activeEmployee && !activeJob && (
+          !canInspectActiveEmployee ? (
+            <div className="p-6 rounded-2xl border border-border bg-surface text-center space-y-3 mt-4">
+              <div className="w-10 h-10 rounded-xl bg-surface-elevated border border-border flex items-center justify-center mx-auto text-text-tertiary">
+                <Lock className="w-5 h-5" />
+              </div>
+              <h4 className="text-sm font-bold text-text-primary">Department Workload Restricted</h4>
+              <p className="text-xs text-text-tertiary max-w-xs mx-auto">
+                Discipline leads and team members can only inspect workloads and commitments of their own department. Cross-department capacity oversight belongs strictly to General Management and Studio Traffic.
+              </p>
+            </div>
+          ) : (
           <div className="space-y-5">
             <div>
               <div className="text-[10px] uppercase font-mono text-text-tertiary tracking-wider">
@@ -530,7 +670,7 @@ export const OperationalInspector: React.FC = () => {
               </div>
             </div>
 
-            {/* Overtime & Good Books Career Material */}
+            {/* Overtime & Strategic Recognition Career Context */}
             {(() => {
               const otSummary = getUserOvertimeSummary(activeEmployee.id);
               const isManagerOrGM =
@@ -541,19 +681,25 @@ export const OperationalInspector: React.FC = () => {
                 currentUser.role.includes('director');
 
               return (
-                <div className="p-3.5 rounded-xl bg-surface-elevated/70 border border-amber-500/30 space-y-3">
+                <div
+                  className="p-3.5 rounded-xl border space-y-3"
+                  style={{
+                    backgroundColor: 'var(--color-warning-muted)',
+                    borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)'
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Award className="w-4 h-4 text-amber-500" />
+                      <Award className="w-4 h-4" style={{ color: 'var(--color-warning)' }} />
                       <div>
-                        <div className="text-xs font-bold text-text-primary">Good Books · Overtime Material</div>
+                        <div className="text-xs font-bold text-text-primary">Strategic Recognition · Overtime Context</div>
                         <div className="text-[10px] text-text-tertiary font-mono">
                           Standard Workday: 9:00 AM – 5:00 PM
                         </div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                      +{otSummary.goodBooksPoints} pts
+                    <span className="text-xs font-mono font-bold tracking-wider" style={{ color: 'var(--color-warning)' }}>
+                      +{otSummary.recognitionPoints} Recognition pts
                     </span>
                   </div>
 
@@ -561,7 +707,7 @@ export const OperationalInspector: React.FC = () => {
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="p-2 rounded-lg bg-surface border border-border">
                       <div className="text-[9px] font-mono uppercase text-text-tertiary flex items-center justify-center gap-1">
-                        <Sunrise className="w-3 h-3 text-amber-500" />
+                        <Sunrise className="w-3 h-3" style={{ color: 'var(--color-warning)' }} />
                         <span>Pre-9 AM</span>
                       </div>
                       <div className="text-xs font-bold font-mono text-text-primary mt-0.5">
@@ -571,7 +717,7 @@ export const OperationalInspector: React.FC = () => {
 
                     <div className="p-2 rounded-lg bg-surface border border-border">
                       <div className="text-[9px] font-mono uppercase text-text-tertiary flex items-center justify-center gap-1">
-                        <Sunset className="w-3 h-3 text-indigo-500" />
+                        <Sunset className="w-3 h-3" style={{ color: 'var(--color-brand)' }} />
                         <span>Post-5 PM</span>
                       </div>
                       <div className="text-xs font-bold font-mono text-text-primary mt-0.5">
@@ -583,7 +729,7 @@ export const OperationalInspector: React.FC = () => {
                       <div className="text-[9px] font-mono uppercase text-text-tertiary">
                         Total OT
                       </div>
-                      <div className="text-xs font-bold font-mono text-amber-500 mt-0.5">
+                      <div className="text-xs font-bold font-mono mt-0.5" style={{ color: 'var(--color-warning)' }}>
                         {otSummary.totalHours}h
                       </div>
                     </div>
@@ -605,7 +751,7 @@ export const OperationalInspector: React.FC = () => {
                               <span className="font-semibold text-text-primary">
                                 [{log.jobId}] {log.jobTitle}
                               </span>
-                              <span className="font-mono text-[10px] font-bold text-amber-500">
+                              <span className="font-mono text-[10px] font-bold" style={{ color: 'var(--color-warning)' }}>
                                 {log.hoursLogged}h ({log.period === 'pre_9am' ? 'Pre-9 AM' : log.period === 'post_5pm' ? 'Post-5 PM' : 'Weekend'})
                               </span>
                             </div>
@@ -617,8 +763,8 @@ export const OperationalInspector: React.FC = () => {
                             </p>
 
                             <div className="flex items-center justify-between pt-1 border-t border-border/40">
-                              <span className="text-[9px] font-mono text-emerald-500 font-bold">
-                                +{log.goodBooksPoints} Good Books pts
+                              <span className="text-[9px] font-mono font-bold" style={{ color: 'var(--color-success)' }}>
+                                +{log.recognitionPoints} Recognition pts
                               </span>
 
                               {log.status === 'pending_acknowledgment' ? (
@@ -626,10 +772,15 @@ export const OperationalInspector: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => acknowledgeOvertime(log.id)}
-                                    className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                    className="px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors border"
+                                    style={{
+                                      backgroundColor: 'var(--color-success-muted)',
+                                      borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)',
+                                      color: 'var(--color-success)'
+                                    }}
                                   >
                                     <ThumbsUp className="w-3 h-3" />
-                                    <span>Endorse into Good Books</span>
+                                    <span>Endorse Recognition</span>
                                   </button>
                                 ) : (
                                   <span className="text-[9px] text-text-tertiary font-mono">
@@ -637,7 +788,7 @@ export const OperationalInspector: React.FC = () => {
                                   </span>
                                 )
                               ) : (
-                                <div className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                                <div className="text-[9px] font-medium flex items-center gap-1" style={{ color: 'var(--color-success)' }}>
                                   <CheckCircle2 className="w-3 h-3" />
                                   <span>
                                     {log.status === 'acknowledged_by_gm' ? 'GM Endorsed' : 'Manager Endorsed'}
@@ -659,6 +810,7 @@ export const OperationalInspector: React.FC = () => {
               );
             })()}
           </div>
+          )
         )}
       </div>
 
@@ -669,18 +821,23 @@ export const OperationalInspector: React.FC = () => {
             onClick={() => {
               updateJobStatus(activeJob.id, 'completed');
             }}
-            className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+            className="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90 shadow-xs cursor-pointer"
+            style={{
+              backgroundColor: 'var(--color-brand)',
+              color: 'var(--color-brand-contrast)'
+            }}
           >
             <CheckCircle2 className="w-4 h-4" />
             Mark Deliverable Completed
           </button>
         )}
-        {activeEmployee && !activeJob && (
+        {activeEmployee && !activeJob && canInspectActiveEmployee && (
           <button
             onClick={() => setShowBuildCaseModal(true)}
-            className="w-full py-2 rounded-xl text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+            className="w-full py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-opacity hover:opacity-90 shadow-xs cursor-pointer"
             style={{
-              backgroundColor: 'var(--color-brand)'
+              backgroundColor: 'var(--color-brand)',
+              color: 'var(--color-brand-contrast)'
             }}
           >
             <FileCheck className="w-4 h-4" />
@@ -689,5 +846,6 @@ export const OperationalInspector: React.FC = () => {
         )}
       </div>
     </aside>
+  </>
   );
 };

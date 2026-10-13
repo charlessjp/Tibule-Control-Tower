@@ -50,34 +50,23 @@ export const ExecutiveFooter: React.FC = () => {
       </div>
 
       {/* Center: Ergonomic Hotkeys Helper */}
-      <div className="hidden sm:flex items-center gap-2 text-[10px]">
+      <div className="hidden sm:flex items-center gap-3 text-[10px] font-mono text-text-tertiary">
         <span className="opacity-60">Hotkeys:</span>
-        <span
-          className="px-1.5 py-0.2 rounded border"
-          style={{ borderColor: 'var(--color-border-subtle)' }}
-        >
-          1-8 Views
-        </span>
+        <span className="opacity-70">1-8 Views</span>
         <button
           onClick={() => setIsPaletteModalOpen(true)}
-          className="px-1.5 py-0.2 rounded border hover:opacity-100 cursor-pointer transition-opacity"
-          style={{ borderColor: 'var(--color-border-subtle)', color: 'var(--color-brand)' }}
+          className="hover:underline cursor-pointer transition-opacity"
+          style={{ color: 'var(--color-brand)' }}
         >
-          T Palette ({currentPalette.name})
+          [T] Palette ({currentPalette.name})
         </button>
         <button
           onClick={() => setIsAnalystTipsOpen(true)}
-          className="px-1.5 py-0.2 rounded border hover:opacity-100 cursor-pointer transition-opacity"
-          style={{ borderColor: 'var(--color-border-subtle)' }}
+          className="hover:underline cursor-pointer transition-opacity opacity-75 hover:opacity-100"
         >
-          ? Reference &amp; Guidelines
+          [?] Guidelines
         </button>
-        <span
-          className="px-1.5 py-0.2 rounded border"
-          style={{ borderColor: 'var(--color-border-subtle)' }}
-        >
-          Ctrl+K Command
-        </span>
+        <span className="opacity-70">[Ctrl+K] Command</span>
       </div>
 
       {/* Right: Clock & Trace ID */}

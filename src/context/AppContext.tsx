@@ -16,10 +16,15 @@ import {
   SeniorityLevel,
   WorkflowStage,
   Priority,
+  Complexity,
   ClientRevertInfo,
+  SplitTimelineConfig,
   Brand,
   DebriefMaterial,
   DebriefMeetingInfo,
+  StrategyMeetingInfo,
+  ClientEmailDispatchInfo,
+  CreativeAlignmentSessionInfo,
   EmailAlertItem,
   EmailAlertType,
   DeliverableEscalationStage,
@@ -28,12 +33,40 @@ import {
   EfficiencyLeaderboardEntry,
   OvertimeLog,
   OvertimePeriod,
+  StrategicContribution,
+  ContributionCategory,
+  ContributionStatus,
+  ContributionClarification,
   OperationalEvent,
   WorkCycle,
   ReworkClassification,
   RevertCategory,
-  BlockerType
+  BlockerType,
+  ArchivedTaskRecord,
+  OneDriveSyncConfig,
+  OneDriveSyncBatch,
+  DeliveryImpactLog,
+  DeliveryImpactCategory,
+  DeliveryImpactSeverity,
+  EmployeeDisciplineAssignment,
+  CSDisciplineId,
+  CSAccountCommitment,
+  NSSProgressionDossier,
+  CSTimesheetEntry,
+  CSActiveTimer,
+  CSDiscrepancyAlert,
+  DiscrepancyStatus
 } from '../types';
+import {
+  INITIAL_DISCIPLINE_ASSIGNMENTS,
+  INITIAL_ACCOUNT_COMMITMENTS,
+  INITIAL_NSS_PROGRESSION_DOSSIERS
+} from '../data/clientServicesOperatingModel';
+import {
+  INITIAL_CS_TIMESHEET_ENTRIES,
+  INITIAL_CS_DISCREPANCY_ALERTS,
+  evaluateCSDiscrepancies
+} from '../data/clientServicesTimesheets';
 import { calculateUserCapacity } from '../utils/capacityEngine';
 import {
   evaluateDeliverableEscalation,
@@ -49,15 +82,24 @@ import {
   INITIAL_CASES,
   INITIAL_RECOGNITIONS,
   INITIAL_AUDIT_EVENTS,
-  INITIAL_OVERTIME_LOGS
+  INITIAL_OVERTIME_LOGS,
+  INITIAL_STRATEGIC_CONTRIBUTIONS,
+  INITIAL_DELIVERY_IMPACT_LOGS
 } from '../mockData';
 import { INITIAL_BRANDS } from '../data/brands';
+import { CalendarPeriodKey } from '../utils/calendarPeriodFilter';
+import {
+  INITIAL_ARCHIVED_TASKS,
+  INITIAL_ONEDRIVE_CONFIG,
+  INITIAL_SYNC_BATCHES
+} from '../data/historicTasksData';
 import {
   INITIAL_LEADERBOARD,
   INITIAL_REWARDS,
   INITIAL_EMAIL_ALERTS
 } from '../data/competitionData';
 import { PALETTES, DEFAULT_PALETTE_ID, PaletteScheme } from '../theme/palettes';
+import { getActiveOperationalLoadColors } from '../utils/chartColorUtils';
 import { buildClientRevertRecord } from '../utils/revertConflictEngine';
 import { getStandardTaskBenchmarkHours } from '../data/standardTasks';
 import {
@@ -123,6 +165,9 @@ interface AppContextType {
   isSidebarCollapsed: boolean;
   toggleSidebar: () => void;
   setIsSidebarCollapsed: (collapsed: boolean) => void;
+  isMobileSidebarOpen: boolean;
+  setIsMobileSidebarOpen: (open: boolean) => void;
+  toggleMobileSidebar: () => void;
   showOnboardingModal: boolean;
   setShowOnboardingModal: (show: boolean) => void;
   showBuildCaseModal: boolean;
@@ -141,7 +186,13 @@ interface AppContextType {
   resolveBlocker: (jobId: string) => void;
   addComment: (jobId: string, content: string) => void;
   createCase: (caseItem: Omit<ProgressionCase, 'id' | 'submissionDate'>) => void;
-  updateCaseStatus: (caseId: string, status: ProgressionCase['status'], decision?: ProgressionCase['decision'], notes?: string) => void;
+  updateCaseStatus: (
+    caseId: string,
+    status: ProgressionCase['status'],
+    decision?: ProgressionCase['decision'],
+    notes?: string,
+    extraUpdates?: Partial<ProgressionCase>
+  ) => void;
   grantRecognition: (rec: Omit<Recognition, 'id' | 'date'>) => void;
   createTeam: (name: string, description: string, managerId: string, color?: string) => void;
   inviteUser: (name: string, email: string, role: User['role'], teamId: string, jobTitle: string) => void;
@@ -181,7 +232,8 @@ interface AppContextType {
     jobId: string,
     decision: 'approved' | 'feedback',
     feedbackNotes: string,
-    revisedHours?: number
+    revisedHours?: number,
+    alignmentSession?: Partial<CreativeAlignmentSessionInfo>
   ) => void;
   clientServiceSendToClient: (jobId: string, clientContactEmail?: string) => void;
   clientSubmitRevert: (
@@ -196,12 +248,39 @@ interface AppContextType {
   resolveRevertConflict: (
     jobId: string,
     resolution: 'queued' | 'paused_current' | 'reassigned' | 'split_timeline',
-    targetAssigneeId?: string
+    targetAssigneeId?: string,
+    splitConfig?: SplitTimelineConfig
   ) => void;
   clientApproveDeliverable: (jobId: string) => void;
   // Ghanaian Agency Updated Workflow & Debrief Engine
   markDebriefReady: (jobId: string, material: DebriefMaterial) => void;
-  callDebriefMeeting: (jobId: string) => void;
+  callDebriefMeeting: (
+    jobId: string,
+    scheduledDate?: string,
+    invitedAttendeeIds?: string[],
+    discussionNotes?: string
+  ) => void;
+  completeDebriefMeeting: (
+    jobId: string,
+    discussionNotes: string,
+    prescribedHours: number,
+    rationale: string,
+    meetingInfo?: Partial<DebriefMeetingInfo>
+  ) => void;
+  completeStrategyMeeting: (
+    jobId: string,
+    strategyInfo: {
+      agreedCreativeAngle: string;
+      strategyNotes: string;
+      complexity: Complexity;
+      estimatedHours: number;
+      deliverablesBreakdownNotes?: string;
+    }
+  ) => void;
+  clientServiceDispatchViaEmail: (
+    jobId: string,
+    dispatchInfo: ClientEmailDispatchInfo
+  ) => void;
   completeDebriefAndAssign: (
     jobId: string,
     meetingInfo: DebriefMeetingInfo,
@@ -232,7 +311,45 @@ interface AppContextType {
   markAllNotificationsRead: () => void;
   deleteNotification: (id: string) => void;
   awardReward: (rewardData: Omit<EfficiencyReward, 'id'>) => void;
-  // Overtime & Good Books Engine
+  // Strategic Recognition & Verified Impact System
+  contributions: StrategicContribution[];
+  isLogContributionModalOpen: boolean;
+  setIsLogContributionModalOpen: (open: boolean) => void;
+  logContributionTargetJobId: string | null;
+  setLogContributionTargetJobId: (jobId: string | null) => void;
+  openLogContributionModal: (jobId?: string) => void;
+  closeLogContributionModal: () => void;
+  logContribution: (data: {
+    nomineeId?: string;
+    category: ContributionCategory;
+    title: string;
+    description: string;
+    impactStatement: string;
+    relatedJobId?: string;
+    taskId?: string;
+    workCycleId?: string;
+    contributionDate?: string;
+    timeContext?: StrategicContribution['timeContext'];
+    evidenceLinks?: string[];
+    evidenceAttachments?: string[];
+    attributes?: StrategicContribution['attributes'];
+  }) => void;
+  verifyContribution: (id: string, note?: string) => void;
+  requestClarification: (id: string, question: string) => void;
+  respondToClarification: (id: string, response: string) => void;
+  recogniseContribution: (id: string, recognitionNote?: string) => void;
+  declineContribution: (id: string, reason: string) => void;
+  reopenContribution: (id: string) => void;
+  getUserContributionSummary: (userId: string) => {
+    totalContributions: number;
+    byCategory: Record<ContributionCategory, number>;
+    verifiedCount: number;
+    recognisedCount: number;
+    clarificationCount: number;
+    exceptionalEffortHours: number;
+    contributions: StrategicContribution[];
+  };
+  // Overtime & Recognition Logging
   overtimeLogs: OvertimeLog[];
   isLogOvertimeModalOpen: boolean;
   setIsLogOvertimeModalOpen: (open: boolean) => void;
@@ -256,7 +373,7 @@ interface AppContextType {
     post5pmHours: number;
     weekendHours: number;
     count: number;
-    goodBooksPoints: number;
+    recognitionPoints: number;
     acknowledgedCount: number;
     logs: OvertimeLog[];
   };
@@ -267,6 +384,60 @@ interface AppContextType {
   setReportTargetUserId: (id: string | null) => void;
   openReportModal: (targetUserId?: string) => void;
   closeReportModal: () => void;
+  // Traffic Year-Long Task Archive & OneDrive Backup
+  archivedTasks: ArchivedTaskRecord[];
+  oneDriveConfig: OneDriveSyncConfig;
+  oneDriveSyncBatches: OneDriveSyncBatch[];
+  syncTaskToOneDrive: (taskId: string) => void;
+  syncQuarterToOneDrive: (quarter: string) => void;
+  updateOneDriveConfig: (config: Partial<OneDriveSyncConfig>) => void;
+  triggerFullOneDriveBackup: () => void;
+  // Home & Operational Calendar Period Filter across all levels & profiles
+  homeCalendarPeriod: CalendarPeriodKey;
+  setHomeCalendarPeriod: (period: CalendarPeriodKey) => void;
+  homeCustomDateRange: { startDate: string; endDate: string };
+  setHomeCustomDateRange: (range: { startDate: string; endDate: string }) => void;
+  // Staff & Lead Deadline Delivery Impact Logging
+  deliveryImpactLogs: DeliveryImpactLog[];
+  isLogDeliveryImpactModalOpen: boolean;
+  setIsLogDeliveryImpactModalOpen: (open: boolean) => void;
+  logDeliveryImpactTargetJobId: string | null;
+  setLogDeliveryImpactTargetJobId: (jobId: string | null) => void;
+  openLogDeliveryImpactModal: (jobId?: string) => void;
+  closeLogDeliveryImpactModal: () => void;
+  logDeliveryImpact: (log: Omit<DeliveryImpactLog, 'id' | 'createdAt' | 'status'>) => void;
+  acknowledgeDeliveryImpact: (logId: string, notes?: string) => void;
+  resolveDeliveryImpact: (logId: string, resolutionNotes?: string) => void;
+  grantDeadlineExtension: (logId: string, revisedDueDate: string) => void;
+  // Client Services Operating Model (The Two Dimensions & 9 Confirmed Disciplines)
+  disciplineAssignments: EmployeeDisciplineAssignment[];
+  assignEmployeeDiscipline: (assignment: Omit<EmployeeDisciplineAssignment, 'id'>) => void;
+  removeEmployeeDiscipline: (assignmentId: string) => void;
+  updateEmployeeDiscipline: (assignment: EmployeeDisciplineAssignment) => void;
+  accountCommitments: CSAccountCommitment[];
+  updateAccountCommitment: (commitment: CSAccountCommitment) => void;
+  nssProgressionDossiers: NSSProgressionDossier[];
+  updateNSSProgressionDossier: (dossier: NSSProgressionDossier) => void;
+  endorseNSSForPromotion: (employeeId: string, notes: string) => void;
+  // Client Services 40-Hour Capacity Baseline, Timesheets & Discrepancies
+  timesheetEntries: CSTimesheetEntry[];
+  activeTimer: CSActiveTimer | null;
+  discrepancyAlerts: CSDiscrepancyAlert[];
+  startTimer: (config: {
+    jobId: string;
+    jobTitle: string;
+    clientName: string;
+    disciplineId: CSDisciplineId | 'account_management' | 'general_operations';
+    description?: string;
+  }) => void;
+  stopTimer: (notes?: string) => CSTimesheetEntry | null;
+  cancelTimer: () => void;
+  updateActiveTimerElapsed: (seconds: number) => void;
+  logTimesheetEntry: (entry: Omit<CSTimesheetEntry, 'id' | 'loggedAt'>) => void;
+  updateTimesheetEntry: (entry: CSTimesheetEntry) => void;
+  deleteTimesheetEntry: (entryId: string) => void;
+  adjustTimesheetHours: (entryId: string, deltaHours: number) => void;
+  reconcileDiscrepancy: (alertId: string, auditNotes: string, newStatus?: DiscrepancyStatus) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -319,7 +490,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {}
   }, [operationalEvents]);
 
-  // Overtime & Good Books State
+  // Strategic Recognition: Contributions State
+  const [contributions, setContributions] = useState<StrategicContribution[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_strategic_contributions');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_STRATEGIC_CONTRIBUTIONS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_strategic_contributions', JSON.stringify(contributions));
+    } catch {}
+  }, [contributions]);
+
+  const [isLogContributionModalOpen, setIsLogContributionModalOpen] = useState<boolean>(false);
+  const [logContributionTargetJobId, setLogContributionTargetJobId] = useState<string | null>(null);
+
+  // Home Views & Profiles Global Date Filter
+  const [homeCalendarPeriod, setHomeCalendarPeriod] = useState<CalendarPeriodKey>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_home_calendar_period');
+      if (saved) return saved as CalendarPeriodKey;
+    } catch {}
+    return 'q4_2026';
+  });
+
+  const [homeCustomDateRange, setHomeCustomDateRange] = useState<{ startDate: string; endDate: string }>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_home_custom_date_range');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { startDate: '2026-10-01', endDate: '2026-10-31' };
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_home_calendar_period', homeCalendarPeriod);
+    } catch {}
+  }, [homeCalendarPeriod]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_home_custom_date_range', JSON.stringify(homeCustomDateRange));
+    } catch {}
+  }, [homeCustomDateRange]);
+
+  // Overtime & Recognition State (Sync)
   const [overtimeLogs, setOvertimeLogs] = useState<OvertimeLog[]>(() => {
     try {
       const saved = localStorage.getItem('tibule_overtime_logs');
@@ -330,6 +548,114 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [isLogOvertimeModalOpen, setIsLogOvertimeModalOpen] = useState<boolean>(false);
   const [logOvertimeTargetJobId, setLogOvertimeTargetJobId] = useState<string | null>(null);
+
+  // Traffic Year-Long Task Archive & OneDrive Backup State
+  const [archivedTasks, setArchivedTasks] = useState<ArchivedTaskRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_archived_tasks');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_ARCHIVED_TASKS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_archived_tasks', JSON.stringify(archivedTasks));
+    } catch {}
+  }, [archivedTasks]);
+
+  const [oneDriveConfig, setOneDriveConfig] = useState<OneDriveSyncConfig>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_onedrive_config');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_ONEDRIVE_CONFIG;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_onedrive_config', JSON.stringify(oneDriveConfig));
+    } catch {}
+  }, [oneDriveConfig]);
+
+  const [oneDriveSyncBatches, setOneDriveSyncBatches] = useState<OneDriveSyncBatch[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_onedrive_batches');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_SYNC_BATCHES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_onedrive_batches', JSON.stringify(oneDriveSyncBatches));
+    } catch {}
+  }, [oneDriveSyncBatches]);
+
+  const syncTaskToOneDrive = useCallback((taskId: string) => {
+    const nowIso = new Date().toISOString();
+    setArchivedTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            oneDriveBackup: {
+              ...t.oneDriveBackup,
+              status: 'verified',
+              syncedAt: nowIso
+            }
+          };
+        }
+        return t;
+      })
+    );
+  }, []);
+
+  const syncQuarterToOneDrive = useCallback((quarter: string) => {
+    const nowIso = new Date().toISOString();
+    let updatedCount = 0;
+    setArchivedTasks((prev) =>
+      prev.map((t) => {
+        if (t.quarter === quarter || quarter === 'all') {
+          updatedCount++;
+          return {
+            ...t,
+            oneDriveBackup: {
+              ...t.oneDriveBackup,
+              status: 'verified',
+              syncedAt: nowIso
+            }
+          };
+        }
+        return t;
+      })
+    );
+    const newBatch: OneDriveSyncBatch = {
+      id: `BATCH-${Date.now().toString(36).toUpperCase()}`,
+      timestamp: nowIso,
+      recordsCount: updatedCount,
+      totalSizeMb: Math.round(updatedCount * 280),
+      targetFolder: `Historical_Archives/Manual_Sync_${quarter}`,
+      initiatedBy: 'Kwame Mensah (Traffic Lead)',
+      status: 'completed',
+      checksumStatus: 'verified',
+      manifestFilename: `manifest_${quarter.toLowerCase()}_${Date.now()}.json`
+    };
+    setOneDriveSyncBatches((prev) => [newBatch, ...prev]);
+    setOneDriveConfig((prev) => ({
+      ...prev,
+      lastSuccessfulSync: nowIso,
+      totalRecordsBackedUp: prev.totalRecordsBackedUp + updatedCount
+    }));
+  }, []);
+
+  const updateOneDriveConfig = useCallback((config: Partial<OneDriveSyncConfig>) => {
+    setOneDriveConfig((prev) => ({ ...prev, ...config }));
+  }, []);
+
+  const triggerFullOneDriveBackup = useCallback(() => {
+    syncQuarterToOneDrive('all');
+  }, [syncQuarterToOneDrive]);
 
   // Performance PDF Report Modal State
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
@@ -344,6 +670,135 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsReportModalOpen(false);
     setReportTargetUserId(null);
   }, []);
+
+  // Staff & Lead Deadline Delivery Impact Logging State
+  const [deliveryImpactLogs, setDeliveryImpactLogs] = useState<DeliveryImpactLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_delivery_impact_logs');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_DELIVERY_IMPACT_LOGS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_delivery_impact_logs', JSON.stringify(deliveryImpactLogs));
+    } catch {}
+  }, [deliveryImpactLogs]);
+
+  const [isLogDeliveryImpactModalOpen, setIsLogDeliveryImpactModalOpen] = useState<boolean>(false);
+  const [logDeliveryImpactTargetJobId, setLogDeliveryImpactTargetJobId] = useState<string | null>(null);
+
+  const openLogDeliveryImpactModal = useCallback((jobId?: string) => {
+    setLogDeliveryImpactTargetJobId(jobId || null);
+    setIsLogDeliveryImpactModalOpen(true);
+  }, []);
+
+  const closeLogDeliveryImpactModal = useCallback(() => {
+    setIsLogDeliveryImpactModalOpen(false);
+    setLogDeliveryImpactTargetJobId(null);
+  }, []);
+
+  // Client Services Operating Model State (The Two Dimensions & 9 Confirmed Disciplines)
+  const [disciplineAssignments, setDisciplineAssignments] = useState<EmployeeDisciplineAssignment[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_cs_discipline_assignments');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_DISCIPLINE_ASSIGNMENTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_cs_discipline_assignments', JSON.stringify(disciplineAssignments));
+    } catch {}
+  }, [disciplineAssignments]);
+
+  const [accountCommitments, setAccountCommitments] = useState<CSAccountCommitment[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_cs_account_commitments');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_ACCOUNT_COMMITMENTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_cs_account_commitments', JSON.stringify(accountCommitments));
+    } catch {}
+  }, [accountCommitments]);
+
+  const [nssProgressionDossiers, setNssProgressionDossiers] = useState<NSSProgressionDossier[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_cs_nss_dossiers');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_NSS_PROGRESSION_DOSSIERS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_cs_nss_dossiers', JSON.stringify(nssProgressionDossiers));
+    } catch {}
+  }, [nssProgressionDossiers]);
+
+  // Client Services Timesheets & Discrepancies State
+  const [timesheetEntries, setTimesheetEntries] = useState<CSTimesheetEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_cs_timesheets');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_CS_TIMESHEET_ENTRIES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_cs_timesheets', JSON.stringify(timesheetEntries));
+    } catch {}
+  }, [timesheetEntries]);
+
+  const [activeTimer, setActiveTimer] = useState<CSActiveTimer | null>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_cs_active_timer');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+
+  useEffect(() => {
+    try {
+      if (activeTimer) {
+        localStorage.setItem('tibule_cs_active_timer', JSON.stringify(activeTimer));
+      } else {
+        localStorage.removeItem('tibule_cs_active_timer');
+      }
+    } catch {}
+  }, [activeTimer]);
+
+  // Active stopwatch ticker
+  useEffect(() => {
+    if (!activeTimer || !activeTimer.isRunning || !activeTimer.startTime) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - (activeTimer.startTime || now)) / 1000);
+      setActiveTimer((prev) => (prev && prev.isRunning ? { ...prev, elapsedSeconds: elapsed } : prev));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeTimer?.isRunning, activeTimer?.startTime]);
+
+  const [discrepancyAlerts, setDiscrepancyAlerts] = useState<CSDiscrepancyAlert[]>(() => {
+    try {
+      const saved = localStorage.getItem('tibule_cs_discrepancy_alerts');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_CS_DISCREPANCY_ALERTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tibule_cs_discrepancy_alerts', JSON.stringify(discrepancyAlerts));
+    } catch {}
+  }, [discrepancyAlerts]);
 
   useEffect(() => {
     try {
@@ -437,6 +892,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
+
   const toggleSidebar = useCallback(() => {
     setIsSidebarCollapsed((prev) => {
       const next = !prev;
@@ -445,6 +902,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch {}
       return next;
     });
+  }, []);
+
+  const toggleMobileSidebar = useCallback(() => {
+    setIsMobileSidebarOpen((prev) => !prev);
   }, []);
 
   const [showOnboardingModal, setShowOnboardingModal] = useState<boolean>(false);
@@ -499,6 +960,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     root.style.setProperty('--color-surface-elevated', pMode.bgSurfaceElevated);
     root.style.setProperty('--surface-muted', pMode.bgSurfaceMuted || pMode.bgBase);
     root.style.setProperty('--color-surface-muted', pMode.bgSurfaceMuted || pMode.bgBase);
+    root.style.setProperty('--color-surface-tertiary', pMode.bgSurfaceMuted || pMode.bgBase);
     root.style.setProperty('--surface-hover', pMode.bgSurfaceHover || pMode.bgSurfaceElevated);
     root.style.setProperty('--color-surface-hover', pMode.bgSurfaceHover || pMode.bgSurfaceElevated);
 
@@ -561,6 +1023,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     root.style.setProperty('--color-chart-4', pMode.charts[3]);
     root.style.setProperty('--chart-5', pMode.charts[4]);
     root.style.setProperty('--color-chart-5', pMode.charts[4]);
+
+    // Active Operational Load Metric Variables (distinct & anti-collision)
+    const opColors = getActiveOperationalLoadColors(activePaletteId, theme === 'dark');
+    root.style.setProperty('--color-load-conflicts', opColors.conflicts);
+    root.style.setProperty('--color-load-assignments', opColors.assignments);
+    root.style.setProperty('--color-load-debriefs', opColors.debriefs);
+    root.style.setProperty('--color-load-brief-intake', opColors.brief_intake);
+    root.style.setProperty('--color-load-production', opColors.production);
+    root.style.setProperty('--color-load-review', opColors.review);
 
     // Halo Lighting Rings
     root.style.setProperty('--color-halo-border', pMode.accentPrimary);
@@ -644,9 +1115,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             '3': 'agency_workflow',
             '4': 'master_table',
             '5': 'summary_matrix',
-            '6': 'executive_brief',
-            '7': 'visual_analytics',
-            '8': 'manager_tower'
+            '6': 'visual_analytics',
+            '7': 'manager_tower'
           };
         } else if (currentRole === 'traffic_manager') {
           viewMap = {
@@ -655,15 +1125,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             '3': 'master_table',
             '4': 'team_traffic',
             '5': 'all_work',
-            '6': 'manager_tower'
+            '6': 'visual_analytics',
+            '7': 'manager_tower'
           };
         } else if (currentRole === 'client_service') {
           viewMap = {
             '1': 'overview',
             '2': 'agency_workflow',
             '3': 'master_table',
-            '4': 'executive_brief',
-            '5': 'all_work',
+            '4': 'all_work',
+            '5': 'visual_analytics',
             '6': 'manager_tower'
           };
         } else if (currentRole === 'manager' || currentRole === 'director' || currentRole === 'team_lead') {
@@ -674,7 +1145,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             '4': 'master_table',
             '5': 'team_traffic',
             '6': 'all_work',
-            '7': 'manager_tower'
+            '7': 'visual_analytics',
+            '8': 'manager_tower'
           };
         } else {
           // Specialist / Production Employee
@@ -683,7 +1155,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             '2': 'my_work',
             '3': 'evidence',
             '4': 'cases',
-            '5': 'all_work'
+            '5': 'all_work',
+            '6': 'visual_analytics'
           };
         }
 
@@ -943,7 +1416,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     caseId: string,
     status: ProgressionCase['status'],
     decision?: ProgressionCase['decision'],
-    notes?: string
+    notes?: string,
+    extraUpdates?: Partial<ProgressionCase>
   ) => {
     setCases((prev) =>
       prev.map((c) => {
@@ -954,7 +1428,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             status,
             decision: decision || c.decision,
             decisionNotes: notes || c.decisionNotes,
-            decisionDate: decision ? new Date().toISOString() : c.decisionDate
+            decisionDate: decision ? new Date().toISOString() : c.decisionDate,
+            ...(extraUpdates || {})
           };
         }
         return c;
@@ -1047,6 +1522,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dueDate: string;
     estimatedHours?: number;
   }) => {
+    if (currentUser.role !== 'client_service') {
+      console.warn('Brief submission rejected: strictly restricted to Client Services role.');
+      return;
+    }
+
     const newId = `CT-${Math.floor(1865 + Math.random() * 800)}`;
     const baseHours = brief.estimatedHours || getStandardTaskBenchmarkHours(brief.standardTaskType, 'mid');
     
@@ -1105,7 +1585,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       summary: `Initial work cycle opened with ${baseHours}h standard benchmark`,
       impact: 'neutral'
     });
-  }, [logAuditEvent]);
+  }, [currentUser, logAuditEvent]);
 
   const trafficRouteBrief = useCallback((jobId: string, targetManagerId: string, notes?: string) => {
     const targetManager = users.find((u) => u.id === targetManagerId);
@@ -1242,12 +1722,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     jobId: string,
     decision: 'approved' | 'feedback',
     feedbackNotes: string,
-    revisedHours?: number
+    revisedHours?: number,
+    alignmentSession?: Partial<CreativeAlignmentSessionInfo>
   ) => {
     setJobs((prev) =>
       prev.map((job) => {
         if (job.id === jobId) {
           const currentCycleNum = job.activeCycleNumber || 1;
+          const targetAssignee = users.find((u) => u.id === job.assigneeId);
+
+          const fullAlignmentRecord: CreativeAlignmentSessionInfo = {
+            conductedAt: new Date().toISOString(),
+            leadReviewerId: currentUser.id,
+            leadReviewerName: currentUser.name,
+            leadReviewerRole: currentUser.jobTitle || 'Discipline Lead',
+            assigneeId: job.assigneeId || '',
+            assigneeName: targetAssignee?.name || 'Assigned Creative',
+            bouncedIdeas: alignmentSession?.bouncedIdeas || [],
+            verbalDiscussionSummary: alignmentSession?.verbalDiscussionSummary || feedbackNotes,
+            codifiedChanges: alignmentSession?.codifiedChanges || [],
+            additionalHours: decision === 'feedback' ? (revisedHours || 4) : undefined,
+            outcome: decision === 'approved' ? 'approved_to_client_services' : 'codified_revision_needed'
+          };
 
           if (decision === 'feedback') {
             const extraHours = revisedHours || 4;
@@ -1284,13 +1780,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 : c
             );
 
-            logAuditEvent('MANAGER_FEEDBACK_GIVEN', jobId, job.title, 'internal_review', 'in_production', `Manager requested revision: +${extraHours}h rework added`);
+            logAuditEvent('MANAGER_FEEDBACK_GIVEN', jobId, job.title, 'internal_review', 'in_production', `Lead & IC alignment session held. Codified revisions agreed (+${extraHours}h rework added)`);
             logOperationalEvent({
               eventType: 'cycle_started',
               jobId,
               jobTitle: job.title,
               cycleNumber: nextCycleNum,
-              summary: `Internal revision cycle #${nextCycleNum} initiated (+${extraHours}h rework)`,
+              summary: `Creative alignment revision cycle #${nextCycleNum} initiated (+${extraHours}h rework codified)`,
               impact: 'congested'
             });
 
@@ -1302,31 +1798,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               reworkEffortHours: (job.reworkEffortHours || 0) + extraHours,
               activeCycleNumber: nextCycleNum,
               workCycles: [...updatedCycles, newCycle],
-              feedbackHistory: [...(job.feedbackHistory || []), feedbackItem]
+              feedbackHistory: [...(job.feedbackHistory || []), feedbackItem],
+              creativeAlignmentSession: fullAlignmentRecord,
+              critiqueMeetingNotes: fullAlignmentRecord.verbalDiscussionSummary
             };
           } else {
             // Manager Approved -> Hand off to Client Service
-            logAuditEvent('MANAGER_APPROVED', jobId, job.title, 'internal_review', 'client_service_handoff', `Manager approved deliverable for client dispatch`);
+            logAuditEvent('MANAGER_APPROVED', jobId, job.title, 'internal_review', 'client_service_handoff', `Lead & IC alignment session completed. Creative work approved for client dispatch`);
             logOperationalEvent({
               eventType: 'quality_review_completed',
               jobId,
               jobTitle: job.title,
               cycleNumber: currentCycleNum,
-              summary: `Manager review passed successfully; ready for client delivery`,
+              summary: `Creative alignment review passed; ready for Client Services work email dispatch`,
               impact: 'neutral'
             });
 
             return {
               ...job,
               workflowStage: 'client_service_handoff',
-              status: 'in_review'
+              status: 'in_review',
+              creativeAlignmentSession: fullAlignmentRecord,
+              critiqueMeetingNotes: fullAlignmentRecord.verbalDiscussionSummary
             };
           }
         }
         return job;
       })
     );
-  }, [currentUser, logAuditEvent, logOperationalEvent]);
+  }, [currentUser, users, logAuditEvent, logOperationalEvent]);
 
   const clientServiceSendToClient = useCallback((jobId: string, clientContactEmail?: string) => {
     setJobs((prev) =>
@@ -1441,7 +1941,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const resolveRevertConflict = useCallback((
     jobId: string,
     resolution: 'queued' | 'paused_current' | 'reassigned' | 'split_timeline',
-    targetAssigneeId?: string
+    targetAssigneeId?: string,
+    splitConfig?: SplitTimelineConfig
   ) => {
     setJobs((prev) => {
       const targetJob = prev.find((j) => j.id === jobId);
@@ -1449,13 +1950,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const conflictingJobId = targetJob.clientRevertInfo.conflictingJobId;
 
+      const auditSummary = resolution === 'split_timeline'
+        ? `Traffic ${currentUser.name} resolved conflict via Dual-Track Time-Share: Extended Revert deadline by +${splitConfig?.revertDaysExtended || 2}d and Active Job [${conflictingJobId || 'current'}] by +${splitConfig?.activeJobDaysExtended || 2}d. Daily split: ${splitConfig?.revertDailyHours || 4}h revert / ${splitConfig?.activeJobDailyHours || 4}h active.`
+        : `Resolved using strategy: ${resolution}`;
+
       logAuditEvent(
         'REVERT_CONFLICT_RESOLVED',
         jobId,
         targetJob.title,
         'CONFLICT_DETECTED',
         resolution.toUpperCase(),
-        `Resolved using strategy: ${resolution}`
+        auditSummary
       );
 
       return prev.map((j) => {
@@ -1468,11 +1973,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         }
 
+        // Update conflicting active job if we chose 'split_timeline' (extend its timeline)
+        if (resolution === 'split_timeline' && j.id === conflictingJobId) {
+          const extensionDays = splitConfig?.activeJobDaysExtended || 2;
+          const currentDueDate = new Date(j.dueDate);
+          const newDueDate = splitConfig?.newActiveDueDate || new Date(currentDueDate.getTime() + extensionDays * 86400000).toISOString();
+          return {
+            ...j,
+            dueDate: newDueDate,
+            timelineShiftReason: `Timeline extended by +${extensionDays}d (due ${new Date(newDueDate).toLocaleDateString()}) due to dual-track time-share on revert [${targetJob.id}]`
+          };
+        }
+
         // Update target reverting job
         if (j.id === jobId) {
           const updatedRevert: ClientRevertInfo = {
             ...j.clientRevertInfo!,
+            conflictDetected: false,
             conflictResolution: resolution,
+            splitTimelineConfig: resolution === 'split_timeline' ? splitConfig : undefined,
             resolvedBy: currentUser.name,
             resolvedAt: new Date().toISOString()
           };
@@ -1483,7 +2002,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               assigneeId: targetAssigneeId,
               clientRevertInfo: updatedRevert,
               workflowStage: 'in_production',
-              status: 'in_progress'
+              status: 'in_progress',
+              isAtRisk: false
             };
           }
 
@@ -1492,13 +2012,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ...j,
               clientRevertInfo: updatedRevert,
               workflowStage: 'in_production',
-              status: 'in_progress'
+              status: 'in_progress',
+              isAtRisk: false
+            };
+          }
+
+          if (resolution === 'queued') {
+            return {
+              ...j,
+              clientRevertInfo: updatedRevert,
+              workflowStage: 'in_production',
+              status: 'assigned',
+              isAtRisk: false
+            };
+          }
+
+          if (resolution === 'split_timeline') {
+            const extensionDays = splitConfig?.revertDaysExtended || 2;
+            const currentDueDate = new Date(j.dueDate);
+            const newDueDate = splitConfig?.newRevertDueDate || new Date(currentDueDate.getTime() + extensionDays * 86400000).toISOString();
+            return {
+              ...j,
+              dueDate: newDueDate,
+              timelineShiftReason: `Timeline extended by +${extensionDays}d (due ${new Date(newDueDate).toLocaleDateString()}) for dual-track time-share`,
+              clientRevertInfo: updatedRevert,
+              workflowStage: 'in_production',
+              status: 'in_progress',
+              isAtRisk: false
             };
           }
 
           return {
             ...j,
-            clientRevertInfo: updatedRevert
+            clientRevertInfo: updatedRevert,
+            workflowStage: 'in_production',
+            status: 'in_progress',
+            isAtRisk: false
           };
         }
 
@@ -1883,12 +2432,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     sendEmailAlert(jobId, 'debrief_ready', 'usr-kwame-mensah');
   }, [logAuditEvent, sendEmailAlert]);
 
-  const callDebriefMeeting = useCallback((jobId: string) => {
+  const callDebriefMeeting = useCallback((
+    jobId: string,
+    scheduledDate?: string,
+    invitedAttendeeIds?: string[],
+    discussionNotes?: string
+  ) => {
     setJobs((prev) =>
       prev.map((job) => {
         if (job.id === jobId) {
+          // Identify compulsory CS submitter
+          const csSubmitter = users.find((u) => u.name === job.debriefMaterial?.preparedByName || u.id === job.debriefMaterial?.preparedBy) ||
+            users.find((u) => u.role === 'client_service') ||
+            users[0];
+
+          // Creative Director / Lead
+          const cdLead = users.find((u) => u.role === 'director' || u.role === 'manager') || users[0];
+
+          // Creative staff invited
+          const staffIds = invitedAttendeeIds && invitedAttendeeIds.length > 0
+            ? invitedAttendeeIds
+            : ['usr-amara-okafor', 'usr-kofi-mensah'];
+
+          const attendeesList = [
+            {
+              userId: csSubmitter.id,
+              name: csSubmitter.name,
+              role: 'Client Services (Debrief Submitter)',
+              isCompulsory: true,
+              isPresent: true
+            },
+            {
+              userId: cdLead.id,
+              name: cdLead.name,
+              role: 'Creative Director / Lead',
+              isCompulsory: true,
+              isPresent: true
+            },
+            ...staffIds.filter((id) => id !== csSubmitter.id && id !== cdLead.id).map((id) => {
+              const u = users.find((user) => user.id === id);
+              return {
+                userId: id,
+                name: u?.name || 'Creative Specialist',
+                role: u?.jobTitle || 'Creative Specialist',
+                isCompulsory: false,
+                isPresent: true
+              };
+            })
+          ];
+
+          const meetingInfo: DebriefMeetingInfo = {
+            scheduledDate: scheduledDate || new Date(Date.now() + 3600000 * 2).toISOString(),
+            status: 'scheduled',
+            calledByRole: (currentUser.role === 'director' || currentUser.role === 'manager') ? 'creative_director' : 'traffic_manager',
+            calledByUserId: currentUser.id,
+            calledByName: currentUser.name,
+            compulsoryCsSubmitterId: csSubmitter.id,
+            compulsoryCsSubmitterName: csSubmitter.name,
+            calendarEventScheduled: true,
+            calendarEventTitle: `Team Debrief: ${job.title}`,
+            calendarEventTime: scheduledDate || 'Today at 2:00 PM',
+            attendees: attendeesList,
+            discussionNotes: discussionNotes || `Debrief convened with Client Service (${csSubmitter.name}) and called creative staff.`,
+            creativeDirectorOrManagerId: cdLead.id,
+            prescribedHours: job.estimatedHours || 16,
+            prescribedHoursRationale: 'Prescribed during debrief alignment.',
+            teamUnderstandsTask: true
+          };
+
           return {
             ...job,
+            debriefMeeting: meetingInfo,
             workflowStage: 'debrief_meeting'
           };
         }
@@ -1902,9 +2516,153 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       'Debrief Meeting',
       'debrief_ready',
       'debrief_meeting',
-      `Traffic Manager convened debrief meeting with brand squad, Client Service, and Creative Director/Manager.`
+      `${currentUser.name} called debrief meeting. Added compulsory Client Services submitter and invited creative staff. Calendar event dispatched.`
     );
-  }, [logAuditEvent]);
+  }, [users, currentUser, logAuditEvent]);
+
+  const completeDebriefMeeting = useCallback((
+    jobId: string,
+    discussionNotes: string,
+    prescribedHours: number,
+    rationale: string,
+    meetingInfoPartial?: Partial<DebriefMeetingInfo>
+  ) => {
+    setJobs((prev) =>
+      prev.map((job) => {
+        if (job.id === jobId) {
+          const currentMeeting = job.debriefMeeting || {
+            scheduledDate: new Date().toISOString(),
+            status: 'completed',
+            calledByRole: 'traffic_manager',
+            attendees: [],
+            discussionNotes,
+            creativeDirectorOrManagerId: currentUser.id,
+            prescribedHours,
+            prescribedHoursRationale: rationale,
+            teamUnderstandsTask: true
+          };
+
+          const updatedMeeting: DebriefMeetingInfo = {
+            ...currentMeeting,
+            ...meetingInfoPartial,
+            discussionNotes,
+            prescribedHours,
+            prescribedHoursRationale: rationale,
+            status: 'completed',
+            completedAt: new Date().toISOString()
+          };
+
+          return {
+            ...job,
+            debriefMeeting: updatedMeeting,
+            estimatedHours: prescribedHours,
+            workflowStage: 'creative_brainstorm' // Transitions to Strategy & Brainstorming stage!
+          };
+        }
+        return job;
+      })
+    );
+
+    logAuditEvent(
+      'DEBRIEF_COMPLETED_ADVANCED_TO_BRAINSTORM',
+      jobId,
+      'Debrief Alignment',
+      'debrief_meeting',
+      'creative_brainstorm',
+      `Debrief complete. Scope codified (${prescribedHours}h). Advancing to Strategy & Brainstorming session.`
+    );
+  }, [currentUser, logAuditEvent]);
+
+  const completeStrategyMeeting = useCallback((
+    jobId: string,
+    strategyInfo: {
+      agreedCreativeAngle: string;
+      strategyNotes: string;
+      complexity: Complexity;
+      estimatedHours: number;
+      deliverablesBreakdownNotes?: string;
+    }
+  ) => {
+    setJobs((prev) =>
+      prev.map((job) => {
+        if (job.id === jobId) {
+          const strategyRecord: StrategyMeetingInfo = {
+            scheduledDate: new Date().toISOString(),
+            status: 'completed',
+            facilitatorId: currentUser.id,
+            facilitatorName: currentUser.name,
+            compulsoryCsSubmitterId: job.debriefMeeting?.compulsoryCsSubmitterId,
+            compulsoryCsSubmitterName: job.debriefMeeting?.compulsoryCsSubmitterName,
+            calendarEventScheduled: true,
+            calendarEventTime: 'Completed Today',
+            attendees: job.debriefMeeting?.attendees || [],
+            strategyNotes: strategyInfo.strategyNotes,
+            agreedCreativeAngle: strategyInfo.agreedCreativeAngle,
+            deliverablesBreakdownNotes: strategyInfo.deliverablesBreakdownNotes,
+            taskComplexityConfirmed: strategyInfo.complexity,
+            estimatedEffortHours: strategyInfo.estimatedHours,
+            completedAt: new Date().toISOString(),
+            completedBy: currentUser.name
+          };
+
+          return {
+            ...job,
+            strategyMeeting: strategyRecord,
+            complexity: strategyInfo.complexity,
+            estimatedHours: strategyInfo.estimatedHours,
+            workflowStage: 'traffic_assignment' // Transitions to Traffic Staff Allocation!
+          };
+        }
+        return job;
+      })
+    );
+
+    logAuditEvent(
+      'CREATIVE_STRATEGY_COMPLETED',
+      jobId,
+      'Strategy & Brainstorm',
+      'creative_brainstorm',
+      'traffic_assignment',
+      `Strategy & Brainstorm session completed. Angle: "${strategyInfo.agreedCreativeAngle.slice(0, 50)}...". Advancing to Staff Allocation.`
+    );
+  }, [currentUser, logAuditEvent]);
+
+  const clientServiceDispatchViaEmail = useCallback((
+    jobId: string,
+    dispatchInfo: ClientEmailDispatchInfo
+  ) => {
+    setJobs((prev) =>
+      prev.map((job) => {
+        if (job.id === jobId) {
+          logAuditEvent(
+            'SENT_TO_CLIENT_VIA_WORK_EMAIL',
+            jobId,
+            job.title,
+            'client_service_handoff',
+            'client_review',
+            `Client Service (${dispatchInfo.senderName}) dispatched deliverable to client (${dispatchInfo.recipientEmail}) via work email. Subject: "${dispatchInfo.subject}". Materials: ${dispatchInfo.materialsIncluded.join(', ')}`
+          );
+
+          logOperationalEvent({
+            eventType: 'client_submitted',
+            jobId,
+            jobTitle: job.title,
+            cycleNumber: job.activeCycleNumber || 1,
+            summary: `Dispatched to client via work email (${dispatchInfo.recipientEmail})`,
+            impact: 'neutral'
+          });
+
+          return {
+            ...job,
+            clientEmailDispatch: dispatchInfo,
+            workflowStage: 'client_review',
+            status: 'in_review'
+          };
+        }
+        return job;
+      })
+    );
+  }, [logAuditEvent, logOperationalEvent]);
 
   const completeDebriefAndAssign = useCallback((
     jobId: string,
@@ -2016,16 +2774,347 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [logAuditEvent]);
 
-  // Overtime & Good Books Methods
-  const openLogOvertimeModal = useCallback((jobId?: string) => {
-    setLogOvertimeTargetJobId(jobId || null);
-    setIsLogOvertimeModalOpen(true);
+  // Strategic Recognition & Verified Impact Methods
+  const openLogContributionModal = useCallback((jobId?: string) => {
+    setLogContributionTargetJobId(jobId || null);
+    setIsLogContributionModalOpen(true);
   }, []);
 
-  const closeLogOvertimeModal = useCallback(() => {
-    setIsLogOvertimeModalOpen(false);
-    setLogOvertimeTargetJobId(null);
+  const closeLogContributionModal = useCallback(() => {
+    setIsLogContributionModalOpen(false);
+    setLogContributionTargetJobId(null);
   }, []);
+
+  const logContribution = useCallback((data: {
+    nomineeId?: string;
+    category: ContributionCategory;
+    title: string;
+    description: string;
+    impactStatement: string;
+    relatedJobId?: string;
+    taskId?: string;
+    workCycleId?: string;
+    contributionDate?: string;
+    timeContext?: StrategicContribution['timeContext'];
+    evidenceLinks?: string[];
+    evidenceAttachments?: string[];
+    attributes?: StrategicContribution['attributes'];
+  }) => {
+    const targetJob = jobs.find((j) => j.id === data.relatedJobId);
+    const dateStr = data.contributionDate || new Date().toISOString().split('T')[0];
+
+    const nominee = data.nomineeId ? users.find((u) => u.id === data.nomineeId) || currentUser : currentUser;
+    const isNomination = nominee.id !== currentUser.id;
+    const isManagerOrLead =
+      currentUser.role === 'manager' ||
+      currentUser.role === 'director' ||
+      currentUser.role === 'team_lead' ||
+      currentUser.role === 'general_manager' ||
+      currentUser.role === 'admin';
+
+    const newContrib: StrategicContribution = {
+      id: `contrib-${Date.now()}`,
+      employeeId: nominee.id,
+      employeeName: nominee.name,
+      employeeRole: nominee.role,
+      department: nominee.department,
+      category: data.category,
+      title: data.title,
+      description: data.description,
+      impactStatement: data.impactStatement,
+      relatedJobId: data.relatedJobId,
+      relatedJobTitle: targetJob?.title,
+      brandName: targetJob?.brandName || targetJob?.requestor,
+      taskId: data.taskId,
+      workCycleId: data.workCycleId,
+      contributionDate: dateStr,
+      timeContext: data.timeContext,
+      evidenceLinks: data.evidenceLinks,
+      evidenceAttachments: data.evidenceAttachments,
+      status: isManagerOrLead && isNomination ? 'VERIFIED' : 'SUBMITTED',
+      verifiedAt: isManagerOrLead && isNomination ? new Date().toISOString() : undefined,
+      verifiedBy: isManagerOrLead && isNomination ? currentUser.id : undefined,
+      verifiedByName: isManagerOrLead && isNomination ? currentUser.name : undefined,
+      submittedAt: new Date().toISOString(),
+      attributes: {
+        ...data.attributes,
+        urgencyContext: isNomination
+          ? `Endorsed/Nominated by ${currentUser.name} (${currentUser.jobTitle})`
+          : data.attributes?.urgencyContext
+      }
+    };
+
+    setContributions((prev) => [newContrib, ...prev]);
+
+    // If Exceptional Effort with hours, synchronize actual hours on the job if applicable
+    if (data.category === 'exceptional_effort' && data.timeContext?.durationHours && targetJob) {
+      setJobs((prev) =>
+        prev.map((j) => {
+          if (j.id === data.relatedJobId) {
+            return {
+              ...j,
+              actualHours: (j.actualHours || 0) + (data.timeContext?.durationHours || 0)
+            };
+          }
+          return j;
+        })
+      );
+    }
+
+    logAuditEvent(
+      'CONTRIBUTION_LOGGED',
+      data.relatedJobId || nominee.id,
+      data.title,
+      undefined,
+      data.category.replace('_', ' ').toUpperCase(),
+      isNomination
+        ? `${currentUser.name} submitted strategic recognition nomination for ${nominee.name} [${data.category.replace('_', ' ')}]: "${data.title}". Impact: "${data.impactStatement}"`
+        : `${currentUser.name} recorded verified contribution [${data.category.replace('_', ' ')}]: "${data.title}". Impact: "${data.impactStatement}"`
+    );
+
+    if (data.category === 'exceptional_effort' && data.timeContext?.durationHours) {
+      logAuditEvent(
+        'EXCEPTIONAL_EFFORT_RECORDED',
+        data.relatedJobId || nominee.id,
+        targetJob?.title || 'Operational Work',
+        undefined,
+        `${data.timeContext.durationHours} hrs`,
+        `Exceptional effort noted for ${nominee.name} (${data.timeContext.durationHours}h, ${data.timeContext.operatingContext.replace(/_/g, ' ')}). Context registered without overtime points.`
+      );
+    }
+
+    closeLogContributionModal();
+  }, [jobs, users, currentUser, logAuditEvent, closeLogContributionModal]);
+
+  const verifyContribution = useCallback((id: string, note?: string) => {
+    setContributions((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          return {
+            ...c,
+            status: 'VERIFIED',
+            verifiedAt: new Date().toISOString(),
+            verifiedBy: currentUser.id,
+            verifiedByName: currentUser.name,
+            recognitionNote: note || c.recognitionNote
+          };
+        }
+        return c;
+      })
+    );
+
+    const target = contributions.find((c) => c.id === id);
+    if (target) {
+      logAuditEvent(
+        'CONTRIBUTION_VERIFIED',
+        target.relatedJobId || target.employeeId,
+        target.title,
+        target.status,
+        'VERIFIED',
+        `${currentUser.name} (${currentUser.jobTitle}) verified ${target.employeeName}'s contribution [${target.category}]. ${note ? `Note: "${note}"` : ''}`
+      );
+    }
+  }, [currentUser, contributions, logAuditEvent]);
+
+  const requestClarification = useCallback((id: string, question: string) => {
+    const newClarification: ContributionClarification = {
+      id: `clr-${Date.now()}`,
+      requestedBy: currentUser.id,
+      requestedByName: currentUser.name,
+      requestedByRole: currentUser.jobTitle,
+      question,
+      requestedAt: new Date().toISOString()
+    };
+
+    setContributions((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          return {
+            ...c,
+            status: 'CLARIFICATION_REQUIRED',
+            clarifications: [newClarification, ...(c.clarifications || [])]
+          };
+        }
+        return c;
+      })
+    );
+
+    const target = contributions.find((c) => c.id === id);
+    if (target) {
+      logAuditEvent(
+        'CONTRIBUTION_CLARIFICATION_REQUESTED',
+        target.relatedJobId || target.employeeId,
+        target.title,
+        target.status,
+        'CLARIFICATION_REQUIRED',
+        `${currentUser.name} requested clarification on ${target.employeeName}'s contribution: "${question}"`
+      );
+    }
+  }, [currentUser, contributions, logAuditEvent]);
+
+  const respondToClarification = useCallback((id: string, response: string) => {
+    setContributions((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          const updatedClarifications = (c.clarifications || []).map((clr, idx) =>
+            idx === 0 ? { ...clr, response, respondedAt: new Date().toISOString() } : clr
+          );
+          return {
+            ...c,
+            status: 'SUBMITTED',
+            clarifications: updatedClarifications
+          };
+        }
+        return c;
+      })
+    );
+
+    const target = contributions.find((c) => c.id === id);
+    if (target) {
+      logAuditEvent(
+        'CONTRIBUTION_UPDATED',
+        target.relatedJobId || target.employeeId,
+        target.title,
+        'CLARIFICATION_REQUIRED',
+        'SUBMITTED',
+        `${currentUser.name} responded to contribution clarification: "${response}"`
+      );
+    }
+  }, [currentUser, contributions, logAuditEvent]);
+
+  const recogniseContribution = useCallback((id: string, recognitionNote?: string) => {
+    setContributions((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          return {
+            ...c,
+            status: 'RECOGNISED',
+            recognisedAt: new Date().toISOString(),
+            recognisedBy: currentUser.id,
+            recognisedByName: currentUser.name,
+            recognitionNote: recognitionNote || c.recognitionNote
+          };
+        }
+        return c;
+      })
+    );
+
+    const target = contributions.find((c) => c.id === id);
+    if (target) {
+      logAuditEvent(
+        'CONTRIBUTION_RECOGNISED',
+        target.relatedJobId || target.employeeId,
+        target.title,
+        target.status,
+        'RECOGNISED',
+        `${currentUser.name} formally recognised ${target.employeeName}'s contribution [${target.category}]. Commendation: "${recognitionNote || 'Excellence in agency contribution'}"`
+      );
+    }
+  }, [currentUser, contributions, logAuditEvent]);
+
+  const declineContribution = useCallback((id: string, reason: string) => {
+    setContributions((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          return {
+            ...c,
+            status: 'DECLINED',
+            declineReason: reason
+          };
+        }
+        return c;
+      })
+    );
+
+    const target = contributions.find((c) => c.id === id);
+    if (target) {
+      logAuditEvent(
+        'CONTRIBUTION_DECLINED',
+        target.relatedJobId || target.employeeId,
+        target.title,
+        target.status,
+        'DECLINED',
+        `${currentUser.name} declined contribution for ${target.employeeName}. Reason: "${reason}"`
+      );
+    }
+  }, [currentUser, contributions, logAuditEvent]);
+
+  const reopenContribution = useCallback((id: string) => {
+    setContributions((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          return {
+            ...c,
+            status: 'SUBMITTED',
+            declineReason: undefined
+          };
+        }
+        return c;
+      })
+    );
+
+    const target = contributions.find((c) => c.id === id);
+    if (target) {
+      logAuditEvent(
+        'CONTRIBUTION_UPDATED',
+        target.relatedJobId || target.employeeId,
+        target.title,
+        target.status,
+        'SUBMITTED',
+        `${currentUser.name} reopened contribution for ${target.employeeName} for further executive review.`
+      );
+    }
+  }, [currentUser, contributions, logAuditEvent]);
+
+  const getUserContributionSummary = useCallback((userId: string) => {
+    const userContribs = contributions.filter((c) => c.employeeId === userId);
+    const byCategory: Record<ContributionCategory, number> = {
+      exceptional_delivery: 0,
+      client_impact: 0,
+      collaboration: 0,
+      craft_quality: 0,
+      process_improvement: 0,
+      operational_support: 0,
+      exceptional_effort: 0
+    };
+
+    let exceptionalEffortHours = 0;
+    let verifiedCount = 0;
+    let recognisedCount = 0;
+    let clarificationCount = 0;
+
+    userContribs.forEach((c) => {
+      byCategory[c.category] = (byCategory[c.category] || 0) + 1;
+      if (c.status === 'VERIFIED') verifiedCount++;
+      if (c.status === 'RECOGNISED') {
+        verifiedCount++;
+        recognisedCount++;
+      }
+      if (c.status === 'CLARIFICATION_REQUIRED') clarificationCount++;
+      if (c.category === 'exceptional_effort' && c.timeContext?.durationHours) {
+        exceptionalEffortHours += c.timeContext.durationHours;
+      }
+    });
+
+    return {
+      totalContributions: userContribs.length,
+      byCategory,
+      verifiedCount,
+      recognisedCount,
+      clarificationCount,
+      exceptionalEffortHours: Math.round(exceptionalEffortHours * 10) / 10,
+      contributions: userContribs
+    };
+  }, [contributions]);
+
+  // Backward-compatible Overtime & Strategic Recognition Methods (Aliased to contribution modal)
+  const openLogOvertimeModal = useCallback((jobId?: string) => {
+    openLogContributionModal(jobId);
+  }, [openLogContributionModal]);
+
+  const closeLogOvertimeModal = useCallback(() => {
+    closeLogContributionModal();
+  }, [closeLogContributionModal]);
 
   const logOvertime = useCallback((entry: {
     jobId: string;
@@ -2036,40 +3125,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     hoursLogged: number;
     materialNote: string;
   }) => {
-    const targetJob = jobs.find((j) => j.id === entry.jobId);
-    const periodMultiplier = entry.period === 'weekend_crunch' ? 1.5 : entry.period === 'pre_9am' ? 1.25 : 1.1;
-    const points = Math.round(entry.hoursLogged * 10 * periodMultiplier);
+    logContribution({
+      category: 'exceptional_effort',
+      title: entry.materialNote.slice(0, 60),
+      description: entry.materialNote,
+      impactStatement: 'Contributed focused effort under operational urgency.',
+      relatedJobId: entry.jobId,
+      contributionDate: entry.date,
+      timeContext: {
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+        durationHours: entry.hoursLogged,
+        operatingContext: entry.period === 'weekend_crunch' ? 'weekend' : 'outside_standard_hours'
+      }
+    });
+  }, [logContribution]);
 
-    const newLog: OvertimeLog = {
-      id: `ot-${Date.now()}`,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userRole: currentUser.role,
-      department: currentUser.department,
-      jobId: entry.jobId,
-      jobTitle: targetJob?.title || 'Agency Deliverable',
-      brandName: targetJob?.brandName || targetJob?.requestor || 'Client Deliverable',
-      period: entry.period,
-      date: entry.date,
-      startTime: entry.startTime,
-      endTime: entry.endTime,
-      hoursLogged: entry.hoursLogged,
-      materialNote: entry.materialNote,
-      goodBooksPoints: points,
-      status: 'pending_acknowledgment',
+  const acknowledgeOvertime = useCallback((logId: string, note?: string) => {
+    const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
+    if (isGM) {
+      recogniseContribution(logId, note || 'Endorsed by General Manager into permanent recognition dossier.');
+    } else {
+      verifyContribution(logId, note || 'Verified by Studio Manager.');
+    }
+  }, [currentUser, verifyContribution, recogniseContribution]);
+
+  const getUserOvertimeSummary = useCallback((userId: string) => {
+    const summary = getUserContributionSummary(userId);
+    const pts = summary.verifiedCount * 10;
+    return {
+      totalHours: summary.exceptionalEffortHours,
+      pre9amHours: 0,
+      post5pmHours: summary.exceptionalEffortHours,
+      weekendHours: 0,
+      count: summary.totalContributions,
+      recognitionPoints: pts,
+      acknowledgedCount: summary.verifiedCount,
+      logs: overtimeLogs.filter(l => l.userId === userId)
+    };
+  }, [getUserContributionSummary, overtimeLogs]);
+
+  const logDeliveryImpact = useCallback((data: Omit<DeliveryImpactLog, 'id' | 'createdAt' | 'status'>) => {
+    const newId = `impact-${Date.now().toString().slice(-5)}`;
+    const newLog: DeliveryImpactLog = {
+      ...data,
+      id: newId,
+      status: 'active',
       createdAt: new Date().toISOString()
     };
 
-    setOvertimeLogs((prev) => [newLog, ...prev]);
+    setDeliveryImpactLogs((prev) => [newLog, ...prev]);
 
-    // Keep actual task hours synchronized
-    if (targetJob) {
-      setJobs((prev) =>
-        prev.map((j) => {
-          if (j.id === entry.jobId) {
+    // Update affected job if specified
+    if (data.jobId) {
+      setJobs((prevJobs) =>
+        prevJobs.map((j) => {
+          if (j.id === data.jobId) {
             return {
               ...j,
-              actualHours: (j.actualHours || 0) + entry.hoursLogged
+              isAtRisk: true,
+              timelineShiftReason: data.impactDescription,
+              latestDeliveryImpact: newLog,
+              deliveryImpactLogs: [newLog, ...(j.deliveryImpactLogs || [])]
             };
           }
           return j;
@@ -2077,71 +3194,347 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
     }
 
+    const delayHours = data.estimatedDelayHours || data.estimatedDelayDays * 8;
+
     logAuditEvent(
-      'OVERTIME_LOGGED',
-      entry.jobId,
-      targetJob?.title || 'Deliverable',
-      undefined,
-      `${entry.hoursLogged} hrs (${entry.period.replace('_', ' ')})`,
-      `${currentUser.name} logged ${entry.hoursLogged}h overtime [${entry.period.replace('_', ' ')}: ${entry.startTime} - ${entry.endTime}] on task ${entry.jobId}. Material contribution: "${entry.materialNote}". Added +${points} Good Books dedication points.`
+      'DELIVERY_IMPACT_LOGGED',
+      data.jobId || 'GENERAL',
+      data.jobTitle || 'Delivery Risk',
+      'ON_TRACK',
+      'AT_RISK',
+      `[${data.category.toUpperCase()}] +${delayHours}h extension requested (${data.estimatedDelayDays}d): ${data.impactDescription}`
     );
 
-    closeLogOvertimeModal();
-  }, [jobs, currentUser, logAuditEvent, closeLogOvertimeModal]);
+    logOperationalEvent({
+      eventType: 'delivery_impact_logged',
+      jobId: data.jobId || 'GENERAL',
+      jobTitle: data.jobTitle,
+      summary: `Delivery extension requested by ${currentUser.name} (+${delayHours}h / ${data.estimatedDelayDays}d): ${data.impactDescription}`,
+      impact: 'congested',
+      hoursImpact: delayHours
+    });
+  }, [currentUser, logAuditEvent, logOperationalEvent]);
 
-  const acknowledgeOvertime = useCallback((logId: string, note?: string) => {
-    const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
-    const newStatus = isGM ? 'acknowledged_by_gm' : 'acknowledged_by_manager';
-
-    setOvertimeLogs((prev) =>
-      prev.map((log) => {
-        if (log.id === logId) {
+  const acknowledgeDeliveryImpact = useCallback((logId: string, notes?: string) => {
+    setDeliveryImpactLogs((prev) =>
+      prev.map((item) => {
+        if (item.id === logId) {
           return {
-            ...log,
-            status: newStatus,
-            acknowledgedBy: currentUser.id,
-            acknowledgedByName: currentUser.name,
+            ...item,
+            status: 'acknowledged',
+            acknowledgedBy: currentUser.name,
             acknowledgedAt: new Date().toISOString(),
-            acknowledgmentNote: note || (isGM ? 'Endorsed by General Manager for Good Books dossier.' : 'Acknowledged by Studio Manager. Commended dedication.')
+            resolutionNotes: notes || item.resolutionNotes
           };
         }
-        return log;
+        return item;
       })
     );
 
-    const targetLog = overtimeLogs.find((l) => l.id === logId);
-    if (targetLog) {
-      logAuditEvent(
-        'OVERTIME_ACKNOWLEDGED',
-        targetLog.jobId,
-        targetLog.jobTitle,
-        targetLog.status,
-        newStatus,
-        `${currentUser.name} (${currentUser.jobTitle}) endorsed ${targetLog.userName}'s ${targetLog.hoursLogged}h overtime into the agency Good Books.`
+    logOperationalEvent({
+      eventType: 'delivery_impact_acknowledged',
+      jobId: 'GENERAL',
+      summary: `Delivery impediment risk acknowledged by ${currentUser.name}`,
+      impact: 'neutral'
+    });
+  }, [currentUser, logOperationalEvent]);
+
+  const resolveDeliveryImpact = useCallback((logId: string, resolutionNotes?: string) => {
+    setDeliveryImpactLogs((prev) =>
+      prev.map((item) => {
+        if (item.id === logId) {
+          return {
+            ...item,
+            status: 'resolved',
+            resolvedAt: new Date().toISOString(),
+            resolutionNotes: resolutionNotes || 'Resolved by lead/staff'
+          };
+        }
+        return item;
+      })
+    );
+
+    logOperationalEvent({
+      eventType: 'delivery_impact_resolved',
+      jobId: 'GENERAL',
+      summary: `Delivery impediment resolved by ${currentUser.name}: ${resolutionNotes || 'Cleared'}`,
+      impact: 'neutral'
+    });
+  }, [currentUser, logOperationalEvent]);
+
+  const grantDeadlineExtension = useCallback((logId: string, revisedDueDate: string) => {
+    const targetLog = deliveryImpactLogs.find((l) => l.id === logId);
+    if (!targetLog) return;
+
+    setDeliveryImpactLogs((prev) =>
+      prev.map((item) => {
+        if (item.id === logId) {
+          return {
+            ...item,
+            status: 'mitigated',
+            acknowledgedBy: currentUser.name,
+            acknowledgedAt: new Date().toISOString(),
+            resolutionNotes: `Deadline extended to ${new Date(revisedDueDate).toLocaleDateString()}`
+          };
+        }
+        return item;
+      })
+    );
+
+    if (targetLog.jobId) {
+      setJobs((prevJobs) =>
+        prevJobs.map((j) => {
+          if (j.id === targetLog.jobId) {
+            return {
+              ...j,
+              dueDate: revisedDueDate,
+              isAtRisk: false,
+              timelineShiftReason: `Approved extension: ${targetLog.impactDescription}`
+            };
+          }
+          return j;
+        })
       );
     }
-  }, [currentUser, overtimeLogs, logAuditEvent]);
 
-  const getUserOvertimeSummary = useCallback((userId: string) => {
-    const userLogs = overtimeLogs.filter((l) => l.userId === userId);
-    const totalHours = userLogs.reduce((sum, l) => sum + l.hoursLogged, 0);
-    const pre9amHours = userLogs.filter((l) => l.period === 'pre_9am').reduce((sum, l) => sum + l.hoursLogged, 0);
-    const post5pmHours = userLogs.filter((l) => l.period === 'post_5pm').reduce((sum, l) => sum + l.hoursLogged, 0);
-    const weekendHours = userLogs.filter((l) => l.period === 'weekend_crunch').reduce((sum, l) => sum + l.hoursLogged, 0);
-    const goodBooksPoints = userLogs.reduce((sum, l) => sum + l.goodBooksPoints, 0);
-    const acknowledgedCount = userLogs.filter((l) => l.status !== 'pending_acknowledgment').length;
+    logOperationalEvent({
+      eventType: 'deadline_changed',
+      jobId: targetLog.jobId || 'GENERAL',
+      jobTitle: targetLog.jobTitle,
+      summary: `Deadline officially extended to ${new Date(revisedDueDate).toLocaleDateString()} following impediment review`,
+      impact: 'neutral'
+    });
+  }, [deliveryImpactLogs, currentUser, logOperationalEvent]);
 
-    return {
-      totalHours: Math.round(totalHours * 10) / 10,
-      pre9amHours: Math.round(pre9amHours * 10) / 10,
-      post5pmHours: Math.round(post5pmHours * 10) / 10,
-      weekendHours: Math.round(weekendHours * 10) / 10,
-      count: userLogs.length,
-      goodBooksPoints,
-      acknowledgedCount,
-      logs: userLogs
+  // Client Services Operating Model Actions
+  const assignEmployeeDiscipline = useCallback((assignment: Omit<EmployeeDisciplineAssignment, 'id'>) => {
+    const newAssignment: EmployeeDisciplineAssignment = {
+      ...assignment,
+      id: `cda-${Date.now()}`
     };
-  }, [overtimeLogs]);
+    setDisciplineAssignments((prev) => [...prev, newAssignment]);
+    logAuditEvent(
+      'DISCIPLINE_ASSIGNED',
+      assignment.employeeId,
+      `Assigned to ${assignment.disciplineId}`,
+      'NONE',
+      assignment.proficiency,
+      `${currentUser.name} assigned functional discipline [${assignment.disciplineId}] to ${assignment.employeeName} (${assignment.weeklyExecutionHours}h/wk planned effort).`
+    );
+  }, [currentUser, logAuditEvent]);
+
+  const removeEmployeeDiscipline = useCallback((assignmentId: string) => {
+    setDisciplineAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
+  }, []);
+
+  const updateEmployeeDiscipline = useCallback((assignment: EmployeeDisciplineAssignment) => {
+    setDisciplineAssignments((prev) =>
+      prev.map((a) => (a.id === assignment.id ? assignment : a))
+    );
+  }, []);
+
+  const updateAccountCommitment = useCallback((commitment: CSAccountCommitment) => {
+    setAccountCommitments((prev) => {
+      const exists = prev.some((c) => c.id === commitment.id);
+      if (exists) {
+        return prev.map((c) => (c.id === commitment.id ? commitment : c));
+      }
+      return [...prev, commitment];
+    });
+  }, []);
+
+  const updateNSSProgressionDossier = useCallback((dossier: NSSProgressionDossier) => {
+    setNssProgressionDossiers((prev) =>
+      prev.map((d) => (d.employeeId === dossier.employeeId ? dossier : d))
+    );
+  }, []);
+
+  const endorseNSSForPromotion = useCallback((employeeId: string, notes: string) => {
+    setNssProgressionDossiers((prev) =>
+      prev.map((d) => {
+        if (d.employeeId === employeeId) {
+          return {
+            ...d,
+            status: 'endorsed_for_ae',
+            recommendation: 'ready_for_ae_promotion',
+            executiveSponsorNote: notes
+          };
+        }
+        return d;
+      })
+    );
+    const target = users.find((u) => u.id === employeeId);
+    if (target) {
+      logAuditEvent(
+        'NSS_PROMOTION_ENDORSED',
+        employeeId,
+        `Endorsement for AE: ${target.name}`,
+        'nss_intern',
+        'account_executive',
+        `${currentUser.name} endorsed ${target.name} for promotion to Account Executive based on verified readiness dossier: "${notes}"`
+      );
+    }
+  }, [users, currentUser, logAuditEvent]);
+
+  // Client Services Timesheet & Stopwatch Handlers
+  const startTimer = useCallback((config: {
+    jobId: string;
+    jobTitle: string;
+    clientName: string;
+    disciplineId: CSDisciplineId | 'account_management' | 'general_operations';
+    description?: string;
+  }) => {
+    setActiveTimer({
+      isRunning: true,
+      startTime: Date.now(),
+      jobId: config.jobId,
+      jobTitle: config.jobTitle,
+      clientName: config.clientName,
+      disciplineId: config.disciplineId,
+      description: config.description || '',
+      elapsedSeconds: 0,
+      userId: currentUser.id
+    });
+  }, [currentUser]);
+
+  const stopTimer = useCallback((notes?: string): CSTimesheetEntry | null => {
+    if (!activeTimer || !activeTimer.startTime) return null;
+    const now = Date.now();
+    const elapsedSeconds = Math.max(1, Math.floor((now - activeTimer.startTime) / 1000));
+    const hours = Math.max(0.1, Math.round((elapsedSeconds / 3600) * 10) / 10);
+    const today = new Date().toISOString().slice(0, 10);
+
+    const newEntry: CSTimesheetEntry = {
+      id: `cst-${Date.now()}`,
+      userId: activeTimer.userId || currentUser.id,
+      userName: currentUser.name,
+      userRole: currentUser.seniority || currentUser.jobTitle,
+      department: 'client_services',
+      jobId: activeTimer.jobId,
+      jobTitle: activeTimer.jobTitle,
+      clientName: activeTimer.clientName,
+      disciplineId: activeTimer.disciplineId,
+      date: today,
+      hours,
+      description: notes || activeTimer.description || 'Logged from live activity stopwatch',
+      isBillable: true,
+      loggedAt: new Date().toISOString(),
+      source: 'live_timer'
+    };
+
+    setTimesheetEntries((prev) => [newEntry, ...prev]);
+    setActiveTimer(null);
+
+    // Recheck discrepancies
+    setDiscrepancyAlerts((prevAlerts) => {
+      const generated = evaluateCSDiscrepancies(
+        [newEntry, ...timesheetEntries],
+        jobs,
+        users,
+        disciplineAssignments
+      );
+      const existingIds = new Set(prevAlerts.map((a) => a.id));
+      const newOnly = generated.filter((g) => !existingIds.has(g.id));
+      return [...prevAlerts, ...newOnly];
+    });
+
+    logAuditEvent(
+      'TIMESHEET_LOGGED_TIMER',
+      newEntry.id,
+      `${newEntry.jobTitle} (${hours}h)`,
+      'ACTIVE',
+      'COMMITTED',
+      `${currentUser.name} stopped active timer and logged ${hours}h for ${newEntry.jobTitle}.`
+    );
+
+    return newEntry;
+  }, [activeTimer, currentUser, timesheetEntries, jobs, users, disciplineAssignments, logAuditEvent]);
+
+  const cancelTimer = useCallback(() => {
+    setActiveTimer(null);
+  }, []);
+
+  const updateActiveTimerElapsed = useCallback((seconds: number) => {
+    setActiveTimer((prev) => (prev ? { ...prev, elapsedSeconds: seconds } : null));
+  }, []);
+
+  const logTimesheetEntry = useCallback((entry: Omit<CSTimesheetEntry, 'id' | 'loggedAt'>) => {
+    const newEntry: CSTimesheetEntry = {
+      ...entry,
+      id: `cst-${Date.now()}`,
+      loggedAt: new Date().toISOString()
+    };
+    setTimesheetEntries((prev) => [newEntry, ...prev]);
+
+    setDiscrepancyAlerts((prevAlerts) => {
+      const generated = evaluateCSDiscrepancies(
+        [newEntry, ...timesheetEntries],
+        jobs,
+        users,
+        disciplineAssignments
+      );
+      const existingIds = new Set(prevAlerts.map((a) => a.id));
+      const newOnly = generated.filter((g) => !existingIds.has(g.id));
+      return [...prevAlerts, ...newOnly];
+    });
+
+    logAuditEvent(
+      'TIMESHEET_LOGGED_MANUAL',
+      newEntry.id,
+      `${newEntry.jobTitle} (${newEntry.hours}h)`,
+      'NONE',
+      'LOGGED',
+      `${currentUser.name} manually logged ${newEntry.hours}h on ${newEntry.date} for ${newEntry.jobTitle}.`
+    );
+  }, [currentUser, timesheetEntries, jobs, users, disciplineAssignments, logAuditEvent]);
+
+  const updateTimesheetEntry = useCallback((entry: CSTimesheetEntry) => {
+    setTimesheetEntries((prev) =>
+      prev.map((e) => (e.id === entry.id ? entry : e))
+    );
+  }, []);
+
+  const deleteTimesheetEntry = useCallback((entryId: string) => {
+    setTimesheetEntries((prev) => prev.filter((e) => e.id !== entryId));
+  }, []);
+
+  const adjustTimesheetHours = useCallback((entryId: string, deltaHours: number) => {
+    setTimesheetEntries((prev) =>
+      prev.map((e) => {
+        if (e.id === entryId) {
+          const newHours = Math.max(0.25, Math.round((e.hours + deltaHours) * 10) / 10);
+          return { ...e, hours: newHours };
+        }
+        return e;
+      })
+    );
+  }, []);
+
+  const reconcileDiscrepancy = useCallback((alertId: string, auditNotes: string, newStatus: DiscrepancyStatus = 'reconciled') => {
+    setDiscrepancyAlerts((prev) =>
+      prev.map((a) => {
+        if (a.id === alertId) {
+          return {
+            ...a,
+            status: newStatus,
+            auditNotes,
+            reconciledBy: currentUser.id,
+            reconciledByName: currentUser.name,
+            reconciledAt: new Date().toISOString()
+          };
+        }
+        return a;
+      })
+    );
+    logAuditEvent(
+      'DISCREPANCY_RECONCILED',
+      alertId,
+      'Discrepancy Audit',
+      'flagged',
+      newStatus,
+      `${currentUser.name} audited and transitioned discrepancy status to [${newStatus}]: "${auditNotes}"`
+    );
+  }, [currentUser, logAuditEvent]);
 
   return (
     <AppContext.Provider
@@ -2198,6 +3591,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isSidebarCollapsed,
         toggleSidebar,
         setIsSidebarCollapsed,
+        isMobileSidebarOpen,
+        setIsMobileSidebarOpen,
+        toggleMobileSidebar,
         showOnboardingModal,
         setShowOnboardingModal,
         showBuildCaseModal,
@@ -2235,6 +3631,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clientApproveDeliverable,
         markDebriefReady,
         callDebriefMeeting,
+        completeDebriefMeeting,
+        completeStrategyMeeting,
+        clientServiceDispatchViaEmail,
         completeDebriefAndAssign,
         trafficAssignJob,
         sendEmailAlert,
@@ -2248,6 +3647,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markAllNotificationsRead,
         deleteNotification,
         awardReward,
+        // Strategic Recognition & Verified Impact System
+        contributions,
+        isLogContributionModalOpen,
+        setIsLogContributionModalOpen,
+        logContributionTargetJobId,
+        setLogContributionTargetJobId,
+        openLogContributionModal,
+        closeLogContributionModal,
+        logContribution,
+        verifyContribution,
+        requestClarification,
+        respondToClarification,
+        recogniseContribution,
+        declineContribution,
+        reopenContribution,
+        getUserContributionSummary,
+        // Overtime & Recognition Logging
         overtimeLogs,
         isLogOvertimeModalOpen,
         setIsLogOvertimeModalOpen,
@@ -2263,7 +3679,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reportTargetUserId,
         setReportTargetUserId,
         openReportModal,
-        closeReportModal
+        closeReportModal,
+        // Traffic Year-Long Task Archive & OneDrive Backup
+        archivedTasks,
+        oneDriveConfig,
+        oneDriveSyncBatches,
+        syncTaskToOneDrive,
+        syncQuarterToOneDrive,
+        updateOneDriveConfig,
+        triggerFullOneDriveBackup,
+        // Home Date Filter across all profiles
+        homeCalendarPeriod,
+        setHomeCalendarPeriod,
+        homeCustomDateRange,
+        setHomeCustomDateRange,
+        // Staff & Lead Deadline Delivery Impact Logging
+        deliveryImpactLogs,
+        isLogDeliveryImpactModalOpen,
+        setIsLogDeliveryImpactModalOpen,
+        logDeliveryImpactTargetJobId,
+        setLogDeliveryImpactTargetJobId,
+        openLogDeliveryImpactModal,
+        closeLogDeliveryImpactModal,
+        logDeliveryImpact,
+        acknowledgeDeliveryImpact,
+        resolveDeliveryImpact,
+        grantDeadlineExtension,
+        // Client Services Operating Model (The Two Dimensions & 9 Confirmed Disciplines)
+        disciplineAssignments,
+        assignEmployeeDiscipline,
+        removeEmployeeDiscipline,
+        updateEmployeeDiscipline,
+        accountCommitments,
+        updateAccountCommitment,
+        nssProgressionDossiers,
+        updateNSSProgressionDossier,
+        endorseNSSForPromotion,
+        // Client Services 40-Hour Capacity Baseline, Timesheets & Discrepancies
+        timesheetEntries,
+        activeTimer,
+        discrepancyAlerts,
+        startTimer,
+        stopTimer,
+        cancelTimer,
+        updateActiveTimerElapsed,
+        logTimesheetEntry,
+        updateTimesheetEntry,
+        deleteTimesheetEntry,
+        adjustTimesheetHours,
+        reconcileDiscrepancy
       }}
     >
       {children}

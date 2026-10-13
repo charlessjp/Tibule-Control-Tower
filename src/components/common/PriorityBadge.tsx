@@ -45,17 +45,17 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
   };
 
   const sizeClasses = {
-    xs: 'text-[10px] px-1.5 py-0.5 gap-1',
-    sm: 'text-[11px] px-2 py-0.5 gap-1.5',
-    md: 'text-xs px-2.5 py-1 gap-2'
+    xs: 'text-[10px] gap-1',
+    sm: 'text-[11px] gap-1.5',
+    md: 'text-xs gap-1.5'
   }[size];
 
   return (
     <span
-      className={`inline-flex items-center font-semibold rounded-md uppercase tracking-wider font-mono border ${getBadgeClass()} ${sizeClasses} ${className}`}
+      className={`inline-flex items-center font-bold uppercase tracking-wider font-mono ${getBadgeClass()} ${sizeClasses} ${className}`}
     >
       {showDot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${getDotClass()}`} />}
-      <span className="capitalize">{norm}</span>
+      <span>{norm}</span>
     </span>
   );
 };

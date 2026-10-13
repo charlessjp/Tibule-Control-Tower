@@ -16,7 +16,8 @@ import {
   AlertCircle,
   FolderGit2,
   X,
-  Lock
+  Lock,
+  AlertTriangle
 } from 'lucide-react';
 
 interface MyWorkViewProps {
@@ -32,11 +33,14 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
     selectedJobId,
     setSelectedJobId,
     createJob,
-    theme
+    theme,
+    openLogDeliveryImpactModal
   } = useApp();
 
   const isDark = theme === 'dark';
   const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
+  const isTraffic = currentUser.role === 'traffic_manager';
+  const canSeeAllStudioJobs = isGM || isTraffic;
   const userTeam = teams.find((t) => t.id === currentUser.teamId);
 
   const [viewMode, setViewMode] = useState<'list' | 'cards' | 'board'>('list');
@@ -66,8 +70,8 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
     } else if (filterMode === 'unassigned_queue') {
       list = jobs.filter((j) => j.status === 'unassigned' || !j.assigneeId);
     } else if (filterMode === 'all_work') {
-      // If user is a manager or non-GM, strictly lock to their team
-      if (!isGM) {
+      // General Manager and Traffic Manager can see across all teams; Discipline Leads are strictly locked to their team
+      if (!canSeeAllStudioJobs) {
         list = jobs.filter((j) => j.teamId === currentUser.teamId);
       } else if (selectedTeamFilter !== 'all') {
         list = jobs.filter((j) => j.teamId === selectedTeamFilter);
@@ -155,8 +159,10 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
           </h1>
           <p className="text-xs mt-1 text-text-tertiary">
             {filterMode === 'my_work'
-              ? 'Here is your active workload, project deadlines, and assigned responsibilities.'
-              : 'Browse, manage, and coordinate deliverables across your projects.'}
+              ? 'Track your active tasks, progress status, and upcoming deadlines across assigned deliverables.'
+              : filterMode === 'team_queue'
+              ? 'Manage and coordinate active deliverables queued across your team.'
+              : 'Search and inspect all project deliverables, deadlines, and assignees across the agency.'}
           </p>
         </div>
 
@@ -233,6 +239,15 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
               <span className="hidden sm:inline">Board</span>
             </button>
           </div>
+
+          <button
+            onClick={() => openLogDeliveryImpactModal()}
+            className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
+            title="Log an impediment, risk, or blocker threatening delivery deadlines"
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>Log Impediment</span>
+          </button>
 
           <button
             onClick={() => setShowCreateModal(true)}
@@ -340,9 +355,9 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
 
         {/* Dropdown Filters */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Team Filter: GM can filter by all/any team; Managers are locked to their own team */}
+          {/* Team Filter: GM & Traffic can filter by all/any team; Discipline leads are locked to their own team */}
           {filterMode === 'all_work' && (
-            isGM ? (
+            canSeeAllStudioJobs ? (
               <select
                 value={selectedTeamFilter}
                 onChange={(e) => setSelectedTeamFilter(e.target.value)}
@@ -368,12 +383,12 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
                   borderColor: 'var(--color-border)',
                   color: 'var(--color-text-secondary)'
                 }}
-                title="Your team view is strictly locked to your assigned team. Cross-team filtering belongs strictly to the General Manager."
+                title="Your team view is strictly locked to your assigned team. Cross-team filtering belongs strictly to General Management and Studio Traffic."
               >
                 <Lock className="w-3.5 h-3.5 text-text-tertiary" />
                 <span>Team: {userTeam?.name || 'Assigned Studio'}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded border text-text-tertiary bg-surface border-border font-normal">
-                  Locked
+                <span className="text-[10px] text-text-tertiary font-mono font-normal">
+                  · Locked
                 </span>
               </div>
             )
@@ -391,8 +406,8 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
             >
               <Lock className="w-3.5 h-3.5 text-text-tertiary" />
               <span>Team: {userTeam?.name || 'Assigned Studio'}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded border text-text-tertiary bg-surface border-border font-normal">
-                Locked
+              <span className="text-[10px] text-text-tertiary font-mono font-normal">
+                · Locked
               </span>
             </div>
           )}
@@ -511,13 +526,13 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
         </div>
       ) : (
         /* BOARD VIEW: Clean, friendly Kanban columns */
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="flex lg:grid lg:grid-cols-5 gap-4 overflow-x-auto pb-4 -mx-2 px-2 sm:mx-0 sm:px-0">
           {statusBoardColumns.map((col) => {
             const colJobs = scopedJobs.filter((j) => j.status === col.id);
             return (
               <div
                 key={col.id}
-                className="p-3.5 rounded-2xl border border-border bg-surface space-y-3 flex flex-col"
+                className="w-72 sm:w-80 lg:w-auto shrink-0 lg:shrink p-3.5 rounded-2xl border border-border bg-surface space-y-3 flex flex-col"
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between pb-2 border-b border-border">
@@ -530,8 +545,8 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
                       {col.label}
                     </h3>
                   </div>
-                  <span className="text-[11px] font-mono px-1.5 py-0.5 rounded-md border border-border bg-surface-elevated text-text-secondary">
-                    {colJobs.length}
+                  <span className="text-[11px] font-mono text-text-tertiary">
+                    ({colJobs.length})
                   </span>
                 </div>
 

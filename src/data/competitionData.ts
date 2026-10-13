@@ -87,6 +87,20 @@ export const INITIAL_REWARDS: EfficiencyReward[] = [
     awardedDate: '2026-08-10T14:15:00Z',
     badgeIcon: 'target',
     category: 'sharp_shooter'
+  },
+  {
+    id: 'rew-004',
+    employeeId: 'usr-kwame-mensah',
+    employeeName: 'Kwame Mensah',
+    employeeTitle: 'Studio Traffic Manager',
+    rewardTitle: 'Studio Operations Champion',
+    rewardDescription: 'Zero SLA dispatch breaches and maintained an 88% Studio Balance Index across all Q3 creative sprints with instant timeline conflict mediation.',
+    prize: 'GH₵ 2,000 Operational Excellence Bonus + Studio Commendation',
+    awardedBy: 'usr-marcus-sterling',
+    awardedByName: 'Marcus Sterling (GM)',
+    awardedDate: '2026-09-12T14:30:00Z',
+    badgeIcon: 'zap',
+    category: 'turnaround_titan'
   }
 ];
 

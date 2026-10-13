@@ -22,18 +22,28 @@ import {
 } from '../../utils/performanceReportEngine';
 import { ThemeModeTokens } from '../../theme/palettes';
 
-interface ReportScopeCalendarPickerProps {
+export interface ReportScopeCalendarPickerProps {
   value: ReportDateScope;
   onChange: (newScope: ReportDateScope) => void;
   activeTokens: ThemeModeTokens;
   referenceDate?: Date; // Default 2026-09-22
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  headerTitle?: string;
+  headerSubtitle?: string;
+  buttonClassName?: string;
 }
 
 export const ReportScopeCalendarPicker: React.FC<ReportScopeCalendarPickerProps> = ({
   value,
   onChange,
   activeTokens: propTokens,
-  referenceDate = new Date(2026, 8, 22) // Anchor to mock current date 2026-09-22
+  referenceDate = new Date(2026, 8, 22), // Anchor to mock current date 2026-09-22
+  isOpen: controlledIsOpen,
+  onOpenChange,
+  headerTitle,
+  headerSubtitle,
+  buttonClassName = ''
 }) => {
   // Normalize tokens so activeTokens.surface, activeTokens.surfaceElevated, and activeTokens.base resolve cleanly
   const activeTokens = useMemo(() => {
@@ -45,7 +55,13 @@ export const ReportScopeCalendarPicker: React.FC<ReportScopeCalendarPickerProps>
     };
   }, [propTokens]);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  const setIsOpen = (next: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof next === 'function' ? next(isOpen) : next;
+    if (onOpenChange) onOpenChange(nextVal);
+    setInternalIsOpen(nextVal);
+  };
   const containerRef = useRef<HTMLDivElement>(null);
   const [popoverShift, setPopoverShift] = useState<number>(0);
 
@@ -343,13 +359,13 @@ export const ReportScopeCalendarPicker: React.FC<ReportScopeCalendarPickerProps>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="group flex items-center gap-2.5 px-3.5 py-1.5 rounded-lg border text-xs font-medium transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none"
+        className={`group flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border text-xs font-medium transition-all shadow-2xs hover:shadow-xs cursor-pointer select-none ${buttonClassName}`}
         style={{
           borderColor: isOpen ? activeTokens.accentPrimary : activeTokens.border,
           backgroundColor: activeTokens.surfaceElevated,
           color: activeTokens.textPrimary
         }}
-        title="Click to change report timeframe scope (days, weeks, years, or custom calendar dates)"
+        title="Click to change timeframe scope (days, weeks, years, or custom calendar dates)"
       >
         <div
           className="w-5 h-5 rounded-md flex items-center justify-center transition-colors border"
@@ -385,7 +401,7 @@ export const ReportScopeCalendarPicker: React.FC<ReportScopeCalendarPickerProps>
         />
       </button>
 
-      {/* Clamped Popover Panel: Never stretches outside PDF review screen */}
+      {/* Clamped Popover Panel: Never stretches outside screen */}
       {isOpen && (
         <div
           className="absolute z-50 mt-2 w-[calc(100vw-2rem)] sm:w-[480px] md:w-[490px] max-w-[calc(100vw-2rem)] rounded-2xl border-2 shadow-2xl overflow-hidden backdrop-blur-md transition-all animate-in fade-in zoom-in-95 duration-150"
@@ -415,7 +431,7 @@ export const ReportScopeCalendarPicker: React.FC<ReportScopeCalendarPickerProps>
               </div>
               <div>
                 <h4 className="text-xs font-bold font-mono uppercase tracking-wider flex items-center gap-2">
-                  <span>Report Timeframe Scope</span>
+                  <span>{headerTitle || 'Report Timeframe Scope'}</span>
                   <span
                     className="text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold border"
                     style={{
@@ -428,7 +444,7 @@ export const ReportScopeCalendarPicker: React.FC<ReportScopeCalendarPickerProps>
                   </span>
                 </h4>
                 <p className="text-[10px]" style={{ color: activeTokens.textSecondary }}>
-                  Configure trailing duration (Days, Weeks, Years) or select calendar range.
+                  {headerSubtitle || 'Configure trailing duration (Days, Weeks, Years) or select calendar range.'}
                 </p>
               </div>
             </div>
@@ -1011,7 +1027,8 @@ export const ReportScopeCalendarPicker: React.FC<ReportScopeCalendarPickerProps>
                       <span>Start Date (From):</span>
                     </label>
                     <input
-                      type="date"
+                      type="text"
+                      placeholder="YYYY-MM-DD"
                       value={calStart}
                       onChange={(e) => setCalStart(e.target.value)}
                       className="w-full px-2 py-1.5 rounded-lg border text-xs font-mono font-bold bg-surface text-text-primary outline-hidden focus:border-brand"
@@ -1028,7 +1045,8 @@ export const ReportScopeCalendarPicker: React.FC<ReportScopeCalendarPickerProps>
                       <span>End Date (To):</span>
                     </label>
                     <input
-                      type="date"
+                      type="text"
+                      placeholder="YYYY-MM-DD"
                       value={calEnd}
                       onChange={(e) => setCalEnd(e.target.value)}
                       className="w-full px-2 py-1.5 rounded-lg border text-xs font-mono font-bold bg-surface text-text-primary outline-hidden focus:border-brand"
@@ -1059,14 +1077,12 @@ export const ReportScopeCalendarPicker: React.FC<ReportScopeCalendarPickerProps>
                           <ArrowRight className="w-3 h-3 text-text-tertiary inline" />
                           <span>{calEnd}</span>
                           <span
-                            className="text-[9px] font-mono px-1.5 py-0.2 rounded-full border font-bold"
+                            className="text-[11px] font-mono font-bold"
                             style={{
-                              borderColor: `${activeTokens.accentPrimary}40`,
-                              backgroundColor: `${activeTokens.accentPrimary}15`,
                               color: activeTokens.accentPrimary
                             }}
                           >
-                            {activeDurationDays} Days
+                            ({activeDurationDays} Days)
                           </span>
                         </div>
                       </div>

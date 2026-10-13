@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
 import { UserPerformanceReportData } from './performanceReportEngine';
 import { ThemeModeTokens } from '../theme/palettes';
@@ -149,6 +149,60 @@ export async function generateExecutivePDF({
           }
         `;
         clonedDoc.head.appendChild(baselineFixStyle);
+
+        // Sanitize any modern CSS color functions (oklch, oklab, lab, lch) to safe sRGB
+        // Modern browsers may serialize colors to oklch which crashes older parsers in html2canvas
+        try {
+          const colorCanvas = clonedDoc.createElement('canvas');
+          colorCanvas.width = 1;
+          colorCanvas.height = 1;
+          const colorCtx = colorCanvas.getContext('2d');
+          const colorCache = new Map<string, string>();
+
+          const toSafeColor = (val: string): string => {
+            if (!val || typeof val !== 'string') return val;
+            if (!val.includes('oklch') && !val.includes('oklab') && !val.includes('lab(') && !val.includes('lch(')) {
+              return val;
+            }
+            if (colorCache.has(val)) return colorCache.get(val)!;
+            if (colorCtx) {
+              try {
+                colorCtx.fillStyle = '#000000';
+                colorCtx.fillStyle = val;
+                const converted = colorCtx.fillStyle;
+                colorCache.set(val, converted);
+                return converted;
+              } catch {
+                return '#888888';
+              }
+            }
+            return '#888888';
+          };
+
+          // Sanitize style tags
+          const styleTags = clonedDoc.querySelectorAll('style');
+          styleTags.forEach((st) => {
+            if (st.textContent && (st.textContent.includes('oklch') || st.textContent.includes('oklab'))) {
+              st.textContent = st.textContent.replace(/oklch\([^)]+\)/g, (match) => toSafeColor(match));
+            }
+          });
+
+          // Sanitize inline styles on all elements
+          const allElements = clonedDoc.querySelectorAll<HTMLElement>('*');
+          allElements.forEach((el) => {
+            if (el.style) {
+              const colorProps = ['color', 'backgroundColor', 'borderColor', 'outlineColor', 'fill', 'stroke'];
+              colorProps.forEach((prop) => {
+                const currentVal = (el.style as any)[prop];
+                if (currentVal && typeof currentVal === 'string' && (currentVal.includes('oklch') || currentVal.includes('oklab'))) {
+                  (el.style as any)[prop] = toSafeColor(currentVal);
+                }
+              });
+            }
+          });
+        } catch {
+          // Fallback gracefully if DOM canvas is restricted
+        }
       }
     });
 

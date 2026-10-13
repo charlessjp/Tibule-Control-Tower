@@ -29,6 +29,8 @@ const SYSTEM_TERM_MAP: Record<string, string> = {
   debrief_prep: 'Debrief Prep',
   debrief_ready: 'Debrief Pack Ready',
   debrief_meeting: 'Team Debrief',
+  creative_brainstorm: 'Strategy & Brainstorm',
+  strategy_session: 'Strategy & Brainstorm',
   traffic_assignment: 'Traffic Assignment',
   manager_assignment: 'Lead Assignment',
   traffic_routing: 'Traffic Routing',
@@ -46,6 +48,19 @@ const SYSTEM_TERM_MAP: Record<string, string> = {
   workload_rebalance: 'Workload Rebalance',
   title_upgrade: 'Title Upgrade',
   fast_track_lead: 'Fast-Track Lead',
+  salary_review: 'Salary Review',
+  promotion: 'Promotion',
+  role_review: 'Role Review',
+  responsibility_expansion: 'Responsibility Expansion',
+  workload_concern: 'Workload Concern',
+  resource_request: 'Resource Request',
+  process_improvement: 'Process Improvement',
+  correction: 'Correction Appeal',
+  traffic_sla_exception: 'Traffic SLA Relief Exception',
+  traffic_scope_dispute: 'Scope Breach Dispute',
+  traffic_capacity_requisition: 'Emergency Capacity Requisition',
+  traffic_process_waiver: 'Process Fast-Track Waiver',
+  traffic_progression: 'Traffic Operations Career Progression',
 
   // Case Statuses & Decisions
   draft: 'Draft',
@@ -85,12 +100,29 @@ const SYSTEM_TERM_MAP: Record<string, string> = {
   process_innovation: 'Process Innovation',
   complexity_mastery: 'Complexity Mastery',
 
-  // Seniority & Complexity
+  // Seniority & Creative Roles
+  associate_director: 'Associate Director',
+  art_director: 'Art Director',
+  specialist: 'Specialist',
   junior: 'Junior',
-  mid: 'Specialist',
-  senior: 'Senior',
+  nsp_intern: 'NSP/Intern',
   lead: 'Lead',
+  senior: 'Senior',
+  mid: 'Mid-Weight',
   nss_intern: 'NSS/Intern',
+
+  // Delivery Impact & Delay Categories
+  missing_assets: 'Missing Brief Assets / Specs',
+  scope_creep: 'Scope Creep / Unscheduled Scope',
+  client_delay: 'Client Approval / Feedback Lag',
+  technical_issue: 'Software / Tooling Outage',
+  cross_dependency: 'Inter-Department Dependency',
+  workload_overload: 'Workload & Priority Overload',
+  stakeholder_conflict: 'Conflicting Stakeholder Feedback',
+  production_spec: 'Production / Print Dieline Rejection',
+  health_emergency: 'Personal / Health Emergency',
+  delivery_impact: 'Delivery Impediment',
+
   low: 'Low',
   medium: 'Medium',
   high: 'High',
@@ -200,17 +232,90 @@ export function formatAuditAction(action?: string | null): string {
   return SYSTEM_TERM_MAP[action.trim()] || formatReadable(action);
 }
 
-export function formatSeniority(seniority?: string | null): string {
+export function formatSeniority(seniority?: string | null, department?: string | null): string {
   if (!seniority) return 'Specialist';
   const lower = seniority.trim().toLowerCase();
+  if (lower === 'nsp_intern' || lower === 'nsp / intern' || lower === 'nsp/intern' || lower === 'nsp') {
+    return 'NSP/Intern';
+  }
   if (lower === 'nss_intern' || lower === 'nss / intern' || lower === 'nss/intern') {
-    return 'NSS/Intern';
+    return department === 'creative' ? 'NSP/Intern' : 'NSS/Intern';
+  }
+  if (lower === 'associate_director' || lower === 'associate director') {
+    return 'Associate Director';
+  }
+  if (lower === 'art_director' || lower === 'art director') {
+    return 'Art Director';
+  }
+  if (lower === 'specialist') {
+    return 'Specialist';
+  }
+  if (lower === 'director') {
+    return 'Director';
+  }
+  if (lower === 'junior') {
+    return 'Junior';
   }
   return SYSTEM_TERM_MAP[lower] || formatReadable(seniority);
+}
+
+export function formatDeliveryImpactCategory(cat?: string | null): string {
+  if (!cat) return 'Delivery Impediment';
+  const lower = cat.trim().toLowerCase();
+  return SYSTEM_TERM_MAP[lower] || formatReadable(cat);
 }
 
 export function formatDepartment(dept?: string | null): string {
   if (!dept) return '';
   const lower = dept.trim().toLowerCase();
   return SYSTEM_TERM_MAP[lower] || formatReadable(dept);
+}
+
+export function getContributionCategoryBadge(category?: string | null): { label: string; badgeClass: string } {
+  if (!category) {
+    return { label: 'General', badgeClass: 'text-text-secondary font-mono uppercase tracking-wider' };
+  }
+  const key = category.trim().toLowerCase();
+  switch (key) {
+    case 'exceptional_delivery':
+      return {
+        label: 'Exceptional Delivery',
+        badgeClass: 'text-amber-500 font-mono uppercase tracking-wider'
+      };
+    case 'client_impact':
+      return {
+        label: 'Client Impact',
+        badgeClass: 'text-emerald-500 font-mono uppercase tracking-wider'
+      };
+    case 'collaboration':
+      return {
+        label: 'Collaboration',
+        badgeClass: 'text-sky-500 font-mono uppercase tracking-wider'
+      };
+    case 'craft_quality':
+      return {
+        label: 'Craft & Quality',
+        badgeClass: 'text-purple-400 font-mono uppercase tracking-wider'
+      };
+    case 'process_improvement':
+      return {
+        label: 'Process Improvement',
+        badgeClass: 'text-indigo-400 font-mono uppercase tracking-wider'
+      };
+    case 'operational_support':
+      return {
+        label: 'Operational Support',
+        badgeClass: 'text-teal-400 font-mono uppercase tracking-wider'
+      };
+    case 'exceptional_effort':
+      return {
+        label: 'Exceptional Effort',
+        badgeClass: 'text-rose-400 font-mono uppercase tracking-wider'
+      };
+    default:
+      return {
+        label: formatReadable(category),
+        badgeClass: 'text-text-secondary font-mono uppercase tracking-wider'
+      };
+  }
 }

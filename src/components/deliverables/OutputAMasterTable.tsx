@@ -20,6 +20,12 @@ export const OutputAMasterTable: React.FC = () => {
   const { jobs, users, teams, currentUser, setSelectedJobId, selectedJobId, theme } = useApp();
   const isDark = theme === 'dark';
   const isGM = currentUser.role === 'general_manager' || currentUser.role === 'admin';
+  const isTraffic = currentUser.role === 'traffic_manager';
+  const isClientService =
+    currentUser.role === 'client_service' ||
+    currentUser.department === 'client_services' ||
+    currentUser.teamId === 'team-client-service';
+  const canViewAllStudio = isGM || isTraffic || isClientService;
   const userTeam = teams.find((t) => t.id === currentUser.teamId);
 
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
@@ -31,13 +37,13 @@ export const OutputAMasterTable: React.FC = () => {
   const [sortField, setSortField] = useState<keyof Job>('dueDate');
   const [sortAsc, setSortAsc] = useState<boolean>(true);
 
-  // Scoped jobs: Managers are strictly constrained to their team; GMs have full cross-team capacity
+  // Scoped jobs: Discipline leads and directors are strictly constrained to their own team; GMs and Traffic have cross-team delivery oversight
   const teamScopedJobs = useMemo(() => {
-    if (isGM) {
+    if (canViewAllStudio) {
       return selectedTeam === 'all' ? jobs : jobs.filter((j) => j.teamId === selectedTeam);
     }
     return jobs.filter((j) => j.teamId === (currentUser.teamId || 'team-creative'));
-  }, [jobs, isGM, selectedTeam, currentUser.teamId]);
+  }, [jobs, canViewAllStudio, selectedTeam, currentUser.teamId]);
 
   // Available categories within scope
   const categories = useMemo(() => {
@@ -117,12 +123,12 @@ export const OutputAMasterTable: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text-primary">
-            {isGM ? 'All Deliverables & Tasks' : `${userTeam?.name || 'Team'} Deliverables & Tasks`}
+            {isGM ? 'Master Deliverables Schedule' : `${userTeam?.name || 'Team'} Deliverables Schedule`}
           </h1>
           <p className="text-xs mt-1 text-text-secondary">
             {isGM
-              ? 'Search, filter, and track all tasks and project deliverables across the agency.'
-              : `Search, filter, and track deliverables strictly scoped to ${userTeam?.name || 'your assigned team'}.`}
+              ? 'Master schedule of all agency deliverables: filter by client, stage, priority, due date, and team assignee.'
+              : `Delivery schedule for ${userTeam?.name || 'your team'}: filter by client, status, priority, and due date.`}
           </p>
         </div>
 
@@ -300,8 +306,8 @@ export const OutputAMasterTable: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Team Filter: General Manager can filter by any team; Managers are locked to their team */}
-          {isGM ? (
+          {/* Team Filter: General Manager and Traffic Manager can filter by any team; Discipline leads are locked to their team */}
+          {canViewAllStudio ? (
             <select
               value={selectedTeam}
               onChange={(e) => setSelectedTeam(e.target.value)}
@@ -327,12 +333,12 @@ export const OutputAMasterTable: React.FC = () => {
                 borderColor: 'var(--color-border)',
                 color: 'var(--color-text-secondary)'
               }}
-              title="Your deliverables view is strictly locked to your assigned team. Cross-team filtering belongs strictly to the General Manager."
+              title="Your deliverables view is strictly locked to your assigned team. Cross-team filtering belongs strictly to General Management and Studio Traffic."
             >
               <Lock className="w-3.5 h-3.5 text-text-tertiary" />
               <span>Team: {userTeam?.name || 'Assigned Studio'}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded border text-text-tertiary bg-surface border-border font-normal">
-                Locked
+              <span className="text-[10px] text-text-tertiary font-mono font-normal">
+                · Locked
               </span>
             </div>
           )}

@@ -26,13 +26,13 @@ export const AnalyticsView: React.FC = () => {
         <div>
           <div className="text-[11px] uppercase tracking-wider text-text-tertiary font-semibold flex items-center gap-1.5">
             <BarChart3 className="w-3.5 h-3.5 text-brand-primary" />
-            Operational Velocity & Evidence Analytics
+            Performance &amp; Delivery Analytics
           </div>
           <h1 className="text-xl font-bold text-text-primary mt-0.5">
-            Delivery Health & Workforce Assurance
+            Delivery Health &amp; SLA Metrics
           </h1>
           <p className="text-xs text-text-secondary mt-1">
-            Empirical measurements of work completion, SLA integrity, and systemic bottlenecks.
+            Track on-time SLA delivery rates, blocker turnaround times, and team capacity health across performance cycles.
           </p>
         </div>
 

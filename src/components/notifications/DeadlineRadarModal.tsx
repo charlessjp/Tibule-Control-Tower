@@ -132,7 +132,7 @@ export const DeadlineRadarModal: React.FC<DeadlineRadarModalProps> = ({
 
   const handleViewJob = (jobId: string) => {
     setSelectedJobId(jobId);
-    setActiveView('jobs');
+    setActiveView('all_work');
     onClose();
   };
 
@@ -370,7 +370,7 @@ export const DeadlineRadarModal: React.FC<DeadlineRadarModalProps> = ({
                               </div>
                               {job.lastPromptedAt && (
                                 <div className="text-amber-400 font-mono text-[10px] pt-0.5">
-                                  ⚠️ Last Traffic Prompt: {new Date(job.lastPromptedAt).toLocaleTimeString()} — "{job.promptNotes}"
+                                  ⚠️ Last Traffic Prompt: {new Date(job.lastPromptedAt).toLocaleTimeString()} - "{job.promptNotes}"
                                 </div>
                               )}
                             </div>
@@ -494,8 +494,8 @@ export const DeadlineRadarModal: React.FC<DeadlineRadarModalProps> = ({
                             {!notif.read && (
                               <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                             )}
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono uppercase bg-surface-elevated border border-border text-text-tertiary">
-                              {formatRole(notif.recipientRole)}
+                            <span className="text-[10px] font-mono uppercase text-text-tertiary">
+                              · {formatRole(notif.recipientRole)}
                             </span>
                             <span className="text-[10px] text-text-tertiary">
                               {new Date(notif.createdAt).toLocaleTimeString()}

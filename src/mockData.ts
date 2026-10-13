@@ -1,4 +1,4 @@
-import { User, Team, Job, ProgressionCase, Recognition, AuditEvent, ExceptionItem, JobComment, OvertimeLog, WorkCycle, OperationalEvent } from './types';
+import { User, Team, Job, ProgressionCase, Recognition, AuditEvent, ExceptionItem, JobComment, OvertimeLog, WorkCycle, OperationalEvent, StrategicContribution, DeliveryImpactLog } from './types';
 
 export const INITIAL_TEAMS: Team[] = [
   {
@@ -9,7 +9,7 @@ export const INITIAL_TEAMS: Team[] = [
     status: 'active',
     createdDate: '2025-01-10',
     color: '#0284c7', // Tibule Blue
-    memberIds: ['usr-david-vance', 'usr-michael-chen', 'usr-liam-oconnor', 'usr-abena-mensah', 'usr-noah-thorne']
+    memberIds: ['usr-david-vance', 'usr-michael-chen', 'usr-noah-thorne', 'usr-selorm-adams', 'usr-liam-oconnor', 'usr-abena-mensah']
   },
   {
     id: 'team-creative',
@@ -19,7 +19,7 @@ export const INITIAL_TEAMS: Team[] = [
     status: 'active',
     createdDate: '2025-01-10',
     color: '#8b5cf6', // Indigo Violet
-    memberIds: ['usr-elena-rostova', 'usr-sarah-jenkins', 'usr-amara-okafor', 'usr-priyah-sharma', 'usr-kofi-boateng']
+    memberIds: ['usr-elena-rostova', 'usr-maya-osei', 'usr-sarah-jenkins', 'usr-amara-okafor', 'usr-priyah-sharma', 'usr-kofi-boateng']
   },
   {
     id: 'team-ops',
@@ -65,6 +65,22 @@ export const INITIAL_USERS: User[] = [
     capacityHoursPerWeek: 40
   },
   {
+    id: 'usr-kweku-traffic',
+    name: 'Kweku Asare',
+    email: 'kweku.asare@tibule.com',
+    role: 'traffic_manager',
+    department: 'traffic',
+    seniority: 'junior',
+    jobTitle: 'Traffic Coordinator & Intake Specialist',
+    teamId: 'team-ops',
+    status: 'active',
+    managerId: 'usr-kwame-mensah',
+    createdDate: '2025-03-01',
+    lastLogin: '2026-09-14T09:15:00Z',
+    skillProfile: ['Brief Completeness Audit', 'Debrief Scheduling', 'Deliverable Proofing', 'Production Calendar Management'],
+    capacityHoursPerWeek: 40
+  },
+  {
     id: 'usr-elena-rostova',
     name: 'Elena Rostova',
     email: 'elena.rostova@tibule.com',
@@ -81,19 +97,35 @@ export const INITIAL_USERS: User[] = [
     capacityHoursPerWeek: 40
   },
   {
+    id: 'usr-maya-osei',
+    name: 'Maya Osei',
+    email: 'maya.osei@tibule.com',
+    role: 'director',
+    department: 'creative',
+    seniority: 'associate_director',
+    jobTitle: 'Associate Creative Director',
+    teamId: 'team-creative',
+    status: 'active',
+    managerId: 'usr-elena-rostova',
+    createdDate: '2024-12-01',
+    lastLogin: '2026-09-14T08:45:00Z',
+    skillProfile: ['Creative Concept Supervision', 'Multi-Squad Direction', 'Design Systems', 'Campaign Architecture'],
+    capacityHoursPerWeek: 40
+  },
+  {
     id: 'usr-david-vance',
     name: 'David Vance',
     email: 'david.vance@tibule.com',
-    role: 'manager',
+    role: 'director',
     department: 'client_services',
-    seniority: 'lead',
-    jobTitle: 'Head of Client Service',
+    seniority: 'director',
+    jobTitle: 'Director of Client Services',
     teamId: 'team-client-service',
     status: 'active',
     managerId: 'usr-marcus-sterling',
     createdDate: '2024-11-15',
     lastLogin: '2026-09-14T08:50:00Z',
-    skillProfile: ['Account Leadership', 'Brief Intake', 'Workload Balancing', 'SLA Governance', 'Risk Escalation'],
+    skillProfile: ['Department Leadership', 'Resource Allocation', 'Delivery Health', 'Strategy Execution', 'SLA Governance'],
     capacityHoursPerWeek: 40
   },
   {
@@ -103,14 +135,30 @@ export const INITIAL_USERS: User[] = [
     role: 'client_service',
     department: 'client_services',
     seniority: 'senior',
-    jobTitle: 'Senior Account Lead',
+    jobTitle: 'Senior Account Manager',
     teamId: 'team-client-service',
     status: 'active',
     managerId: 'usr-david-vance',
     createdDate: '2025-01-20',
     lastLogin: '2026-09-14T08:42:00Z',
-    skillProfile: ['Key Account Governance', 'Brief Formulation', 'Stakeholder Management', 'Scope Protection'],
-    capacityHoursPerWeek: 38
+    skillProfile: ['Client Leadership', 'AM Oversight', 'Digital Media Execution', 'Digital Media Buying', 'Scope Governance'],
+    capacityHoursPerWeek: 40
+  },
+  {
+    id: 'usr-selorm-adams',
+    name: 'Selorm Adams',
+    email: 'selorm.adams@tibule.com',
+    role: 'client_service',
+    department: 'client_services',
+    seniority: 'mid',
+    jobTitle: 'Account Manager',
+    teamId: 'team-client-service',
+    status: 'active',
+    managerId: 'usr-michael-chen',
+    createdDate: '2025-02-01',
+    lastLogin: '2026-09-14T08:35:00Z',
+    skillProfile: ['Client & Brief Ownership', 'Workstream Coordination', 'Content Strategy Execution', 'Campaign Reporting'],
+    capacityHoursPerWeek: 40
   },
   {
     id: 'usr-liam-oconnor',
@@ -122,11 +170,11 @@ export const INITIAL_USERS: User[] = [
     jobTitle: 'Account Executive',
     teamId: 'team-client-service',
     status: 'active',
-    managerId: 'usr-david-vance',
+    managerId: 'usr-selorm-adams',
     createdDate: '2025-02-15',
     lastLogin: '2026-09-14T07:55:00Z',
-    skillProfile: ['Brief Intake', 'Sprint Coordination', 'Status Reporting', 'Client Delivery'],
-    capacityHoursPerWeek: 38
+    skillProfile: ['Delivery Support', 'Community Management', 'Influencer Management', 'Follow-up Tracking', 'Asset Preparation'],
+    capacityHoursPerWeek: 40
   },
   {
     id: 'usr-abena-mensah',
@@ -135,14 +183,14 @@ export const INITIAL_USERS: User[] = [
     role: 'client_service',
     department: 'client_services',
     seniority: 'nss_intern',
-    jobTitle: 'Client Service NSS Assistant',
+    jobTitle: 'National Service Personnel (NSS)',
     teamId: 'team-client-service',
     status: 'active',
-    managerId: 'usr-michael-chen',
+    managerId: 'usr-selorm-adams',
     createdDate: '2026-09-01',
     lastLogin: '2026-09-15T08:30:00Z',
-    skillProfile: ['Contact Reports', 'Client Meeting Minutes', 'Billing Docket Preparation'],
-    capacityHoursPerWeek: 35
+    skillProfile: ['Junior Support', 'Structured Development', 'Contact Reports', 'Content Strategy Shadowing', 'Meeting Minutes'],
+    capacityHoursPerWeek: 40
   },
   {
     id: 'usr-sarah-jenkins',
@@ -150,11 +198,11 @@ export const INITIAL_USERS: User[] = [
     email: 'sarah.jenkins@tibule.com',
     role: 'team_lead',
     department: 'creative',
-    seniority: 'senior',
-    jobTitle: 'Senior Art Director & Brand Lead',
+    seniority: 'art_director',
+    jobTitle: 'Art Director & Brand Lead',
     teamId: 'team-creative',
     status: 'active',
-    managerId: 'usr-elena-rostova',
+    managerId: 'usr-maya-osei',
     createdDate: '2025-01-15',
     lastLogin: '2026-09-14T09:05:00Z',
     skillProfile: ['Brand Identity', 'Complex Art Direction', 'Typography Systems', 'Motion Direction', 'Cross-Team Coordination'],
@@ -174,11 +222,11 @@ export const INITIAL_USERS: User[] = [
     email: 'amara.okafor@tibule.com',
     role: 'employee',
     department: 'creative',
-    seniority: 'mid',
-    jobTitle: 'Motion & Digital Designer',
+    seniority: 'specialist',
+    jobTitle: 'Motion & Digital Specialist',
     teamId: 'team-creative',
     status: 'active',
-    managerId: 'usr-elena-rostova',
+    managerId: 'usr-sarah-jenkins',
     createdDate: '2025-02-01',
     lastLogin: '2026-09-14T08:15:00Z',
     skillProfile: ['Motion Graphics', '3D Cinema', 'Digital Advertising', 'Interactive Prototyping'],
@@ -202,7 +250,7 @@ export const INITIAL_USERS: User[] = [
     jobTitle: 'Junior Visual & Packaging Designer',
     teamId: 'team-creative',
     status: 'active',
-    managerId: 'usr-elena-rostova',
+    managerId: 'usr-sarah-jenkins',
     createdDate: '2025-02-20',
     lastLogin: '2026-09-14T08:10:00Z',
     skillProfile: ['Packaging Architecture', 'CGI Renders', 'Print Production', 'Design Guidelines'],
@@ -214,30 +262,31 @@ export const INITIAL_USERS: User[] = [
     email: 'kofi.boateng@tibule.com',
     role: 'employee',
     department: 'creative',
-    seniority: 'nss_intern',
-    jobTitle: 'Creative NSS Assistant',
+    seniority: 'nsp_intern',
+    jobTitle: 'Creative NSP Assistant',
     teamId: 'team-creative',
     status: 'active',
     managerId: 'usr-sarah-jenkins',
     createdDate: '2026-09-01',
     lastLogin: '2026-09-15T08:00:00Z',
     skillProfile: ['Graphic Production', 'Social Resizes', 'Moodboarding', 'Asset Management'],
-    capacityHoursPerWeek: 35
+    capacityHoursPerWeek: 40
   },
   {
     id: 'usr-noah-thorne',
     name: 'Noah Thorne',
     email: 'noah.thorne@tibule.com',
     role: 'client_service',
+    department: 'client_services',
     seniority: 'senior',
-    jobTitle: 'Client Partner',
+    jobTitle: 'Senior Account Manager',
     teamId: 'team-client-service',
-    status: 'pending_setup',
+    status: 'active',
     managerId: 'usr-david-vance',
-    createdDate: '2026-09-10',
-    lastLogin: 'Never',
-    skillProfile: ['Strategic Accounts', 'Commercial Negotiation'],
-    capacityHoursPerWeek: 38
+    createdDate: '2025-02-10',
+    lastLogin: '2026-09-14T08:52:00Z',
+    skillProfile: ['Complex Account Leadership', 'Experientials Execution', 'Public Relations Strategy', 'AM Mentorship'],
+    capacityHoursPerWeek: 40
   },
   {
     id: 'usr-tariq-afriq',
@@ -478,7 +527,7 @@ export const INITIAL_JOBS: Job[] = [
       preparedBy: 'usr-michael-chen',
       preparedByName: 'Michael Chen',
       preparedDate: '2026-09-15T09:30:00Z',
-      deckTitle: 'MTN MoMo Nationwide Cash Promo — Agency Debrief Pack',
+      deckTitle: 'MTN MoMo Nationwide Cash Promo - Agency Debrief Pack',
       keyObjectives: [
         'Drive nationwide customer participation across Accra, Kumasi, and Takoradi',
         'Highlight instant cash rewards with bold, high-contrast MoMo yellow graphics',
@@ -521,7 +570,7 @@ export const INITIAL_JOBS: Job[] = [
       preparedBy: 'usr-liam-oconnor',
       preparedByName: 'Liam O\'Connor',
       preparedDate: '2026-09-14T16:00:00Z',
-      deckTitle: 'Guinness Smooth Nightlife DOOH — Brand Squad Briefing',
+      deckTitle: 'Guinness Smooth Nightlife DOOH - Brand Squad Briefing',
       keyObjectives: [
         'Maximize night-time contrast for dynamic LED displays in Osu and Airport City',
         'Incorporate signature Guinness golden harp and velvet surge liquid physics',
@@ -562,7 +611,7 @@ export const INITIAL_JOBS: Job[] = [
       preparedBy: 'usr-michael-chen',
       preparedByName: 'Michael Chen',
       preparedDate: '2026-09-13T11:00:00Z',
-      deckTitle: 'Stanbic Bank SME Literacy — Debrief Deck',
+      deckTitle: 'Stanbic Bank SME Literacy - Debrief Deck',
       keyObjectives: ['Demystify commercial SME loans for local entrepreneurs'],
       deliverableSpecs: '3x 45s motion graphic explainers with localized voiceover stems.',
       brandToneNotes: 'Approachable, trustworthy, professional banking excellence.',
@@ -571,11 +620,19 @@ export const INITIAL_JOBS: Job[] = [
     debriefMeeting: {
       scheduledDate: '2026-09-14T10:00:00Z',
       status: 'in_progress',
+      calledByRole: 'traffic_manager',
+      calledByUserId: 'usr-kwame-mensah',
+      calledByName: 'Kwame Mensah',
+      compulsoryCsSubmitterId: 'usr-michael-chen',
+      compulsoryCsSubmitterName: 'Michael Chen',
+      calendarEventScheduled: true,
+      calendarEventTitle: 'Team Debrief: Stanbic SME Loan Animated Video Suite',
+      calendarEventTime: 'Today at 10:00 AM',
       attendees: [
-        { userId: 'usr-michael-chen', name: 'Michael Chen', role: 'Account Lead', isPresent: true },
-        { userId: 'usr-elena-rostova', name: 'Elena Rostova', role: 'Creative Director', isPresent: true },
-        { userId: 'usr-priyah-sharma', name: 'Priyah Sharma', role: 'Designer', isPresent: true },
-        { userId: 'usr-amara-okafor', name: 'Amara Okafor', role: 'Motion Animator', isPresent: true }
+        { userId: 'usr-michael-chen', name: 'Michael Chen', role: 'Client Services Submitter', isCompulsory: true, isPresent: true },
+        { userId: 'usr-elena-rostova', name: 'Elena Rostova', role: 'Creative Director', isCompulsory: true, isPresent: true },
+        { userId: 'usr-priyah-sharma', name: 'Priyah Sharma', role: 'Designer', isCompulsory: false, isPresent: true },
+        { userId: 'usr-amara-okafor', name: 'Amara Okafor', role: 'Motion Animator', isCompulsory: false, isPresent: true }
       ],
       discussionNotes: 'Creative Director Elena Rostova reviewing visual metaphor for SME loans with Stanbic brand squad. Clarified that local English and Twi voiceover options will be recorded.',
       creativeDirectorOrManagerId: 'usr-elena-rostova',
@@ -857,6 +914,7 @@ export const INITIAL_CASES: ProgressionCase[] = [
     reviewerName: 'Elena Rostova',
     title: 'Progression to Associate Creative Director & Studio Design Lead',
     narrative: 'Over the last 9 months, my scope has shifted from individual design execution to leading creative direction across our key Accra accounts (Zenith, Vanguard, MTN MoMo). I instituted our agency tokenized design system which reduced artwork rework by 34%, while actively mentoring our junior and mid designers.',
+    leadEndorsementStatus: 'pending',
     evidenceData: {
       responsibilityGrowth: {
         originalCount: 4,
@@ -896,12 +954,16 @@ export const INITIAL_CASES: ProgressionCase[] = [
     employeeTitle: 'Motion Designer & 3D Animator',
     teamId: 'team-creative',
     type: 'salary_review',
-    status: 'submitted',
+    status: 'manager_review',
     submissionDate: '2026-09-12T11:20:00Z',
     reviewerId: 'usr-elena-rostova',
     reviewerName: 'Elena Rostova',
     title: 'Senior Motion Specialist Promotion & Benchmark Calibration',
     narrative: 'Over the past 6 months, I have taken full ownership of 3D motion toolkits, broadcast TVC animations, and dynamic DOOH digital billboard renders for MTN MoMo and Guinness Ghana. My benchmark turnaround velocity is +24% faster than standard task estimates with zero audio-visual sync rejects.',
+    leadEndorsementStatus: 'disendorsed',
+    leadEndorsementNotes: 'Disendorsed by Elena Rostova (Creative Director): Not recommended for title elevation at this quarterly cycle. Expressed reservations regarding broadcast TVC turnaround velocity under live broadcast pressure; recommends 6 additional months at mid-weight before title calibration.',
+    leadEndorsementDate: '2026-09-13T10:15:00Z',
+    leadEndorsedBy: 'Elena Rostova',
     evidenceData: {
       responsibilityGrowth: {
         originalCount: 3,
@@ -943,6 +1005,12 @@ export const INITIAL_CASES: ProgressionCase[] = [
     reviewerName: 'Elena Rostova',
     title: 'Mid-Weight Packaging Lead & Print Production Calibration',
     narrative: 'Transitioned from junior production assistant to managing complete prepress packaging workflows for FanMilk Ghana and Orion Biotech. Coordinated with industrial packaging printers in Tema to ensure zero CMYK color shifts and regulatory compliance.',
+    leadEndorsementStatus: 'endorsed',
+    leadEndorsementNotes: 'Elena Rostova fully endorsed packaging lead scope expansion on Sep 11. Priyah demonstrated 100% first-pass printer approvals.',
+    leadEndorsementDate: '2026-09-11T16:30:00Z',
+    leadEndorsedBy: 'Elena Rostova',
+    verificationStatus: 'in_progress',
+    verificationNotes: 'Auditing Tema print house zero-reject logs and CT-1848 prepress dieline files.',
     evidenceData: {
       responsibilityGrowth: {
         originalCount: 2,
@@ -978,12 +1046,19 @@ export const INITIAL_CASES: ProgressionCase[] = [
     employeeTitle: 'Senior Account Lead',
     teamId: 'team-client-service',
     type: 'workload_concern',
-    status: 'evidence_review',
+    status: 'decision',
     submissionDate: '2026-09-11T10:00:00Z',
     reviewerId: 'usr-david-vance',
     reviewerName: 'David Vance',
     title: 'Workload Capacity Rebalance for Client Service Squad EMEA',
     narrative: 'Over the past 6 weeks, Apex FinTech multi-market scope has doubled our client coordination hours. Average weekly load is exceeding 46 hours. Requesting structural reassignment of auxiliary accounts so focus remains on high-priority executive deliverables.',
+    leadEndorsementStatus: 'endorsed',
+    leadEndorsementNotes: 'David Vance (Head of CS) strongly endorsed workload rebalancing on Sep 12.',
+    leadEndorsementDate: '2026-09-12T17:00:00Z',
+    leadEndorsedBy: 'David Vance',
+    verificationStatus: 'verified',
+    verificationNotes: 'Client Service workload audit verified: 46 average weekly hours across Apex EMEA verified by timesheet logs.',
+    verificationDate: '2026-09-13T14:00:00Z',
     evidenceData: {
       responsibilityGrowth: {
         originalCount: 3,
@@ -1000,6 +1075,174 @@ export const INITIAL_CASES: ProgressionCase[] = [
       outcomes: ['100% client retention on key accounts'],
       linkedJobIds: ['CT-1845', 'CT-1851']
     }
+  },
+  {
+    id: 'CASE-TRF-01',
+    employeeId: 'usr-kwame-mensah',
+    employeeName: 'Kwame Mensah',
+    employeeTitle: 'Studio Traffic Manager',
+    teamId: 'team-ops',
+    type: 'traffic_sla_exception',
+    status: 'closed',
+    submissionDate: '2026-09-08T10:00:00Z',
+    reviewerId: 'usr-marcus-sterling',
+    reviewerName: 'Marcus Sterling',
+    title: 'SLA Relief Determination: Zenith Bank Token Pack Security Push',
+    narrative: 'Client Service submitted an emergency request for a 6-hour turnaround on CT-1842. The deliverable involves extreme-complexity dielines and token specifications. Granting a 24-hour SLA relief waiver protected the creative team from unmanageable night overtime and prevented defect slippage into client production.',
+    category: 'operational_sla_dispute',
+    trafficMeta: {
+      clientProject: 'Zenith Global Refresh',
+      urgency: 'high',
+      requestedHours: 24,
+      impactedJobIds: ['CT-1842'],
+      resolutionAction: 'Approved 24h SLA extension without client penalty. Synchronized with Account Director.',
+      trafficRuling: 'RELIEF GRANTED - Standard 24h calibration applied'
+    },
+    evidenceData: {
+      responsibilityGrowth: {
+        originalCount: 2,
+        currentCount: 5,
+        items: ['Studio SLA Governance', 'Crisis Relief Adjudication', 'Client Commercial Shielding']
+      },
+      workVolume: {
+        previousPeriodCount: 18,
+        currentPeriodCount: 34,
+        totalHours: 420
+      },
+      complexityIncreasePercent: 28,
+      additionalContributions: ['Prevented designer burnout during Zenith sprint'],
+      outcomes: ['Zero defect delivery on revised timeline', 'Client praise for quality diligence'],
+      linkedJobIds: ['CT-1842']
+    },
+    decision: 'approved',
+    decisionNotes: 'Traffic manager exercised sound operational judgment. Relieved SLA without financial penalty.',
+    decisionDate: '2026-09-08T15:30:00Z'
+  },
+  {
+    id: 'CASE-TRF-02',
+    employeeId: 'usr-kwame-mensah',
+    employeeName: 'Kwame Mensah',
+    employeeTitle: 'Studio Traffic Manager',
+    teamId: 'team-ops',
+    type: 'traffic_scope_dispute',
+    status: 'evidence_review',
+    submissionDate: '2026-09-14T08:30:00Z',
+    reviewerId: 'usr-marcus-sterling',
+    reviewerName: 'Marcus Sterling',
+    title: 'Scope Breach Hold: Helios Energy Unbriefed Social Video Resizes',
+    narrative: 'Client Service injected 12 unbriefed social cutdowns and 3 TikTok 9:16 re-renders into standard TVC job CT-1862 without commercial quote approval or timeline adjustment. Traffic placed an operational hold on the deliverable until Client Service issues a formal variation quote.',
+    category: 'operational_sla_dispute',
+    trafficMeta: {
+      clientProject: 'Helios Clean Grid Expansion',
+      urgency: 'urgent',
+      requestedHours: 16,
+      impactedJobIds: ['CT-1862'],
+      resolutionAction: 'Held production dispatch. Escalated to Head of Client Service David Vance.',
+      trafficRuling: 'HOLD APPLIED - Commercial re-brief required'
+    },
+    evidenceData: {
+      responsibilityGrowth: {
+        originalCount: 3,
+        currentCount: 7,
+        items: ['Scope Integrity Defense', 'Agency Commercial Margin Protection', 'Intake Completeness Enforcement']
+      },
+      workVolume: {
+        previousPeriodCount: 14,
+        currentPeriodCount: 28,
+        totalHours: 380
+      },
+      complexityIncreasePercent: 32,
+      additionalContributions: ['Saved 16 hours of unbilled creative labor'],
+      outcomes: ['Enforced commercial variation estimate of GH₵ 18,500'],
+      linkedJobIds: ['CT-1862']
+    },
+    decisionNotes: 'Awaiting David Vance variation quote sign-off before releasing deliverable to creative pool.'
+  },
+  {
+    id: 'CASE-TRF-03',
+    employeeId: 'usr-kwame-mensah',
+    employeeName: 'Kwame Mensah',
+    employeeTitle: 'Studio Traffic Manager',
+    teamId: 'team-ops',
+    type: 'traffic_capacity_requisition',
+    status: 'manager_review',
+    submissionDate: '2026-09-13T14:15:00Z',
+    reviewerId: 'usr-marcus-sterling',
+    reviewerName: 'Marcus Sterling',
+    title: 'Emergency Freelance Motion Requisition: Q4 MTN MoMo Festival Surge',
+    narrative: 'Studio capacity metrics show motion design pool (Amara Okafor) projected at 114% saturation across late September. Requesting pre-authorization for a 35-hour freelance motion design burst contractor to protect core delivery dates and prevent bottlenecking on broadcast TVC timelines.',
+    category: 'capacity_requisition',
+    trafficMeta: {
+      clientProject: 'MTN MoMo Nationwide Surge',
+      urgency: 'high',
+      requestedHours: 35,
+      impactedJobIds: ['CT-1875'],
+      resolutionAction: 'Sourced vetted Accra motion freelance contractor (Kojo Anim) at standard day rate.',
+      trafficRuling: 'RECOMMENDED - GM budget authorization pending'
+    },
+    evidenceData: {
+      responsibilityGrowth: {
+        originalCount: 2,
+        currentCount: 6,
+        items: ['Studio Capacity Leveling', 'Freelance Roster Management', 'Contingency Planning']
+      },
+      workVolume: {
+        previousPeriodCount: 12,
+        currentPeriodCount: 26,
+        totalHours: 340
+      },
+      complexityIncreasePercent: 26,
+      additionalContributions: ['Maintained 98% utilization rate across creative staff'],
+      outcomes: ['Zero missed broadcast deadlines across festival season'],
+      linkedJobIds: ['CT-1875']
+    }
+  },
+  {
+    id: 'CASE-TRF-04',
+    employeeId: 'usr-kwame-mensah',
+    employeeName: 'Kwame Mensah',
+    employeeTitle: 'Studio Traffic Manager',
+    teamId: 'team-ops',
+    type: 'traffic_progression',
+    status: 'evidence_review',
+    submissionDate: '2026-09-02T11:00:00Z',
+    reviewerId: 'usr-marcus-sterling',
+    reviewerName: 'Marcus Sterling',
+    title: 'Progression to Head of Studio Operations & Enterprise Dispatch Architecture',
+    narrative: 'Over the past 12 months, I transformed agency traffic from reactive task forwarding into an intelligence-driven studio operations engine. Instituted mandatory CS Debriefs, Creative Strategy Brainstorms, automated Microsoft Teams calendar syncing, and the OneDrive Year-Long Historical Archive. Governed over 1,840 tasks with 96.4% on-time agency delivery.',
+    category: 'career_progression',
+    evidenceData: {
+      responsibilityGrowth: {
+        originalCount: 4,
+        currentCount: 11,
+        items: [
+          'Enterprise Studio Dispatch Architecture',
+          'SLA Exception & Commercial Scope Dispute Adjudication',
+          'Debrief & Brainstorm Protocol Institutionalization',
+          'Cross-Team Capacity Load Leveling (Creative + CS)',
+          'Historical Archive & Data Integrity Lead',
+          'Junior Traffic Coordinator Mentorship (Kweku Asare)'
+        ]
+      },
+      workVolume: {
+        previousPeriodCount: 45,
+        currentPeriodCount: 88,
+        totalHours: 1840
+      },
+      complexityIncreasePercent: 44,
+      additionalContributions: [
+        'Designed Tibule Control Tower 60-30-10 operational UI structure',
+        'Resolved 48 inter-team friction nodes with zero client escalations',
+        'Built Microsoft OneDrive automated backup pipeline for 1-year archive'
+      ],
+      outcomes: [
+        '96.4% studio-wide on-time deliverable rate across 1,840 jobs',
+        'Reduced client rework turnaround from 4.2 days to 1.8 days',
+        '3 commended leadership mentions in General Manager executive reviews'
+      ],
+      linkedJobIds: ['CT-1842', 'CT-1845', 'CT-1855', 'CT-1862']
+    },
+    decisionNotes: 'Marcus Sterling reviewing with agency partners. Exceptional track record in establishing agency operational rigor.'
   }
 ];
 
@@ -1117,7 +1360,7 @@ export const INITIAL_OVERTIME_LOGS: OvertimeLog[] = [
     endTime: '09:00',
     hoursLogged: 2.0,
     materialNote: 'Arrived at 7:00 AM to rebuild the primary font kerning vector tables and responsive lockups before the client 10:00 AM executive review.',
-    goodBooksPoints: 25,
+    recognitionPoints: 25,
     status: 'acknowledged_by_manager',
     acknowledgedBy: 'usr-elena-rostova',
     acknowledgedByName: 'Elena Rostova',
@@ -1140,12 +1383,12 @@ export const INITIAL_OVERTIME_LOGS: OvertimeLog[] = [
     endTime: '20:30',
     hoursLogged: 3.0,
     materialNote: 'Late evening push to complete 12 merchant animation loop variations and compress deliverables for regional field testing.',
-    goodBooksPoints: 35,
+    recognitionPoints: 35,
     status: 'acknowledged_by_gm',
     acknowledgedBy: 'usr-marcus-sterling',
     acknowledgedByName: 'Marcus Sterling',
     acknowledgedAt: '2026-09-20T09:15:00Z',
-    acknowledgmentNote: 'Demonstrated true initiative and pride in craft. Added directly to Good Books for upcoming Q3 promotion review.',
+    acknowledgmentNote: 'Demonstrated true initiative and pride in craft. Added directly to Strategic Recognition dossier for upcoming Q3 promotion review.',
     createdAt: '2026-09-19T20:35:00Z'
   },
   {
@@ -1163,7 +1406,7 @@ export const INITIAL_OVERTIME_LOGS: OvertimeLog[] = [
     endTime: '19:30',
     hoursLogged: 2.5,
     materialNote: 'Stayed past 5:00 PM to debug SVG clipping bugs on the high-net-worth customer investment breakdown dashboard layout.',
-    goodBooksPoints: 30,
+    recognitionPoints: 30,
     status: 'pending_acknowledgment',
     createdAt: '2026-09-20T19:35:00Z'
   },
@@ -1182,7 +1425,7 @@ export const INITIAL_OVERTIME_LOGS: OvertimeLog[] = [
     endTime: '09:00',
     hoursLogged: 1.5,
     materialNote: 'Early morning proofing of all financial milestone charts with legal compliance notes ahead of the C-Suite board review.',
-    goodBooksPoints: 20,
+    recognitionPoints: 20,
     status: 'pending_acknowledgment',
     createdAt: '2026-09-21T09:02:00Z'
   },
@@ -1201,7 +1444,7 @@ export const INITIAL_OVERTIME_LOGS: OvertimeLog[] = [
     endTime: '14:00',
     hoursLogged: 4.0,
     materialNote: 'Saturday emergency crunch to composite high-res photography plates for urgent print campaign billboard release.',
-    goodBooksPoints: 45,
+    recognitionPoints: 45,
     status: 'acknowledged_by_manager',
     acknowledgedBy: 'usr-david-vance',
     acknowledgedByName: 'David Vance',
@@ -1210,3 +1453,246 @@ export const INITIAL_OVERTIME_LOGS: OvertimeLog[] = [
     createdAt: '2026-09-20T14:05:00Z'
   }
 ];
+
+export const INITIAL_STRATEGIC_CONTRIBUTIONS: StrategicContribution[] = [
+  {
+    id: 'contrib-01',
+    employeeId: 'usr-sarah-jenkins',
+    employeeName: 'Sarah Jenkins',
+    employeeRole: 'team_lead',
+    department: 'creative',
+    category: 'craft_quality',
+    title: 'Rebuilt Primary Font Kerning Tables & Responsive Lockups',
+    description: 'Rebuilt the primary font kerning vector tables and responsive lockups before the client 10:00 AM executive review.',
+    impactStatement: 'Prevented vector rendering artifacts across responsive screen breakpoints, ensuring seamless client sign-off without rework.',
+    relatedJobId: 'CT-1842',
+    relatedJobTitle: 'Q3 Zenith Global Brand Refresh Asset System',
+    brandName: 'Zenith Global Bank',
+    contributionDate: '2026-09-18',
+    status: 'RECOGNISED',
+    submittedAt: '2026-09-18T09:05:00Z',
+    verifiedAt: '2026-09-18T11:30:00Z',
+    verifiedBy: 'usr-elena-rostova',
+    verifiedByName: 'Elena Rostova',
+    recognisedAt: '2026-09-18T11:35:00Z',
+    recognisedBy: 'usr-elena-rostova',
+    recognisedByName: 'Elena Rostova',
+    recognitionNote: 'Exceptional ownership and craft excellence. Ensured our presentation went off without a hitch with the C-Suite.',
+    attributes: {
+      complexity: 'high',
+      ownership: 'lead',
+      crossFunctional: false
+    }
+  },
+  {
+    id: 'contrib-02',
+    employeeId: 'usr-amara-okafor',
+    employeeName: 'Amara Okafor',
+    employeeRole: 'employee',
+    department: 'creative',
+    category: 'exceptional_delivery',
+    title: 'Late Push on 12 Merchant Animation Loop Variations',
+    description: 'Completed 12 merchant animation loop variations and compressed deliverables for regional field testing under tight timeline.',
+    impactStatement: 'Secured field trial timeline for Vodafone Ghana nationwide rollout, avoiding a 2-week launch delay.',
+    relatedJobId: 'CT-1875',
+    relatedJobTitle: 'Vodafone Cash Merchant QR Onboarding Visual Kit',
+    brandName: 'Vodafone Ghana',
+    contributionDate: '2026-09-19',
+    timeContext: {
+      startTime: '17:30',
+      endTime: '20:30',
+      durationHours: 3.0,
+      operatingContext: 'outside_standard_hours'
+    },
+    status: 'RECOGNISED',
+    submittedAt: '2026-09-19T20:35:00Z',
+    verifiedAt: '2026-09-20T09:15:00Z',
+    verifiedBy: 'usr-elena-rostova',
+    verifiedByName: 'Elena Rostova',
+    recognisedAt: '2026-09-20T09:20:00Z',
+    recognisedBy: 'usr-marcus-sterling',
+    recognisedByName: 'Marcus Sterling',
+    recognitionNote: 'Demonstrated true initiative and pride in craft. Essential contribution to regional rollout.',
+    attributes: {
+      complexity: 'high',
+      ownership: 'individual',
+      crossFunctional: true
+    }
+  },
+  {
+    id: 'contrib-03',
+    employeeId: 'usr-kofi-boateng',
+    employeeName: 'Kofi Boateng',
+    employeeRole: 'employee',
+    department: 'creative',
+    category: 'collaboration',
+    title: 'Debugged SVG Clipping Artifacts for HNW Investment Portal',
+    description: 'Partnered with front-end engineering to resolve SVG viewBox clipping issues on the high-net-worth customer investment breakdown dashboard layout.',
+    impactStatement: 'Cross-team problem solving resolved a high-priority UI defect blocking user acceptance testing.',
+    relatedJobId: 'CT-1844',
+    relatedJobTitle: 'Stanbic Wealth Management Private Banking Portal',
+    brandName: 'Stanbic Bank Ghana',
+    contributionDate: '2026-09-20',
+    status: 'SUBMITTED',
+    submittedAt: '2026-09-20T19:35:00Z',
+    attributes: {
+      complexity: 'standard',
+      ownership: 'collaborative',
+      crossFunctional: true
+    }
+  },
+  {
+    id: 'contrib-04',
+    employeeId: 'usr-michael-chen',
+    employeeName: 'Michael Chen',
+    employeeRole: 'employee',
+    department: 'client_services',
+    category: 'client_impact',
+    title: 'Pre-Audit of C-Suite Financial Milestone Charts',
+    description: 'Conducted early morning proofing of all financial milestone charts with legal compliance notes ahead of C-Suite review.',
+    impactStatement: 'Eliminated 4 regulatory compliance discrepancies before the client board meeting, protecting agency reputation.',
+    relatedJobId: 'CT-1845',
+    relatedJobTitle: 'Apex FinTech Omnichannel Launch Executive Deck',
+    brandName: 'Apex FinTech EMEA',
+    contributionDate: '2026-09-21',
+    status: 'VERIFIED',
+    submittedAt: '2026-09-21T09:02:00Z',
+    verifiedAt: '2026-09-21T10:15:00Z',
+    verifiedBy: 'usr-david-vance',
+    verifiedByName: 'David Vance',
+    recognitionNote: 'Diligent client care and sharp attention to compliance details.',
+    attributes: {
+      complexity: 'high',
+      ownership: 'individual',
+      crossFunctional: false
+    }
+  },
+  {
+    id: 'contrib-05',
+    employeeId: 'usr-liam-oconnor',
+    employeeName: "Liam O'Connor",
+    employeeRole: 'employee',
+    department: 'client_services',
+    category: 'exceptional_effort',
+    title: 'Emergency Billboard Photo Plate Composite for Print Release',
+    description: 'Emergency crunch to composite high-res photography plates for urgent print campaign billboard release.',
+    impactStatement: 'Guaranteed printer dispatch deadline met for nationwide outdoor launch without incurring late media penalties.',
+    relatedJobId: 'CT-1860',
+    relatedJobTitle: 'Guinness Smooth Street Culture Visual Assets',
+    brandName: 'Guinness Ghana',
+    contributionDate: '2026-09-20',
+    timeContext: {
+      startTime: '10:00',
+      endTime: '14:00',
+      durationHours: 4.0,
+      operatingContext: 'weekend'
+    },
+    status: 'VERIFIED',
+    submittedAt: '2026-09-20T14:05:00Z',
+    verifiedAt: '2026-09-21T08:30:00Z',
+    verifiedBy: 'usr-david-vance',
+    verifiedByName: 'David Vance',
+    recognitionNote: 'Swift operational reaction to meet urgent printer requirements.',
+    attributes: {
+      complexity: 'high',
+      ownership: 'individual',
+      crossFunctional: false
+    }
+  },
+  {
+    id: 'contrib-06',
+    employeeId: 'usr-priyah-sharma',
+    employeeName: 'Priyah Sharma',
+    employeeRole: 'employee',
+    department: 'creative',
+    category: 'process_improvement',
+    title: 'Figma Token Export Automation & Asset Package Generator',
+    description: 'Built a reusable design token export script that generates production-ready asset packages directly from design system files.',
+    impactStatement: 'Saved an estimated 6 hours per week across the creative studio by automating manual asset slicing and spec exports.',
+    contributionDate: '2026-09-22',
+    status: 'RECOGNISED',
+    submittedAt: '2026-09-22T11:00:00Z',
+    verifiedAt: '2026-09-22T14:00:00Z',
+    verifiedBy: 'usr-elena-rostova',
+    verifiedByName: 'Elena Rostova',
+    recognisedAt: '2026-09-22T15:30:00Z',
+    recognisedBy: 'usr-marcus-sterling',
+    recognisedByName: 'Marcus Sterling',
+    recognitionNote: 'Outstanding process innovation. Directly improves studio velocity, design consistency, and team morale.',
+    attributes: {
+      complexity: 'high',
+      ownership: 'individual',
+      crossFunctional: true
+    }
+  },
+  {
+    id: 'contrib-07',
+    employeeId: 'usr-tariq-afriq',
+    employeeName: 'Tariq Afriq',
+    employeeRole: 'employee',
+    department: 'traffic',
+    category: 'operational_support',
+    title: 'Traffic Backlog De-escalation & Squad Re-routing during Sprint Crunch',
+    description: 'Assisted Traffic Dispatch by triaging unassigned debrief packs and recalibrating bandwidth during peak launch week.',
+    impactStatement: 'Prevented 5 deliverable SLA breaches and helped cross-functional teams rebalance load safely without burning out.',
+    contributionDate: '2026-09-23',
+    status: 'VERIFIED',
+    submittedAt: '2026-09-23T16:00:00Z',
+    verifiedAt: '2026-09-23T17:15:00Z',
+    verifiedBy: 'usr-kwame-mensah',
+    verifiedByName: 'Kwame Mensah',
+    attributes: {
+      complexity: 'standard',
+      ownership: 'individual',
+      crossFunctional: true
+    }
+  }
+];
+
+export const INITIAL_DELIVERY_IMPACT_LOGS: DeliveryImpactLog[] = [
+  {
+    id: 'impact-01',
+    jobId: 'CT-1842',
+    jobTitle: 'Zenith Bank - Q4 Mobile App Redesign Campaign',
+    clientProject: 'Zenith Bank • Q4 Flagship Mobile Experience',
+    loggedByUserId: 'usr-amara-okafor',
+    loggedByName: 'Amara Okafor',
+    loggedByRole: 'Motion & Digital Specialist',
+    loggedBySeniority: 'specialist',
+    loggedByDepartment: 'creative',
+    category: 'missing_assets',
+    severity: 'high',
+    estimatedDelayDays: 2,
+    estimatedDelayHours: 16,
+    impactDescription: 'Client has not supplied 4K master product packaging render assets and updated typography license files. Cannot complete video animatic without raw 3D master renders.',
+    mitigationRequested: 'Escalate to Client Services to request asset delivery by 2 PM or grant a 2-day timeline relief.',
+    originalDueDate: '2026-09-24T17:00:00Z',
+    proposedRevisedDueDate: '2026-09-26T17:00:00Z',
+    status: 'active',
+    createdAt: '2026-09-21T10:30:00Z'
+  },
+  {
+    id: 'impact-02',
+    jobId: 'CT-1845',
+    jobTitle: 'Telecel Ghana - Fibre Broadband Out of Home Billboard',
+    clientProject: 'Telecel Ghana • Nationwide Connectivity',
+    loggedByUserId: 'usr-sarah-jenkins',
+    loggedByName: 'Sarah Jenkins',
+    loggedByRole: 'Art Director & Brand Lead',
+    loggedBySeniority: 'art_director',
+    loggedByDepartment: 'creative',
+    category: 'scope_creep',
+    severity: 'critical',
+    estimatedDelayDays: 3,
+    estimatedDelayHours: 24,
+    impactDescription: 'Client requested 4 additional regional dialect adaptations and 2 LED digital screen ratios outside original brief scope during post-debrief sync.',
+    mitigationRequested: 'Traffic needs to assign Junior Designer (Priyah/Kofi) to assist with regional layout resizes or push milestone release by 3 days.',
+    originalDueDate: '2026-09-26T17:00:00Z',
+    proposedRevisedDueDate: '2026-09-29T17:00:00Z',
+    status: 'acknowledged',
+    acknowledgedBy: 'Elena Rostova',
+    acknowledgedAt: '2026-09-22T11:15:00Z',
+    createdAt: '2026-09-22T09:45:00Z'
+  }
+];
+

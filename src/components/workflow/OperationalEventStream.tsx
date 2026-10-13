@@ -42,52 +42,61 @@ export const OperationalEventStream: React.FC = () => {
 
   const getEventBadge = (eventType: OperationalEventType, impact?: 'neutral' | 'congested' | 'blocked') => {
     switch (eventType) {
-      case 'client_revert_received':
+      case 'client_revert':
+      case 'client_revert_received' as OperationalEventType:
         return {
           icon: RotateCcw,
           label: 'Client Revert',
+          textColor: 'text-rose-500 dark:text-rose-400',
           color: 'bg-rose-500/15 text-rose-400 border-rose-500/30'
         };
       case 'blocker_logged':
         return {
           icon: ShieldAlert,
           label: 'Blocker Logged',
+          textColor: 'text-amber-500 dark:text-amber-400',
           color: 'bg-amber-500/15 text-amber-400 border-amber-500/30'
         };
       case 'blocker_resolved':
         return {
           icon: CheckCircle2,
           label: 'Blocker Cleared',
+          textColor: 'text-emerald-500 dark:text-emerald-400',
           color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
         };
       case 'allocation_overridden':
         return {
           icon: AlertCircle,
           label: 'Allocation Override',
+          textColor: 'text-purple-500 dark:text-purple-400',
           color: 'bg-purple-500/15 text-purple-400 border-purple-500/30'
         };
       case 'quality_review_completed':
         return {
           icon: UserCheck,
           label: 'Review Passed',
+          textColor: 'text-emerald-500 dark:text-emerald-400',
           color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
         };
       case 'client_submitted':
         return {
           icon: ArrowRight,
           label: 'Client Sent',
+          textColor: 'text-blue-500 dark:text-blue-400',
           color: 'bg-blue-500/15 text-blue-400 border-blue-500/30'
         };
       case 'cycle_started':
         return {
           icon: Clock,
           label: 'Cycle Started',
+          textColor: 'text-amber-500 dark:text-amber-400',
           color: 'bg-amber-500/15 text-amber-400 border-amber-500/30'
         };
       default:
         return {
           icon: Activity,
           label: eventType.replace(/_/g, ' '),
+          textColor: 'text-text-secondary',
           color: 'bg-surface-elevated text-text-secondary border-border'
         };
     }
@@ -160,12 +169,13 @@ export const OperationalEventStream: React.FC = () => {
                         </span>
                       )}
                       {ev.cycleNumber && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-surface-elevated border border-border text-text-secondary">
-                          Cycle {ev.cycleNumber}
+                        <span className="text-[10px] font-mono uppercase font-bold text-text-tertiary">
+                          / Cycle {ev.cycleNumber}
                         </span>
                       )}
+                      <span className="text-border text-xs">·</span>
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold border ${badge.color}`}
+                        className={`text-[10px] font-mono uppercase font-bold tracking-wider ${badge.textColor}`}
                       >
                         {badge.label}
                       </span>

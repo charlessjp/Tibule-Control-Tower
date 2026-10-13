@@ -182,8 +182,11 @@ export const CorrectionAppealModal: React.FC<CorrectionAppealModalProps> = ({ is
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md cursor-pointer transition-colors"
-                style={{ backgroundColor: 'var(--color-brand)' }}
+                className="px-4 py-2 rounded-xl text-xs font-bold shadow-md cursor-pointer transition-colors"
+                style={{
+                  backgroundColor: 'var(--color-brand)',
+                  color: 'var(--color-brand-contrast)'
+                }}
               >
                 Submit for Manager Review
               </button>

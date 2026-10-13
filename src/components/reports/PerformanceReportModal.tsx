@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { User } from '../../types';
 import { getPermittedReportTargets } from '../../utils/reportPermissions';
@@ -68,6 +68,13 @@ export const PerformanceReportModal: React.FC<PerformanceReportModalProps> = ({
     return currentUser.id;
   });
 
+  // Sync selectedUserId when initialTargetUserId changes or modal opens
+  useEffect(() => {
+    if (initialTargetUserId && permittedTargets.some((u) => u.id === initialTargetUserId)) {
+      setSelectedUserId(initialTargetUserId);
+    }
+  }, [initialTargetUserId, permittedTargets, isOpen]);
+
   // Calendar / Duration Scope Filter
   const [reportScope, setReportScope] = useState<ReportDateScope>(() => {
     return calculateDateRangeFromUnit(30, 'days', new Date(2026, 8, 22));
@@ -107,6 +114,7 @@ export const PerformanceReportModal: React.FC<PerformanceReportModalProps> = ({
   // Export State
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [exportSuccess, setExportSuccess] = useState<boolean>(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // Target User lookup
   const targetUser = useMemo(() => {
@@ -137,6 +145,7 @@ export const PerformanceReportModal: React.FC<PerformanceReportModalProps> = ({
     if (!printRootRef.current) return;
     setIsExporting(true);
     setExportSuccess(false);
+    setExportError(null);
 
     try {
       await generateExecutivePDF({
@@ -152,6 +161,8 @@ export const PerformanceReportModal: React.FC<PerformanceReportModalProps> = ({
       setTimeout(() => setExportSuccess(false), 3000);
     } catch (err) {
       console.error('PDF Generation Failed', err);
+      setExportError(err instanceof Error ? err.message : 'PDF Generation Failed');
+      setTimeout(() => setExportError(null), 6000);
     } finally {
       setIsExporting(false);
     }
@@ -246,7 +257,7 @@ export const PerformanceReportModal: React.FC<PerformanceReportModalProps> = ({
                 >
                   {permittedTargets.map((u) => (
                     <option key={u.id} value={u.id}>
-                      {u.name} {u.id === currentUser.id ? '(Self)' : `— ${u.jobTitle || formatRole(u.role)} (${formatSeniority(u.seniority)})`}
+                      {u.name} {u.id === currentUser.id ? '(Self)' : `- ${u.jobTitle || formatRole(u.role)} (${formatSeniority(u.seniority)})`}
                     </option>
                   ))}
                 </select>
@@ -330,7 +341,7 @@ export const PerformanceReportModal: React.FC<PerformanceReportModalProps> = ({
                 <option value="app">Sync App ({appPalette.name})</option>
                 {PALETTES.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} — {p.tagline.split('•')[0] || p.tagline}
+                    {p.name} - {p.tagline.split('•')[0] || p.tagline}
                   </option>
                 ))}
               </select>
@@ -339,6 +350,12 @@ export const PerformanceReportModal: React.FC<PerformanceReportModalProps> = ({
 
           {/* Action Buttons: PDF Export & Vector Print */}
           <div className="flex items-center gap-2.5">
+            {exportError && (
+              <span className="text-xs font-medium text-rose-500 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-lg animate-fade-in">
+                {exportError}
+              </span>
+            )}
+
             <button
               onClick={handleNativePrint}
               title="Open browser print dialog to print or save vector PDF"
@@ -399,7 +416,7 @@ export const PerformanceReportModal: React.FC<PerformanceReportModalProps> = ({
           className="px-6 py-2.5 border-t border-border bg-surface-elevated flex flex-wrap items-center justify-between gap-2 text-[11px] text-text-tertiary font-mono"
         >
           <div className="flex items-center gap-2">
-            <Shield className="w-3.5 h-3.5 text-emerald-500" />
+            <Shield className="w-3.5 h-3.5" style={{ color: activeTokens.accentPrimary }} />
             <span>
               Hierarchy Access: {isGM ? 'General Manager (Full Agency Access)' : isSuperiors ? 'Superior (Self + Department Subordinates)' : 'Staff (Self Performance Only)'}
             </span>

@@ -81,12 +81,8 @@ export const StudioChampionsView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <span
-              className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase border"
-              style={{
-                backgroundColor: 'var(--color-brand-muted)',
-                borderColor: 'var(--color-brand)',
-                color: 'var(--color-brand)'
-              }}
+              className="text-[11px] font-mono font-bold uppercase tracking-wider"
+              style={{ color: 'var(--color-brand)' }}
             >
               Efficiency &amp; Craft League
             </span>
@@ -95,10 +91,10 @@ export const StudioChampionsView: React.FC = () => {
             </span>
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight mt-1 text-text-primary">
-            Studio Champions: Turnaround &amp; Craft League
+            Studio Champions &amp; Recognition
           </h1>
           <p className="text-xs mt-1 max-w-3xl leading-relaxed text-text-tertiary">
-            Recognising and rewarding the agency&apos;s most reliable, high-speed creators. On-time delivery rates, fast benchmark velocity, and zero-revert client sign-offs unlock direct bonuses, paid flex-days, and executive lunches with GM Marcus Sterling.
+            Agency leaderboard and recognition program celebrating turnaround speed, delivery accuracy, and client approvals with monthly awards and bonuses.
           </p>
         </div>
 
@@ -234,7 +230,7 @@ export const StudioChampionsView: React.FC = () => {
                       <div className="text-[10px] text-text-tertiary">{entry.employeeTitle}</div>
                     </td>
                     <td className="py-3 text-center">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono font-bold text-[11px]">
+                      <span className="font-mono font-bold text-emerald-500 dark:text-emerald-400 text-xs">
                         {entry.onTimeRate}%
                       </span>
                     </td>

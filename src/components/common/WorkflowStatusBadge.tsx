@@ -80,6 +80,15 @@ export const WorkflowStatusBadge: React.FC<WorkflowStatusBadgeProps> = ({
       borderVar = 'color-mix(in srgb, var(--color-warning) 35%, transparent)';
       break;
 
+    case 'creative_brainstorm':
+    case 'strategy_session':
+      label = 'Strategy & Brainstorm';
+      icon = <Sparkles className="w-3 h-3" />;
+      colorVar = 'var(--color-brand)';
+      bgVar = 'color-mix(in srgb, var(--color-brand) 15%, transparent)';
+      borderVar = 'color-mix(in srgb, var(--color-brand) 38%, transparent)';
+      break;
+
     case 'traffic_assignment':
       label = 'Traffic Assignment';
       icon = <UserCheck className="w-3 h-3" />;
@@ -212,12 +221,10 @@ export const WorkflowStatusBadge: React.FC<WorkflowStatusBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md font-semibold tracking-tight border select-none transition-colors ${
-        isSmall ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+      className={`inline-flex items-center gap-1.5 font-bold tracking-tight select-none ${
+        isSmall ? 'text-[11px]' : 'text-xs'
       } ${className}`}
       style={{
-        backgroundColor: bgVar,
-        borderColor: borderVar,
         color: colorVar
       }}
     >

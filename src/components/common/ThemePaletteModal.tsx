@@ -170,12 +170,11 @@ export const ThemePaletteModal: React.FC<ThemePaletteModalProps> = ({ isOpen, on
                           Aa
                         </span>
 
-                        {/* Interactive Accent Pill */}
+                        {/* Colorway Indicator */}
                         <div
-                          className="px-2 py-0.5 rounded-full text-[9px] font-bold font-mono tracking-wide"
+                          className="font-bold font-mono tracking-wider text-[10px]"
                           style={{
-                            backgroundColor: tokens.accentPrimary,
-                            color: tokens.accentContrast
+                            color: tokens.accentPrimary
                           }}
                         >
                           {p.name.toUpperCase()}
