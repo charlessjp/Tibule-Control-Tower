@@ -156,28 +156,28 @@ export const ClientServiceHubView: React.FC = () => {
       />
 
       {/* 3. Primary Navigation Tabs (The 7 Pillars of the Operating Model) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-border text-xs no-scrollbar">
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface border border-border overflow-x-auto text-xs no-scrollbar">
         <button
           onClick={() => setActiveTab('command_centre')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all shrink-0 cursor-pointer ${
             activeTab === 'command_centre'
-              ? 'bg-brand text-brand-contrast shadow-xs'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+              ? 'bg-surface-elevated text-text-primary border border-border shadow-xs'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60'
           }`}
         >
-          <ShieldCheck className="w-4 h-4" />
+          <ShieldCheck className={`w-4 h-4 ${activeTab === 'command_centre' ? 'text-brand' : 'text-text-tertiary'}`} />
           <span>Department Command Centre</span>
         </button>
 
         <button
           onClick={() => setActiveTab('timesheets_audit')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all shrink-0 cursor-pointer ${
             activeTab === 'timesheets_audit'
-              ? 'bg-brand text-brand-contrast shadow-xs'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+              ? 'bg-surface-elevated text-text-primary border border-border shadow-xs'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60'
           }`}
         >
-          <Clock className="w-4 h-4" />
+          <Clock className={`w-4 h-4 ${activeTab === 'timesheets_audit' ? 'text-brand' : 'text-text-tertiary'}`} />
           <span>40h Timesheets &amp; Audit</span>
           {discrepancyAlerts && discrepancyAlerts.filter((a) => a.status === 'flagged').length > 0 && (
             <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
@@ -186,62 +186,62 @@ export const ClientServiceHubView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('account_workbench')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all shrink-0 cursor-pointer ${
             activeTab === 'account_workbench'
-              ? 'bg-brand text-brand-contrast shadow-xs'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+              ? 'bg-surface-elevated text-text-primary border border-border shadow-xs'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60'
           }`}
         >
-          <Building2 className="w-4 h-4" />
+          <Building2 className={`w-4 h-4 ${activeTab === 'account_workbench' ? 'text-brand' : 'text-text-tertiary'}`} />
           <span>Account Workbench (SAM / AM)</span>
         </button>
 
         <button
           onClick={() => setActiveTab('delivery_workbench')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all shrink-0 cursor-pointer ${
             activeTab === 'delivery_workbench'
-              ? 'bg-brand text-brand-contrast shadow-xs'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+              ? 'bg-surface-elevated text-text-primary border border-border shadow-xs'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60'
           }`}
         >
-          <CheckSquare className="w-4 h-4" />
+          <CheckSquare className={`w-4 h-4 ${activeTab === 'delivery_workbench' ? 'text-brand' : 'text-text-tertiary'}`} />
           <span>Delivery Workbench (AE)</span>
         </button>
 
         <button
           onClick={() => setActiveTab('discipline_capacity')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all shrink-0 cursor-pointer ${
             activeTab === 'discipline_capacity'
-              ? 'bg-brand text-brand-contrast shadow-xs'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+              ? 'bg-surface-elevated text-text-primary border border-border shadow-xs'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60'
           }`}
         >
-          <Layers className="w-4 h-4" />
-          <span>Discipline &amp; Capacity (7 Disciplines)</span>
+          <Layers className={`w-4 h-4 ${activeTab === 'discipline_capacity' ? 'text-brand' : 'text-text-tertiary'}`} />
+          <span>Discipline &amp; Capacity</span>
         </button>
 
         <button
           onClick={() => setActiveTab('two_dimensions')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all shrink-0 cursor-pointer ${
             activeTab === 'two_dimensions'
-              ? 'bg-brand text-brand-contrast shadow-xs'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+              ? 'bg-surface-elevated text-text-primary border border-border shadow-xs'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60'
           }`}
         >
-          <GitCommit className="w-4 h-4" />
+          <GitCommit className={`w-4 h-4 ${activeTab === 'two_dimensions' ? 'text-brand' : 'text-text-tertiary'}`} />
           <span>The Two Dimensions</span>
         </button>
 
         <button
           onClick={() => setActiveTab('nss_progression')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all shrink-0 cursor-pointer ${
             activeTab === 'nss_progression'
-              ? 'bg-brand text-brand-contrast shadow-xs'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
+              ? 'bg-surface-elevated text-text-primary border border-border shadow-xs'
+              : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/60'
           }`}
         >
-          <GraduationCap className="w-4 h-4" />
-          <span>NSS Progression Pathway</span>
+          <GraduationCap className={`w-4 h-4 ${activeTab === 'nss_progression' ? 'text-brand' : 'text-text-tertiary'}`} />
+          <span>NSS Progression</span>
         </button>
       </div>
 

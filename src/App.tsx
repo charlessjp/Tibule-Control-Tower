@@ -161,11 +161,6 @@ const AppContent: React.FC = () => {
           color: 'var(--color-text-primary)'
         }}
       >
-        <div className="absolute inset-0 bg-dot-grid opacity-60 pointer-events-none z-0" />
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[350px] rounded-full blur-[140px] pointer-events-none opacity-25 z-0"
-          style={{ background: 'var(--color-brand-glow)' }}
-        />
         <div className="relative z-10 w-full max-w-2xl my-auto">
           <AuthPortal defaultMode="login" />
         </div>
@@ -181,15 +176,6 @@ const AppContent: React.FC = () => {
         color: 'var(--color-text-primary)'
       }}
     >
-      {/* Ambient Visual Atmosphere: Tactical Dot Grid */}
-      <div className="absolute inset-0 bg-dot-grid opacity-60 pointer-events-none z-0" />
-
-      {/* Ambient Radial Glow Field */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] rounded-full blur-[140px] pointer-events-none opacity-20 z-0"
-        style={{ background: 'var(--color-brand-glow)' }}
-      />
-
       {/* Persistent Left Architectural Navigation */}
       <Sidebar />
 

@@ -32,7 +32,8 @@ import {
   Send,
   Lightbulb,
   UserCheck,
-  AlertTriangle
+  AlertTriangle,
+  Activity
 } from 'lucide-react';
 import { DebriefMeetingModal } from '../workflow/DebriefMeetingModal';
 import { CreativeStrategyModal } from '../workflow/CreativeStrategyModal';
@@ -71,6 +72,7 @@ export const EmployeeDashboard: React.FC = () => {
 
   const firstName = currentUser.name.split(' ')[0] || 'Sarah';
   const contribSummary = getUserContributionSummary(currentUser.id);
+  const [activeTab, setActiveTab] = React.useState<'deliverables' | 'capacity_schedule' | 'impact_recognition' | 'analytics' | 'all'>('deliverables');
   const [clarificationReplies, setClarificationReplies] = React.useState<Record<string, string>>({});
 
   // Modal inspection states
@@ -122,74 +124,109 @@ export const EmployeeDashboard: React.FC = () => {
   const activePeriodCount = myActiveJobs.length;
 
   return (
-    <div id="employee-dashboard-container" className="flex flex-col xl:flex-row gap-6 pb-12">
-      {/* ========================================================
-          LEFT / MAIN WORKSPACE AREA
-      ======================================================== */}
-      <div className="flex-1 min-w-0 space-y-6">
-        {/* Friendly Top Greeting */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text-primary">
-              Good morning, {firstName}.
-            </h1>
-            <p className="text-xs sm:text-sm mt-1 text-text-tertiary">
-              Your daily workspace: track active deliverables, log work evidence, and monitor your personal capacity.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-            <button
-              onClick={() => openReportModal(currentUser.id)}
-              className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-border bg-surface-elevated text-text-primary hover:bg-surface-hover hover:border-brand-primary/40 cursor-pointer shadow-xs"
-              title="Generate your personal PDF performance dossier"
-            >
-              <FileDown className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
-              <span>My PDF Report</span>
-            </button>
-            <button
-              onClick={() => openLogDeliveryImpactModal()}
-              className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer shadow-xs"
-              title="Log delivery impediment or deadline delay factor"
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Log Delivery Risk</span>
-            </button>
-            <button
-              onClick={() => openLogContributionModal()}
-              className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-border bg-surface-elevated hover:bg-surface text-text-primary cursor-pointer shadow-xs"
-            >
-              <Award className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
-              <span>Record Contribution</span>
-            </button>
-            <button
-              onClick={() => setActiveView('my_work')}
-              className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-              style={{
-                backgroundColor: 'var(--color-brand)',
-                color: 'var(--color-brand-contrast)'
-              }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create Task</span>
-            </button>
-          </div>
+    <div id="employee-dashboard-container" className="space-y-6 pb-12">
+      {/* Friendly Top Greeting */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text-primary">
+            Good morning, {firstName}.
+          </h1>
+          <p className="text-xs sm:text-sm mt-1 text-text-tertiary">
+            Your daily workspace: track active deliverables, log work evidence, and monitor your personal capacity.
+          </p>
         </div>
 
-        {/* Operating Date Horizon Filter */}
-        <HomeDateFilterBar
-          period={homeCalendarPeriod}
-          onPeriodChange={setHomeCalendarPeriod}
-          customRange={homeCustomDateRange}
-          onCustomRangeChange={setHomeCustomDateRange}
-          matchedCount={periodMyJobs.length}
-          archivedCount={periodMyArchived.length}
-          totalCount={myJobs.length}
-          label="My Operating Period"
-        />
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <button
+            onClick={() => openReportModal(currentUser.id)}
+            className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-border bg-surface-elevated text-text-primary hover:bg-surface-hover hover:border-brand-primary/40 cursor-pointer shadow-xs"
+            title="Generate your personal PDF performance dossier"
+          >
+            <FileDown className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
+            <span>My PDF Report</span>
+          </button>
+          <button
+            onClick={() => openLogDeliveryImpactModal()}
+            className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer shadow-xs"
+            title="Log delivery impediment or deadline delay factor"
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>Log Delivery Risk</span>
+          </button>
+          <button
+            onClick={() => openLogContributionModal()}
+            className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all border border-border bg-surface-elevated hover:bg-surface text-text-primary cursor-pointer shadow-xs"
+          >
+            <Award className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
+            <span>Record Contribution</span>
+          </button>
+          <button
+            onClick={() => setActiveView('my_work')}
+            className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            style={{
+              backgroundColor: 'var(--color-brand)',
+              color: 'var(--color-brand-contrast)'
+            }}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create Task</span>
+          </button>
+        </div>
+      </div>
 
-        {/* 4 Clean Metric Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      {/* Operating Date Horizon Filter */}
+      <HomeDateFilterBar
+        period={homeCalendarPeriod}
+        onPeriodChange={setHomeCalendarPeriod}
+        customRange={homeCustomDateRange}
+        onCustomRangeChange={setHomeCustomDateRange}
+        matchedCount={periodMyJobs.length}
+        archivedCount={periodMyArchived.length}
+        totalCount={myJobs.length}
+        label="My Operating Period"
+      />
+
+      {/* Workspace Lens Tabs */}
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface border border-border overflow-x-auto text-xs">
+        {[
+          { id: 'deliverables', label: 'My Deliverables', icon: Target, badge: `${myActiveJobs.length} Active` },
+          { id: 'capacity_schedule', label: 'Capacity & Schedule', icon: BarChart3, badge: '40h Universal' },
+          { id: 'impact_recognition', label: 'Impact & Recognition', icon: Award, badge: `${contribSummary.verifiedCount} Verified` },
+          { id: 'analytics', label: 'Personal Analytics', icon: Activity },
+          { id: 'all', label: 'All Sections', icon: Layers }
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap text-xs ${
+                isActive
+                  ? 'bg-surface-elevated text-text-primary border border-border shadow-xs'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/50'
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-brand' : 'text-text-tertiary'}`} />
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                  isActive ? 'bg-brand/10 text-brand' : 'bg-surface text-text-tertiary'
+                }`}>
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* TAB 1: MY DELIVERABLES */}
+      {(activeTab === 'deliverables' || activeTab === 'all') && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* 4 Clean Metric Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Card 1: Deliverables in Scope */}
           <SpotlightCard className="p-4 flex flex-col justify-between h-28">
             <div className="flex items-center justify-between">
@@ -283,53 +320,18 @@ export const EmployeeDashboard: React.FC = () => {
           </SpotlightCard>
         </div>
 
-        {/* Supportive Workload Balance Card */}
-        <SpotlightCard className="p-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5 max-w-xl">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
-                <h2 className="text-sm font-bold text-text-primary">
-                  Weekly Schedule &amp; Workload Balance
-                </h2>
-              </div>
-              <p className="text-xs leading-relaxed text-text-secondary">
-                You have <strong className="text-text-primary">44 hours</strong> scheduled
-                this week against your <strong className="text-text-primary">38-hour</strong> weekly baseline.
-                Your deliverables are in good health. If you feel any strain or need to reassign a task, your team is ready to support you.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => setActiveView('team_traffic')}
-                className="px-3.5 py-2 rounded-xl border border-border bg-surface-elevated hover:bg-surface text-text-primary text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Users className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />
-                <span>View Team Workload</span>
-              </button>
-            </div>
-          </div>
-        </SpotlightCard>
-
         {/* Called Upon Sessions: Debriefs, Brainstorms & Creative Alignment */}
         {(calledDebriefJobs.length > 0 || calledBrainstormJobs.length > 0 || alignmentReviewJobs.length > 0) && (
-          <div
-            className="space-y-3 p-4 rounded-2xl border animate-in fade-in"
-            style={{
-              backgroundColor: 'var(--color-brand-muted)',
-              borderColor: 'color-mix(in srgb, var(--color-brand) 30%, transparent)'
-            }}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="space-y-3.5 p-5 rounded-2xl border border-border bg-surface">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-2.5">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
+                <Users className="w-4 h-4 text-brand" />
                 <h2 className="text-sm font-bold text-text-primary">
                   Called Stakeholder Sessions &amp; Calendar Invites
                 </h2>
               </div>
-              <span className="text-[10px] font-mono flex items-center gap-1" style={{ color: 'var(--color-success)' }}>
-                ✓ Synced with Teams / Work Calendar
+              <span className="text-[11px] font-mono text-emerald-500 font-medium">
+                Synced with Calendar
               </span>
             </div>
 
@@ -575,15 +577,69 @@ export const EmployeeDashboard: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
+    )}
 
-        {/* Workload & Delivery Visual Analytics (Employee Persona Telemetry) */}
-        <VisualAnalyticsWidget
-          scope="employee"
-          employeeId={currentUser.id}
-          title={`My Workload & Delivery Visual Analytics: ${firstName}`}
-          subtitle="Your personal deliverable hours distribution, quoting accuracy, and audited operational performance pillars."
-        />
+    {/* TAB 2: CAPACITY & SCHEDULE */}
+    {(activeTab === 'capacity_schedule' || activeTab === 'all') && (
+      <div className="space-y-6 animate-in fade-in duration-150">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Supportive Workload Balance Card */}
+          <SpotlightCard className="p-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1 max-w-xl">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-brand" />
+                  <h2 className="text-sm font-bold text-text-primary">
+                    Universal 40h Baseline & Workload Balance
+                  </h2>
+                </div>
+                <p className="text-xs leading-relaxed text-text-secondary">
+                  Your deliverable allocation is scheduled at <strong className="text-text-primary font-semibold">36 hours</strong> against the universal <strong className="text-text-primary font-semibold">40.0-hour</strong> weekly baseline. All hours beyond 40.0 are tracked as overtime with compensatory recognition.
+                </p>
+              </div>
 
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setActiveView('team_traffic')}
+                  className="px-3.5 py-1.5 rounded-xl border border-border bg-surface-elevated hover:bg-surface-hover text-text-primary text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Users className="w-3.5 h-3.5 text-brand" />
+                  <span>Team Bandwidth</span>
+                </button>
+              </div>
+            </div>
+          </SpotlightCard>
+
+          {/* Operational Capacity & Pressure */}
+          <SpotlightCard className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-brand" />
+                <h2 className="text-xs font-bold text-text-primary">
+                  Personal 40-Hour Capacity Ratio
+                </h2>
+              </div>
+              <span className="text-[11px] font-mono font-bold text-emerald-500">
+                Healthy Buffer (4h reserve)
+              </span>
+            </div>
+
+            <CapacityMeter
+              percent={90}
+              hoursCommitted={36}
+              hoursContracted={40}
+              label="Standard 40-Hour Capacity"
+              showLegend
+            />
+          </SpotlightCard>
+        </div>
+      </div>
+    )}
+
+    {/* TAB 3: IMPACT & RECOGNITION */}
+    {(activeTab === 'impact_recognition' || activeTab === 'all') && (
+      <div className="space-y-6 animate-in fade-in duration-150">
         {/* Strategic Recognition & Verified Impact */}
         <SpotlightCard className="p-5 space-y-4 border-brand-primary/20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
@@ -871,217 +927,20 @@ export const EmployeeDashboard: React.FC = () => {
             </div>
           )}
         </SpotlightCard>
-
-        {/* Quick Actions (Employee Friendly) */}
-        <div className="space-y-3.5">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
-            <h2 className="text-sm font-bold text-text-primary">
-              Quick Actions
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <button
-              onClick={() => openLogContributionModal()}
-              className="p-3.5 rounded-xl border border-border bg-surface-elevated hover:bg-surface hover:border-[var(--color-brand)] text-left flex items-center gap-3 transition-all duration-200 cursor-pointer group"
-            >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
-                style={{
-                  backgroundColor: 'var(--color-brand-muted)',
-                  color: 'var(--color-brand)'
-                }}
-              >
-                <Award className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-text-primary">
-                  Record Contribution
-                </div>
-                <div className="text-[11px] text-text-tertiary">
-                  Deliveries, Impact, Craft &amp; Sprints
-                </div>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveView('my_work')}
-              className="p-4 rounded-xl border border-border bg-surface hover:border-[var(--color-brand)]/50 hover:bg-surface-elevated text-left flex items-center gap-3 transition-all duration-200 cursor-pointer group"
-            >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: 'var(--color-brand-muted)', color: 'var(--color-brand)' }}
-              >
-                <Plus className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-text-primary">
-                  Create Work Request
-                </div>
-                <div className="text-[11px] text-text-tertiary">
-                  Add a new deliverable or subtask
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setShowBuildCaseModal(true)}
-              className="p-4 rounded-xl border border-border bg-surface hover:border-[var(--color-brand)]/50 hover:bg-surface-elevated text-left flex items-center gap-3 transition-all duration-200 cursor-pointer group"
-            >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: 'var(--color-brand-muted)', color: 'var(--color-brand)' }}
-              >
-                <Award className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-text-primary">
-                  Record Achievement
-                </div>
-                <div className="text-[11px] text-text-tertiary">
-                  Log positive feedback or milestone
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveView('team_traffic')}
-              className="p-4 rounded-xl border border-border bg-surface hover:border-[var(--color-brand)]/50 hover:bg-surface-elevated text-left flex items-center gap-3 transition-all duration-200 cursor-pointer group"
-            >
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: 'var(--color-brand-muted)', color: 'var(--color-brand)' }}
-              >
-                <Users className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-text-primary">
-                  Request Workload Review
-                </div>
-                <div className="text-[11px] text-text-tertiary">
-                  Balance hours with your manager
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Atmospheric Banner */}
-        <div className="relative rounded-2xl overflow-hidden border border-border min-h-[7rem] flex items-center justify-between px-4 sm:px-8 py-3 text-white shadow-md">
-          <img
-            src={controlTowerBannerImg}
-            alt="Tibule Mountain Panorama"
-            className="absolute inset-0 w-full h-full object-cover opacity-35"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/50" />
-          <div className="relative z-10 space-y-1">
-            <div className="text-xs text-text-tertiary uppercase font-mono tracking-wider">
-              Tibule Workplace
-            </div>
-            <div className="text-base sm:text-lg font-extrabold text-white">
-              Clearer work. A stronger tomorrow.
-            </div>
-          </div>
-          <div className="relative z-10 text-right hidden md:block">
-            <p className="text-xs font-serif italic text-text-secondary">
-              &ldquo;A well managed day creates a well built future.&rdquo;
-            </p>
-          </div>
-        </div>
       </div>
+    )}
 
-      {/* ========================================================
-          RIGHT COLUMN: Team Pulse & Helpful Context
-      ======================================================== */}
-      <div className="w-full xl:w-80 shrink-0 space-y-6">
-        {/* Date & Quote Header */}
-        <div className="space-y-2">
-          <div className="text-xs font-mono text-text-tertiary">
-            Thursday, 10 September 2026
-          </div>
-          <div className="text-xl font-serif italic leading-tight text-text-primary">
-            &ldquo;Progress takes focus.&rdquo;
-          </div>
-          <div className="w-10 h-0.5 rounded-full mt-2" style={{ backgroundColor: 'var(--color-brand)' }} />
-        </div>
-
-        {/* Team Pulse Card */}
-        <SpotlightCard className="p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
-              <h2 className="text-xs font-bold text-text-primary">
-                Operational Capacity &amp; Pressure
-              </h2>
-            </div>
-            <button
-              onClick={() => setActiveView('team_traffic')}
-              className="text-xs flex items-center gap-1 cursor-pointer transition-colors text-text-secondary hover:text-text-primary"
-            >
-              <span>Creative Team</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <CapacityMeter
-            percent={72}
-            hoursCommitted={152}
-            hoursContracted={210}
-            label="Team Load Ratio"
-            showLegend
-          />
-        </SpotlightCard>
-
-        {/* Recent Activity / Updates */}
-        <div className="p-5 rounded-2xl border border-border bg-surface space-y-3.5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-text-primary">
-              Recent Updates
-            </h2>
-            <span className="text-[10px] font-mono text-text-tertiary">
-              Live
-            </span>
-          </div>
-
-          <div className="space-y-3 text-xs">
-            <div className="flex items-start gap-2.5">
-              <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: 'var(--color-success)' }} />
-              <div>
-                <p className="text-text-secondary">
-                  <strong className="text-text-primary">Alex Rivera</strong> submitted Q3 Brand Assets for review.
-                </p>
-                <span className="text-[10px] text-text-tertiary">
-                  15 minutes ago
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2.5">
-              <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: 'var(--color-brand)' }} />
-              <div>
-                <p className="text-text-secondary">
-                  Workload rebalanced on <strong className="text-text-primary">Kalahari Solar</strong>.
-                </p>
-                <span className="text-[10px] text-text-tertiary">
-                  1 hour ago
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2.5">
-              <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: 'var(--color-brand)' }} />
-              <div>
-                <p className="text-text-secondary">
-                  Approval requested on <strong className="text-text-primary">Zenith Brand Guidelines</strong>.
-                </p>
-                <span className="text-[10px] text-text-tertiary">
-                  2 hours ago
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+    {/* TAB 4: VISUAL ANALYTICS */}
+    {(activeTab === 'analytics' || activeTab === 'all') && (
+      <div className="space-y-6 animate-in fade-in duration-150">
+        <VisualAnalyticsWidget
+          scope="employee"
+          employeeId={currentUser.id}
+          title={`My Workload & Delivery Visual Analytics: ${firstName}`}
+          subtitle="Your personal deliverable hours distribution, quoting accuracy, and audited operational performance pillars."
+        />
       </div>
+    )}
 
       {/* Modals for Inspecting Called Sessions */}
       <DebriefMeetingModal

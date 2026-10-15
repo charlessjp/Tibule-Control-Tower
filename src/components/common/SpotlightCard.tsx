@@ -64,15 +64,13 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
       style={{
         borderRadius: `${outerRadius}px`,
         backgroundColor: 'var(--color-surface)',
-        borderColor: isHovered ? 'var(--color-brand)' : 'var(--color-border)',
+        borderColor: isHovered ? 'color-mix(in srgb, var(--color-brand) 40%, var(--color-border))' : 'var(--color-border)',
         color: 'var(--color-text-primary)',
         boxShadow: isHovered
           ? (isDark
-              ? '0 0 32px -4px var(--color-halo-glow, rgba(3,193,214,0.4)), 0 0 12px -2px var(--color-brand), 0 12px 28px -6px rgba(0, 0, 0, 0.5), inset 0 1px 1.5px 0 rgba(255,255,255,0.15)'
-              : '0 0 24px -2px var(--color-halo-glow, rgba(3,193,214,0.25)), 0 0 10px -2px var(--color-brand), 0 8px 22px -4px rgba(0, 0, 0, 0.12), inset 0 1px 1.5px 0 rgba(255,255,255,0.7)')
-          : (isDark
-              ? 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.05)'
-              : 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.5)'),
+              ? '0 6px 20px -4px rgba(0, 0, 0, 0.35)'
+              : '0 4px 14px -2px rgba(0, 0, 0, 0.08)')
+          : undefined,
         ['--inner-radius' as any]: `${innerRadius}px`,
         ...style
       }}
@@ -81,46 +79,20 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
       }`}
       {...rest}
     >
-      {/* Interactive Cursor-Following Radial Halo Border Ring */}
+      {/* Subtle, Non-Intrusive Soft Light (Quiet, Low-Eyestrain) */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -inset-[1px] rounded-[inherit] transition-opacity duration-150 z-20"
+        className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-200 z-0"
         style={{
-          opacity: isHovered ? 1 : 0,
-          background: `radial-gradient(350px circle at ${position.x}px ${position.y}px, var(--color-brand), transparent 70%)`,
-          mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-          WebkitMaskComposite: 'xor',
-          maskComposite: 'exclude',
-          padding: '1.5px'
+          opacity: isHovered ? (isDark ? 0.06 : 0.04) : 0,
+          background: `radial-gradient(350px circle at ${position.x}px ${position.y}px, var(--color-brand), transparent 70%)`
         }}
       />
 
-      {/* Dynamic Cursor-Following Radial Surface Spotlight (Base Layer) */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-150 z-0"
-        style={{
-          opacity: isHovered ? 1 : 0,
-          background: `radial-gradient(450px circle at ${position.x}px ${position.y}px, ${effectiveSpotlight}, transparent 70%)`
-        }}
-      />
-
-      {/* Card Content Surface with relative positioning above base spotlight */}
+      {/* Card Content Surface */}
       <div className={`relative z-10 w-full h-full ${className}`}>
         {children}
       </div>
-
-      {/* Dynamic Cursor-Following Top Overlay Light (Ensures spotlight is visible even over child cards with backgrounds) */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-150 z-30"
-        style={{
-          opacity: isHovered ? (isDark ? 0.35 : 0.16) : 0,
-          background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, var(--color-brand), transparent 70%)`,
-          mixBlendMode: isDark ? 'screen' : 'overlay'
-        }}
-      />
     </div>
   );
 };

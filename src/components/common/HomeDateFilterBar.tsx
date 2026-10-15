@@ -117,22 +117,22 @@ export const HomeDateFilterBar: React.FC<HomeDateFilterBarProps> = ({
 
   return (
     <div
-      className={`rounded-2xl border p-3.5 sm:p-4 space-y-3 transition-all duration-200 shadow-xs relative ${className}`}
+      className={`rounded-xl border p-3 sm:p-3.5 space-y-2.5 transition-all duration-150 relative ${className}`}
       style={{
-        backgroundColor: 'var(--color-surface-elevated)',
+        backgroundColor: 'var(--color-surface)',
         borderColor: 'var(--color-border)'
       }}
     >
-      {/* Top Row: PDF Report Calendar Implementation + Active Cycle indicator + Date Horizon Summary */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      {/* Top Row: Calendar Scope Trigger + Date Horizon Summary */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5 flex-wrap">
           {label && (
-            <span className="text-[11px] font-mono font-bold text-text-tertiary hidden sm:inline uppercase">
+            <span className="text-[11px] font-mono font-semibold text-text-tertiary hidden sm:inline uppercase">
               {label}:
             </span>
           )}
 
-          {/* Unified Primary Calendar & Scope Trigger (Exact PDF Report Implementation) */}
+          {/* Unified Primary Calendar & Scope Trigger */}
           <ReportScopeCalendarPicker
             value={activeReportScope}
             onChange={handleReportScopeChange}
@@ -141,13 +141,13 @@ export const HomeDateFilterBar: React.FC<HomeDateFilterBarProps> = ({
             isOpen={isCalendarOpen}
             onOpenChange={setIsCalendarOpen}
             headerTitle="Workspace Operating Horizon"
-            headerSubtitle="Select custom date range or configure duration stepper (Days, Weeks, Months)."
+            headerSubtitle="Select custom date range or configure duration stepper."
           />
 
           {/* Active Operating Cycle Status Indicator */}
           {activePeriodConfig.isCurrent && (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-500">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               <span>Active Cycle</span>
             </span>
           )}
@@ -158,10 +158,9 @@ export const HomeDateFilterBar: React.FC<HomeDateFilterBarProps> = ({
           <span className="font-medium text-text-secondary">{formattedDateRange}</span>
           {(matchedCount !== undefined || totalCount !== undefined) && (
             <>
-              <span>•</span>
-              <span className="font-semibold text-text-primary">
-                {matchedCount !== undefined ? matchedCount : totalCount} deliverable
-                {(matchedCount !== 1 && totalCount !== 1) ? 's' : ''} in scope
+              <span>·</span>
+              <span className="text-text-secondary">
+                <strong className="text-text-primary font-bold">{matchedCount !== undefined ? matchedCount : totalCount}</strong> deliverables
                 {archivedCount > 0 && ` (${archivedCount} archived)`}
               </span>
             </>
@@ -170,9 +169,9 @@ export const HomeDateFilterBar: React.FC<HomeDateFilterBarProps> = ({
       </div>
 
       {/* Quick Period Filter Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-        <span className="text-[11px] font-mono text-text-tertiary mr-1 flex items-center gap-1 shrink-0">
-          <Filter className="w-3 h-3" /> Filter:
+      <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-xs no-scrollbar pt-1 border-t border-border/50">
+        <span className="text-[10px] font-mono text-text-tertiary mr-1 flex items-center gap-1 shrink-0 uppercase tracking-wider">
+          <Filter className="w-3 h-3" /> Scope:
         </span>
         {CALENDAR_PERIODS.map((p) => {
           const isSelected = period === p.id;
@@ -186,20 +185,11 @@ export const HomeDateFilterBar: React.FC<HomeDateFilterBarProps> = ({
                   setIsCalendarOpen(true);
                 }
               }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
                 isSelected
-                  ? 'border font-bold shadow-xs'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface border border-transparent'
+                  ? 'bg-surface-elevated text-brand font-semibold border border-border shadow-xs'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
               }`}
-              style={
-                isSelected
-                  ? {
-                      backgroundColor: 'var(--color-brand-muted)',
-                      borderColor: 'color-mix(in srgb, var(--color-brand) 40%, transparent)',
-                      color: 'var(--color-brand)'
-                    }
-                  : undefined
-              }
               title={p.description}
             >
               {p.shortLabel}

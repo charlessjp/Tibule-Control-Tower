@@ -70,7 +70,7 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
           'Concept Art Director'
         ],
         description: 'Squad leadership, visual craftsmanship, artistic guidance, and squad review sign-off.',
-        defaultCapacity: 38
+        defaultCapacity: 40
       },
       {
         seniority: 'specialist',
@@ -99,7 +99,7 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
           'Junior Motion Designer'
         ],
         description: 'Execution of day-to-day deliverables under supervisory oversight.',
-        defaultCapacity: 38
+        defaultCapacity: 40
       },
       {
         seniority: 'nsp_intern',
@@ -108,7 +108,7 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
         defaultTitle: 'Creative NSP Assistant',
         titleOptions: ['Creative NSP Assistant', 'Design Intern', 'Motion Graphic Intern', 'Creative NSS Assistant'],
         description: 'National Service Personnel (NSP) or student intern undergoing creative studio mentorship.',
-        defaultCapacity: 35
+        defaultCapacity: 40
       }
     ]
   },
@@ -151,7 +151,7 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
         defaultTitle: 'Junior Traffic Officer',
         titleOptions: ['Junior Traffic Officer', 'Traffic Assistant'],
         description: 'Hierarchy expansion: Assisting traffic checks and calendar logs.',
-        defaultCapacity: 38
+        defaultCapacity: 40
       },
       {
         seniority: 'nss_intern',
@@ -160,7 +160,7 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
         defaultTitle: 'Traffic NSS Assistant',
         titleOptions: ['Traffic NSS Assistant', 'Operations Intern'],
         description: 'National Service Scheme or intern supporting studio traffic logs.',
-        defaultCapacity: 35
+        defaultCapacity: 40
       }
     ]
   },
@@ -212,7 +212,7 @@ export const AGENCY_DEPARTMENT_CONFIG: Record<
         defaultTitle: 'National Service Personnel (NSS)',
         titleOptions: ['National Service Personnel (NSS)', 'Client Services Intern'],
         description: 'Junior support and structured development pathway towards Account Executive supported by performance evidence.',
-        defaultCapacity: 35
+        defaultCapacity: 40
       }
     ]
   }
@@ -268,6 +268,7 @@ export function loadStoredUsers(): User[] {
           if (init && (init.teamId === 'team-client-service' || init.department === 'client_services')) {
             userMap.set(u.id, {
               ...u,
+              capacityHoursPerWeek: 40,
               jobTitle: init.jobTitle,
               role: init.role,
               seniority: init.seniority,
@@ -275,7 +276,10 @@ export function loadStoredUsers(): User[] {
               status: init.status
             });
           } else {
-            userMap.set(u.id, u);
+            userMap.set(u.id, {
+              ...u,
+              capacityHoursPerWeek: 40
+            });
           }
         });
         return Array.from(userMap.values());

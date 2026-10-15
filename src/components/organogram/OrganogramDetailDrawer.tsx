@@ -58,12 +58,12 @@ export const OrganogramDetailDrawer: React.FC<OrganogramDetailDrawerProps> = ({
     .reduce((sum, e) => sum + e.hours, 0);
   const disciplineHours = selectedNode.weeklyLoggedHours - accountMgmtHours;
 
-  // Department theme badge
+  // Department theme badge: Creative=Yellow, Traffic=Signal Pink, Client Services=Sky Blue, Executive=Royal Violet
   const deptStyle = {
-    executive: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
+    executive: 'bg-violet-500/10 text-violet-400 border-violet-500/30',
     client_services: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
-    creative: 'bg-violet-500/10 text-violet-400 border-violet-500/30',
-    traffic: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+    creative: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/30',
+    traffic: 'bg-rose-500/10 text-rose-400 border-rose-500/30'
   }[selectedNode.department] || 'bg-brand/10 text-brand border-brand/30';
 
   return (
@@ -227,30 +227,27 @@ export const OrganogramDetailDrawer: React.FC<OrganogramDetailDrawerProps> = ({
             </div>
           </div>
 
-          {/* 4. Functional Disciplines & Specialization Profile */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
-              Functional Execution Capabilities
-            </h4>
-            <div className="bg-surface-elevated border border-border rounded-xl p-3.5 space-y-2">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {selectedNode.user.skillProfile && selectedNode.user.skillProfile.length > 0 ? (
-                  selectedNode.user.skillProfile.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="text-xs font-mono px-2 py-0.5 rounded-md bg-surface border border-border text-text-primary"
-                    >
-                      {skill}
+          {/* 4. Functional Disciplines: ONLY for Client Services */}
+          {selectedNode.department === 'client_services' && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-mono uppercase tracking-wider text-text-tertiary">
+                Client Services Discipline Profile
+              </h4>
+              <div className="bg-surface-elevated border border-border rounded-xl p-3.5 space-y-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {selectedNode.primaryDiscipline ? (
+                    <span className="text-xs font-mono px-2.5 py-1 rounded-md bg-sky-500/15 border border-sky-500/30 text-sky-400 font-bold">
+                      {selectedNode.primaryDiscipline.replace(/_/g, ' ')}
                     </span>
-                  ))
-                ) : (
-                  <span className="text-xs text-text-tertiary font-mono">
-                    Generalist Management
-                  </span>
-                )}
+                  ) : (
+                    <span className="text-xs text-text-tertiary font-mono">
+                      Account Leadership
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* 5. Active Deliverables & Brief Commitments */}
           <div className="space-y-2">

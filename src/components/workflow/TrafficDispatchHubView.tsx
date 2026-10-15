@@ -312,7 +312,7 @@ export const TrafficDispatchHubView: React.FC = () => {
               </button>
             </div>
             <p className="text-xs text-text-tertiary">
-              Measures active coordination and dispatch volume on the Traffic desk in <strong>Operational Points</strong> (benchmarked against a <strong>40.0 pt weekly desk capacity</strong>). Unlike creative staff who log billable artwork hours, Traffic is measured on coordination tasks, dispatching, and conflict resolution.
+              Measures active coordination and dispatch volume on the Traffic desk in <strong>Operational Points</strong> (benchmarked against a <strong>40.0 pt weekly desk capacity</strong>). Traffic is measured on coordination tasks, dispatching, and conflict resolution.
             </p>
           </div>
 

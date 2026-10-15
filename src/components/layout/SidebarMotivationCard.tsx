@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
+import { Sparkles, RefreshCw, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
 // 10 Atmospheric Photographic Visuals
 import sidebarMountainImg from '../../assets/images/sidebar_mountain_1789471169503.jpg';
@@ -15,21 +16,22 @@ import sidebarZenWaterImg from '../../assets/images/sidebar_zen_water_1790865643
 
 interface VisualAsset {
   id: string;
+  name: string;
   src: string;
   alt: string;
 }
 
 const VISUAL_ASSETS: VisualAsset[] = [
-  { id: 'forest', src: sidebarForestImg, alt: 'Misty tranquil forest canopy' },
-  { id: 'geometric', src: sidebarGeometricImg, alt: 'Minimalist brutalist architecture in morning light' },
-  { id: 'ocean', src: sidebarOceanImg, alt: 'Serene ocean horizon at dawn' },
-  { id: 'sunrise', src: sidebarSunriseImg, alt: 'Architectural sunrise over calm water' },
-  { id: 'mountain', src: sidebarMountainImg, alt: 'Atmospheric mountain ridges' },
-  { id: 'control_tower', src: controlTowerBannerImg, alt: 'Agency operations control hub' },
-  { id: 'dune', src: sidebarDuneImg, alt: 'Minimalist golden sand dune curves' },
-  { id: 'bridge', src: sidebarBridgeImg, alt: 'Architectural suspension bridge in quiet morning fog' },
-  { id: 'skylight', src: sidebarSkylightImg, alt: 'Minimalist glass skylight into twilight sky' },
-  { id: 'zen_water', src: sidebarZenWaterImg, alt: 'Dark slate pool with serene water ripple' }
+  { id: 'forest', name: 'Misty Canopy', src: sidebarForestImg, alt: 'Misty tranquil forest canopy' },
+  { id: 'geometric', name: 'Brutalist Light', src: sidebarGeometricImg, alt: 'Minimalist brutalist architecture in morning light' },
+  { id: 'ocean', name: 'Dawn Horizon', src: sidebarOceanImg, alt: 'Serene ocean horizon at dawn' },
+  { id: 'sunrise', name: 'Golden Inlet', src: sidebarSunriseImg, alt: 'Architectural sunrise over calm water' },
+  { id: 'mountain', name: 'Ridge Silhouettes', src: sidebarMountainImg, alt: 'Atmospheric mountain ridges' },
+  { id: 'control_tower', name: 'Control Tower', src: controlTowerBannerImg, alt: 'Agency operations control hub' },
+  { id: 'dune', name: 'Golden Dunes', src: sidebarDuneImg, alt: 'Minimalist golden sand dune curves' },
+  { id: 'bridge', name: 'Morning Span', src: sidebarBridgeImg, alt: 'Architectural suspension bridge in quiet morning fog' },
+  { id: 'skylight', name: 'Twilight Oculus', src: sidebarSkylightImg, alt: 'Minimalist glass skylight into twilight sky' },
+  { id: 'zen_water', name: 'Slate Ripple', src: sidebarZenWaterImg, alt: 'Dark slate pool with serene water ripple' }
 ];
 
 interface CraftMantra {
@@ -61,7 +63,7 @@ const CRAFT_MANTRAS: CraftMantra[] = [
   },
   {
     tag: 'Delivery Impact',
-    mantra: 'Good work builds what\u2019s next. Close strong and seal the record.',
+    mantra: 'Good work builds what’s next. Close strong and seal the record.',
     subtext: 'Ship with pride. Celebrate team wins.'
   },
   {
@@ -92,7 +94,7 @@ const CRAFT_MANTRAS: CraftMantra[] = [
   {
     tag: 'Zero-Revert Standard',
     mantra: 'Measure twice, align once, execute without friction.',
-    subtext: 'Quality control is everyone\u2019s responsibility.'
+    subtext: 'Quality control is everyone’s responsibility.'
   },
   {
     tag: 'Creative Courage',
@@ -102,7 +104,7 @@ const CRAFT_MANTRAS: CraftMantra[] = [
   {
     tag: 'Agency Momentum',
     mantra: 'Small daily refinements compound into agency benchmarks.',
-    subtext: 'Make today\u2019s ceiling tomorrow\u2019s baseline.'
+    subtext: 'Make today’s ceiling tomorrow’s baseline.'
   },
   {
     tag: 'Cross-Discipline',
@@ -166,7 +168,7 @@ const CRAFT_MANTRAS: CraftMantra[] = [
   },
   {
     tag: 'Curiosity & Rigor',
-    mantra: 'Keep the beginner\u2019s curiosity alive in master-tier work.',
+    mantra: 'Keep the beginner’s curiosity alive in master-tier work.',
     subtext: 'Stay open to unexpected elegance.'
   },
   {
@@ -193,7 +195,6 @@ const WEEKDAY_NAMES = [
 
 /**
  * Deterministic integer hash based on SplitMix32 / Mulberry32 principles.
- * Guarantees uniform distribution and stable pseudo-random indexing without external libraries.
  */
 function hashDaySeed(seed: number, salt: number = 0): number {
   let h = (seed + salt * 0x9e3779b9) | 0;
@@ -216,12 +217,20 @@ export const SidebarMotivationCard: React.FC = () => {
   const isPure = activePaletteId === 'pure' || !activePaletteId;
 
   // Visual accent color for colorful palettes (Signal, Cyan, Lime, Violet)
-  // For Pure palette, we use pure white and high-contrast frosted capsules on atmospheric dark photographic cards
   const visualAccentColor = isPure ? '#FFFFFF' : 'var(--color-brand)';
 
   // Absolute day number since epoch (increments by 1 every calendar midnight)
   const [dayNumber, setDayNumber] = useState<number>(() => getLocalDayNumber());
   const [dayOfWeekName, setDayOfWeekName] = useState<string>(() => WEEKDAY_NAMES[new Date().getDay()]);
+
+  // User manual offset to cycle or change images on click
+  const [manualOffset, setManualOffset] = useState<number>(() => {
+    const saved = localStorage.getItem('tibule_sidebar_card_offset');
+    return saved ? parseInt(saved, 10) || 0 : 0;
+  });
+
+  const [isHovered, setIsHovered] = useState(false);
+  const [isCycling, setIsCycling] = useState(false);
 
   // Live calendar rollover listener (checks every minute)
   useEffect(() => {
@@ -238,101 +247,149 @@ export const SidebarMotivationCard: React.FC = () => {
     return () => clearInterval(intervalId);
   }, [dayNumber]);
 
-  // Date-Seeded Algorithmic Pairings:
-  // Decouples images (10) from mantras (28) producing 280 unique non-repeating daily pairs
-  const dailyVisual = useMemo(() => {
-    const imgIndex = hashDaySeed(dayNumber, 7919) % VISUAL_ASSETS.length;
-    return VISUAL_ASSETS[imgIndex];
+  // Compute active image index and mantra index with manual offset
+  const baseImgIndex = useMemo(() => {
+    return hashDaySeed(dayNumber, 7919) % VISUAL_ASSETS.length;
   }, [dayNumber]);
 
-  const dailyMantra = useMemo(() => {
-    const mantraIndex = hashDaySeed(dayNumber, 65537) % CRAFT_MANTRAS.length;
-    return CRAFT_MANTRAS[mantraIndex];
+  const activeVisualIndex = (baseImgIndex + manualOffset + VISUAL_ASSETS.length * 100) % VISUAL_ASSETS.length;
+  const currentVisual = VISUAL_ASSETS[activeVisualIndex];
+
+  const baseMantraIndex = useMemo(() => {
+    return hashDaySeed(dayNumber, 65537) % CRAFT_MANTRAS.length;
   }, [dayNumber]);
+
+  const activeMantraIndex = (baseMantraIndex + manualOffset + CRAFT_MANTRAS.length * 100) % CRAFT_MANTRAS.length;
+  const currentMantra = CRAFT_MANTRAS[activeMantraIndex];
+
+  const handleNext = useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsCycling(true);
+    setManualOffset((prev) => {
+      const next = prev + 1;
+      localStorage.setItem('tibule_sidebar_card_offset', String(next));
+      return next;
+    });
+    setTimeout(() => setIsCycling(false), 300);
+  }, []);
+
+  const handlePrev = useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsCycling(true);
+    setManualOffset((prev) => {
+      const next = prev - 1;
+      localStorage.setItem('tibule_sidebar_card_offset', String(next));
+      return next;
+    });
+    setTimeout(() => setIsCycling(false), 300);
+  }, []);
 
   return (
-    <div className="pt-3 px-1">
+    <div className="pt-2 px-1">
       <div
-        className="relative rounded-2xl overflow-hidden border flex flex-col justify-between p-3.5 group shadow-sm transition-colors duration-200"
-        style={{
-          borderColor: 'var(--color-border)',
-          backgroundColor: 'var(--color-surface)',
-          minHeight: '148px'
-        }}
+        className="group relative rounded-xl overflow-hidden border border-border transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={() => handleNext()}
+        title="Click to cycle focus image & mantra"
       >
-        {/* Background Image: Deterministic date-seeded asset */}
-        <img
-          src={dailyVisual.src}
-          alt={dailyVisual.alt}
-          referrerPolicy="no-referrer"
-          className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-75 transition-all duration-500 transform group-hover:scale-105"
-        />
+        {/* Background Image Container with Smooth Crossfade Zoom */}
+        <div className="relative h-44 w-full overflow-hidden bg-surface-elevated">
+          <img
+            key={currentVisual.id}
+            src={currentVisual.src}
+            alt={currentVisual.alt}
+            className={`w-full h-full object-cover transition-all duration-700 ease-out ${
+              isHovered ? 'scale-108 brightness-105' : 'scale-100'
+            } ${isCycling ? 'opacity-70 scale-95' : 'opacity-100'}`}
+          />
 
-        {/* Adaptive Contrast Scrim: Guarantees deep rich contrast so photographic text is 100% legible */}
-        <div
-          className={`absolute inset-0 transition-opacity ${
-            isDark
-              ? 'bg-gradient-to-t from-black/95 via-black/80 to-black/50'
-              : 'bg-gradient-to-t from-black/95 via-black/85 to-black/60'
-          }`}
-        />
+          {/* Deep Cinematic Gradients for Flawless Text Legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/30 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-transparent pointer-events-none" />
 
-        {/* Top Header Row: Zero pills, pure clean typography */}
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider font-semibold text-white/90">
+          {/* Top Floating Glass Capsule Bar */}
+          <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-auto">
             <span
-              className="w-2 h-2 rounded-full shrink-0"
-              style={{
-                backgroundColor: visualAccentColor,
-                boxShadow: isPure ? '0 0 8px rgba(255, 255, 255, 0.7)' : '0 0 8px var(--color-brand-muted)'
-              }}
-            />
-            <span>Today · {dayOfWeekName}</span>
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-mono font-medium backdrop-blur-md bg-black/50 border border-white/15 text-white/90 shadow-xs"
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ backgroundColor: visualAccentColor }}
+              />
+              {currentMantra.tag}
+            </span>
+
+            {/* Quick Interactive Cycle Controls */}
+            <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+              <button
+                type="button"
+                onClick={handlePrev}
+                className="p-1 rounded-full backdrop-blur-md bg-black/45 hover:bg-black/70 border border-white/15 text-white/80 hover:text-white transition-colors"
+                title="Previous visual"
+              >
+                <ChevronLeft className="w-3 h-3" />
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                className={`p-1 rounded-full backdrop-blur-md bg-black/45 hover:bg-black/70 border border-white/15 text-white/80 hover:text-white transition-all ${
+                  isCycling ? 'rotate-180' : ''
+                }`}
+                title="Next visual (or click card)"
+              >
+                <RefreshCw className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Mantra & Subtext Content */}
+          <div className="absolute bottom-2.5 inset-x-2.5 flex flex-col justify-end pointer-events-none">
+            <div className="flex items-center justify-between text-[9px] font-mono text-white/60 mb-1">
+              <span className="flex items-center gap-1">
+                <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                {currentVisual.name}
+              </span>
+              <span>
+                {dayOfWeekName} &bull; {activeVisualIndex + 1}/{VISUAL_ASSETS.length}
+              </span>
+            </div>
+
+            <p className="text-xs text-white font-medium leading-snug drop-shadow-md line-clamp-3 italic">
+              &ldquo;{currentMantra.mantra}&rdquo;
+            </p>
+
+            <p className="text-[10px] text-white/70 mt-1 leading-tight drop-shadow-xs">
+              {currentMantra.subtext}
+            </p>
           </div>
         </div>
 
-        {/* Bottom Content: Theme-Responsive Tag, Mantra & Accent Rule */}
-        <div className="relative z-10 pt-3 space-y-1.5">
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-md border transition-all ${
-                isPure
-                  ? 'bg-white/20 text-white border-white/40 shadow-xs'
-                  : 'shadow-xs'
-              }`}
-              style={
-                isPure
-                  ? {
-                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.6)',
-                      boxShadow: '0 1px 4px rgba(0, 0, 0, 0.25)'
-                    }
-                  : {
-                      color: visualAccentColor,
-                      backgroundColor: 'color-mix(in srgb, var(--color-brand) 22%, transparent)',
-                      borderColor: 'color-mix(in srgb, var(--color-brand) 45%, transparent)'
-                    }
-              }
-            >
-              {dailyMantra.tag}
-            </span>
+        {/* Visual Progress Dots Bar */}
+        <div className="px-2.5 py-1.5 bg-surface-elevated/90 backdrop-blur-xs flex items-center justify-between border-t border-border/50 text-[9px] text-text-tertiary font-mono">
+          <div className="flex items-center gap-1">
+            {VISUAL_ASSETS.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setManualOffset(idx - baseImgIndex);
+                  localStorage.setItem('tibule_sidebar_card_offset', String(idx - baseImgIndex));
+                }}
+                className={`h-1 rounded-full transition-all duration-200 ${
+                  idx === activeVisualIndex
+                    ? 'w-4 bg-primary'
+                    : 'w-1 bg-border hover:bg-text-tertiary'
+                }`}
+                title={`Switch to visual ${idx + 1}: ${VISUAL_ASSETS[idx].name}`}
+              />
+            ))}
           </div>
 
-          <p className="text-xs font-bold text-white leading-snug select-none drop-shadow-sm">
-            &ldquo;{dailyMantra.mantra}&rdquo;
-          </p>
-
-          <p className="text-[10px] text-white/85 leading-tight select-none drop-shadow-xs">
-            {dailyMantra.subtext}
-          </p>
-
-          <div
-            className="h-1 rounded-full mt-2 transition-all"
-            style={{
-              width: '32px',
-              backgroundColor: visualAccentColor,
-              boxShadow: isPure ? '0 0 10px rgba(255, 255, 255, 0.75)' : '0 0 10px var(--color-brand-muted)'
-            }}
-          />
+          <span className="text-[8px] text-text-tertiary tracking-wider uppercase opacity-75">
+            Click to change
+          </span>
         </div>
       </div>
     </div>

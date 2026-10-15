@@ -55,28 +55,23 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-5 transition-all liquid-glass-panel"
+      className="rounded-2xl p-5 border transition-all"
+      style={{
+        backgroundColor: 'var(--color-surface)',
+        borderColor: 'var(--color-border)'
+      }}
     >
-      {/* Subtle Top Ambient Theme Line */}
-      <div
-        className="absolute top-0 left-0 right-0 h-0.5 opacity-80"
-        style={{ backgroundColor: 'var(--color-brand)' }}
-      />
-
       {/* Header metrics tag */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-        <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-text-tertiary">
-          <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="font-bold text-text-primary">{contextTitle}</span>
-          <span>•</span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-border/60">
+        <div className="flex items-center gap-2 text-xs font-mono text-text-tertiary">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className="font-semibold text-text-primary">{contextTitle}</span>
+          <span>·</span>
           <span>{scopeSubtitle}</span>
         </div>
 
         <div className="text-[11px] font-mono text-text-tertiary">
-          Cadence: <span className="font-semibold" style={{ color: 'var(--color-brand)' }}>Live Metrics</span>
+          Cadence: <span className="font-medium text-text-secondary">Live Metrics</span>
         </div>
       </div>
 
@@ -97,26 +92,25 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
               ]
             });
           }}
-          className="pr-4 py-2 cursor-pointer group hover:bg-surface-elevated/40 rounded-lg p-2 transition-colors"
+          className="pr-4 py-2 cursor-pointer group hover:bg-surface-elevated/60 rounded-xl p-2.5 transition-colors"
         >
           <div className="flex items-center justify-between text-xs text-text-tertiary font-mono">
-            <span className="uppercase text-[10px] tracking-wider font-semibold">Stage 01: Intake Rate</span>
+            <span className="text-[11px] font-semibold text-text-secondary">Intake Rate</span>
             <span
-              className="font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5"
-              style={{ color: 'var(--color-brand)' }}
+              className="text-[11px] font-medium group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 text-brand"
             >
-              trace <ArrowRight className="w-2.5 h-2.5" />
+              Trace <ArrowRight className="w-2.5 h-2.5" />
             </span>
           </div>
-          <div className="flex items-baseline gap-2 mt-1">
+          <div className="flex items-baseline gap-2 mt-1.5">
             <span className="text-2xl font-bold font-mono tracking-tight text-text-primary">
               {totalJobsCount}
             </span>
             <span className="text-xs text-text-secondary font-mono">deliverables</span>
           </div>
-          <div className="text-[11px] text-text-secondary mt-1 flex items-center gap-1 font-medium">
-            <span className="text-emerald-500">● {allocationRatePercent}% assigned</span>
-            <span className="text-text-tertiary font-normal">· {triageQueueCount} queued</span>
+          <div className="text-[11px] text-text-secondary mt-1.5 flex items-center gap-1">
+            <span className="text-emerald-500 font-medium">● {allocationRatePercent}% assigned</span>
+            <span className="text-text-tertiary">· {triageQueueCount} queued</span>
           </div>
         </div>
 
@@ -135,21 +129,19 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
               ]
             });
           }}
-          className="px-0 md:px-4 py-2 cursor-pointer group hover:bg-surface-elevated/40 rounded-lg p-2 transition-colors"
+          className="px-0 md:px-4 py-2 cursor-pointer group hover:bg-surface-elevated/60 rounded-xl p-2.5 transition-colors"
         >
           <div className="flex items-center justify-between text-xs text-text-tertiary font-mono">
-            <span className="uppercase text-[10px] tracking-wider font-semibold">Stage 02: Active Runway</span>
+            <span className="text-[11px] font-semibold text-text-secondary">Active Runway</span>
             <span
-              className="font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5"
-              style={{ color: 'var(--color-brand)' }}
+              className="text-[11px] font-medium group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 text-brand"
             >
-              trace <ArrowRight className="w-2.5 h-2.5" />
+              Trace <ArrowRight className="w-2.5 h-2.5" />
             </span>
           </div>
-          <div className="flex items-baseline gap-2 mt-1">
+          <div className="flex items-baseline gap-2 mt-1.5">
             <span
-              className="text-2xl font-bold font-mono tracking-tight"
-              style={{ color: 'var(--color-brand)' }}
+              className="text-2xl font-bold font-mono tracking-tight text-brand"
             >
               {runwaySaturationPercent}%
             </span>
@@ -157,19 +149,15 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
           </div>
           {/* Subtle horizontal micro-bar */}
           <div
-            className="w-full h-1.5 rounded-full mt-2 overflow-hidden border"
-            style={{
-              backgroundColor: 'var(--color-surface-elevated)',
-              borderColor: 'var(--color-border)'
-            }}
+            className="w-full h-1.5 rounded-full mt-2 overflow-hidden bg-surface-elevated border border-border"
           >
             <div
-              className="h-full rounded-full transition-all duration-300"
-              style={{ width: `${runwaySaturationPercent}%`, backgroundColor: 'var(--color-brand)' }}
+              className="h-full rounded-full transition-all duration-300 bg-brand"
+              style={{ width: `${runwaySaturationPercent}%` }}
             />
           </div>
-          <div className="text-[10px] text-text-tertiary mt-1 font-mono">
-            {reserveCushionPercent}% reserve cushion ({reserveCushionHours}h)
+          <div className="text-[10px] text-text-tertiary mt-1.5 font-mono">
+            {reserveCushionPercent}% cushion ({reserveCushionHours}h)
           </div>
         </div>
 
@@ -187,26 +175,25 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
               ]
             });
           }}
-          className="px-0 md:px-4 py-2 cursor-pointer group hover:bg-surface-elevated/40 rounded-lg p-2 transition-colors"
+          className="px-0 md:px-4 py-2 cursor-pointer group hover:bg-surface-elevated/60 rounded-xl p-2.5 transition-colors"
         >
           <div className="flex items-center justify-between text-xs text-text-tertiary font-mono">
-            <span className="uppercase text-[10px] tracking-wider font-semibold">Stage 03: External Friction</span>
+            <span className="text-[11px] font-semibold text-text-secondary">External Friction</span>
             <span
-              className="font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5"
-              style={{ color: 'var(--color-brand)' }}
+              className="text-[11px] font-medium group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 text-brand"
             >
-              trace <ArrowRight className="w-2.5 h-2.5" />
+              Trace <ArrowRight className="w-2.5 h-2.5" />
             </span>
           </div>
-          <div className="flex items-baseline gap-2 mt-1">
+          <div className="flex items-baseline gap-2 mt-1.5">
             <span className="text-2xl font-bold font-mono tracking-tight text-text-primary">
               {blockedCount}
             </span>
             <span className="text-xs text-text-secondary font-mono">held in buffer</span>
           </div>
-          <div className="text-[11px] text-text-secondary mt-1 flex items-center gap-1 font-medium">
-            <span>🛡️ SLA clock paused</span>
-            <span className="text-text-tertiary font-normal">· worker protected</span>
+          <div className="text-[11px] text-text-secondary mt-1.5 flex items-center gap-1 font-medium">
+            <span>SLA clock paused</span>
+            <span className="text-text-tertiary font-normal">· protected</span>
           </div>
         </div>
 
@@ -225,26 +212,25 @@ export const OperationalPulseRibbon: React.FC<OperationalPulseRibbonProps> = ({
               ]
             });
           }}
-          className="pl-0 md:pl-4 py-2 cursor-pointer group hover:bg-surface-elevated/40 rounded-lg p-2 transition-colors"
+          className="pl-0 md:pl-4 py-2 cursor-pointer group hover:bg-surface-elevated/60 rounded-xl p-2.5 transition-colors"
         >
           <div className="flex items-center justify-between text-xs text-text-tertiary font-mono">
-            <span className="uppercase text-[10px] tracking-wider font-semibold">Stage 04: Delivery Integrity</span>
+            <span className="text-[11px] font-semibold text-text-secondary">Delivery Integrity</span>
             <span
-              className="font-bold group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5"
-              style={{ color: 'var(--color-brand)' }}
+              className="text-[11px] font-medium group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 text-brand"
             >
-              audit <ArrowRight className="w-2.5 h-2.5" />
+              Audit <ArrowRight className="w-2.5 h-2.5" />
             </span>
           </div>
-          <div className="flex items-baseline gap-2 mt-1">
+          <div className="flex items-baseline gap-2 mt-1.5">
             <span className="text-2xl font-bold font-mono tracking-tight text-text-primary">
               {deliveryIntegrityPercent}%
             </span>
             <span className="text-xs text-text-secondary font-mono">on-schedule</span>
           </div>
-          <div className="text-[11px] text-text-secondary mt-1 flex items-center gap-1">
+          <div className="text-[11px] text-text-secondary mt-1.5 flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            <span>Zero surveillance tracking</span>
+            <span>Milestone verified</span>
           </div>
         </div>
       </div>

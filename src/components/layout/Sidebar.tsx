@@ -106,40 +106,30 @@ export const Sidebar: React.FC = () => {
           key={id}
           onClick={handleNav}
           title={`${label}${badge ? ` (${badge})` : ''}`}
-          className={`w-full relative flex items-center justify-center p-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${
+          className={`w-full relative flex items-center justify-center p-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer group ${
             isActive
-              ? 'font-bold'
+              ? 'bg-surface-elevated text-brand font-semibold border border-border/80'
               : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
           }`}
-          style={
-            isActive
-              ? {
-                  backgroundColor: 'var(--color-surface-elevated)',
-                  color: 'var(--color-text-primary)',
-                  boxShadow: '0 0 12px -2px var(--color-brand-muted)'
-                }
-              : undefined
-          }
         >
           {isActive && (
             <div
-              className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full"
+              className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r"
               style={{ backgroundColor: 'var(--color-brand)' }}
             />
           )}
 
           <span
-            style={{ color: isActive ? 'var(--color-brand)' : undefined }}
-            className={isActive ? '' : 'text-text-tertiary group-hover:text-text-secondary transition-colors'}
+            className={isActive ? 'text-brand' : 'text-text-tertiary group-hover:text-text-secondary transition-colors'}
           >
             {icon}
           </span>
 
-          {(hasPing || (badge !== undefined && badge !== null && badge !== 0)) && (
+          {(badge !== undefined && badge !== null && badge !== 0) && (
             <span
-              className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full"
+              className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
               style={{
-                backgroundColor: hasPing || badgeType === 'danger' ? 'var(--color-critical)' : 'var(--color-brand)'
+                backgroundColor: badgeType === 'danger' ? 'var(--color-critical)' : 'var(--color-brand)'
               }}
             />
           )}
@@ -151,61 +141,44 @@ export const Sidebar: React.FC = () => {
       <button
         key={id}
         onClick={handleNav}
-        className={`w-full relative flex items-center justify-between pl-3 pr-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${
+        className={`w-full relative flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer group ${
           isActive
-            ? 'font-bold'
+            ? 'bg-surface-elevated text-text-primary font-semibold border border-border/70'
             : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
         }`}
-        style={
-          isActive
-            ? {
-                backgroundColor: 'var(--color-surface-elevated)',
-                color: 'var(--color-text-primary)',
-                boxShadow: '0 0 16px -2px var(--color-brand-muted)'
-              }
-            : undefined
-        }
       >
-        {/* Left Active Indicator Bar ▌ */}
+        {/* Subtle Left Accent Bar */}
         {isActive && (
           <div
-            className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full"
+            className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r"
             style={{ backgroundColor: 'var(--color-brand)' }}
           />
         )}
 
         <div className="flex items-center gap-2.5 truncate">
           <span
-            style={{ color: isActive ? 'var(--color-brand)' : undefined }}
-            className={isActive ? '' : 'text-text-tertiary group-hover:text-text-secondary transition-colors'}
+            className={isActive ? 'text-brand' : 'text-text-tertiary group-hover:text-text-secondary transition-colors'}
           >
             {icon}
           </span>
-          <span
-            className="truncate"
-            style={{ color: isActive ? 'var(--color-text-primary)' : undefined }}
-          >
+          <span className="truncate">
             {label}
           </span>
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {hasPing && (
-            <span
-              className="w-2 h-2 rounded-full animate-ping"
-              style={{ backgroundColor: 'var(--color-critical)' }}
-              title="Alert Active"
-            />
-          )}
           {badge !== undefined && badge !== null && badge !== 0 && (
             <span
-              className="text-[11px] font-bold font-mono tracking-tight"
+              className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded"
               style={{
                 color: badgeType === 'danger'
                   ? 'var(--color-critical)'
                   : isActive
                   ? 'var(--color-brand)'
-                  : 'var(--color-text-tertiary)'
+                  : 'var(--color-text-tertiary)',
+                backgroundColor: badgeType === 'danger'
+                  ? 'rgba(239, 68, 68, 0.1)'
+                  : 'var(--color-surface)'
               }}
             >
               {badge}

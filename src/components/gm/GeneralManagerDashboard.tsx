@@ -86,6 +86,7 @@ export const GeneralManagerDashboard: React.FC = () => {
   const [showAffectedDeliverablesModal, setShowAffectedDeliverablesModal] = useState<boolean>(false);
   const [showFrictionInline, setShowFrictionInline] = useState<boolean>(false);
   const [funnelScope, setFunnelScope] = useState<'period' | 'cumulative'>('period');
+  const [activePerspective, setActivePerspective] = useState<'command' | 'capacity' | 'impact' | 'assurance' | 'all'>('command');
 
   const activePeriodConfig = React.useMemo(() => {
     if (homeCalendarPeriod === 'custom') {
@@ -295,21 +296,64 @@ export const GeneralManagerDashboard: React.FC = () => {
           totalCount={jobs.length}
           label="Agency Period"
         />
+
+        {/* Executive Perspective Lens */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface border border-border overflow-x-auto text-xs">
+          {[
+            { id: 'command', label: 'Command Center', icon: Activity, badge: frictionNodeCount > 0 ? `${frictionNodeCount} Alerts` : 'Optimal', isDanger: frictionNodeCount > 0 },
+            { id: 'capacity', label: 'Team Capacity & Heatmap', icon: Users, badge: `${teamHeatmaps.length} Teams` },
+            { id: 'impact', label: 'Strategic Impact', icon: Award, badge: `${contributions.length} Records` },
+            { id: 'assurance', label: 'Assurance Funnel', icon: ShieldCheck, badge: `${onTimeDeliveryPercent}% On-Time` },
+            { id: 'all', label: 'All Sections', icon: Layers }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activePerspective === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActivePerspective(tab.id as any)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap text-xs ${
+                  isActive
+                    ? 'bg-surface-elevated text-text-primary border border-border shadow-xs'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated/50'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-brand' : 'text-text-tertiary'}`} />
+                <span>{tab.label}</span>
+                {tab.badge && (
+                  <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                    tab.isDanger
+                      ? 'bg-amber-500/15 text-amber-500'
+                      : isActive
+                      ? 'bg-brand/10 text-brand'
+                      : 'bg-surface text-text-tertiary'
+                  }`}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
-      {/* 2. Macro Operational Pulse Ribbon */}
-      <OperationalPulseRibbon
-        contextTitle="Enterprise Operational Horizon"
-        scopeSubtitle="Active cross-functional capacity and SLA adherence"
-      />
+      {/* 2 & 3. COMMAND CENTER PERSPECTIVE */}
+      {(activePerspective === 'command' || activePerspective === 'all') && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* 2. Macro Operational Pulse Ribbon */}
+          <OperationalPulseRibbon
+            contextTitle="Enterprise Operational Horizon"
+            scopeSubtitle="Active cross-functional capacity and SLA adherence"
+          />
 
-      {/* 3. INTERACTIVE CROSS-TEAM PIPELINE & HANDOFF CONSTRICTION (Section 34) */}
-      <section className="p-6 rounded-2xl bg-surface/80 border border-border/70 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          {/* 3. INTERACTIVE CROSS-TEAM PIPELINE & HANDOFF CONSTRICTION */}
+          <section className="p-5 sm:p-6 rounded-2xl bg-surface border border-border space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
           <div>
             <div className="flex items-center gap-2">
-              <GitPullRequestDraft className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
-              <h2 className="text-lg font-bold text-text-primary tracking-tight">
+              <GitPullRequestDraft className="w-4 h-4 text-brand" />
+              <h2 className="text-base sm:text-lg font-bold text-text-primary tracking-tight">
                 Inter-Team Flow Velocity &amp; Handoff Constriction
               </h2>
             </div>
@@ -335,13 +379,13 @@ export const GeneralManagerDashboard: React.FC = () => {
         </div>
 
         {/* Visual Pipeline Schematic */}
-        <div className="p-3.5 sm:p-5 rounded-xl bg-surface-elevated/50 border border-border/70 space-y-4">
+        <div className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 items-center">
             {/* Step 1: Creative Team */}
-            <div className="p-3.5 rounded-xl bg-surface border border-border space-y-1 text-center">
+            <div className="p-3 rounded-xl bg-surface-elevated border border-border text-center space-y-1">
               <span className="text-[10px] uppercase font-mono text-text-tertiary">Source Team</span>
               <div className="font-bold text-text-primary text-sm">Creative Design</div>
-              <div className="text-xs font-mono" style={{ color: 'var(--color-brand)' }}>
+              <div className="text-xs font-mono text-brand font-semibold">
                 {creativeSatPercent}% Saturation
               </div>
             </div>
@@ -349,30 +393,16 @@ export const GeneralManagerDashboard: React.FC = () => {
             {/* Constriction Connector */}
             <div className="flex flex-col items-center justify-center p-2 text-center">
               <div
-                className="w-full flex items-center justify-center gap-1"
+                className="w-full flex items-center justify-center gap-1 text-xs"
                 style={{ color: frictionNodeCount > 0 ? 'var(--color-critical)' : 'var(--color-success)' }}
               >
-                <span
-                  className="h-0.5 flex-1"
-                  style={{
-                    backgroundColor: frictionNodeCount > 0
-                      ? 'color-mix(in srgb, var(--color-critical) 35%, transparent)'
-                      : 'color-mix(in srgb, var(--color-success) 35%, transparent)'
-                  }}
-                />
+                <span className="h-0.5 flex-1 bg-border" />
                 {frictionNodeCount > 0 ? (
-                  <AlertTriangle className="w-4 h-4 animate-bounce" />
+                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
                 ) : (
-                  <CheckCircle2 className="w-4 h-4" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                 )}
-                <span
-                  className="h-0.5 flex-1"
-                  style={{
-                    backgroundColor: frictionNodeCount > 0
-                      ? 'color-mix(in srgb, var(--color-critical) 35%, transparent)'
-                      : 'color-mix(in srgb, var(--color-success) 35%, transparent)'
-                  }}
-                />
+                <span className="h-0.5 flex-1 bg-border" />
               </div>
               <span
                 className="text-[10px] font-mono font-bold uppercase mt-1"
@@ -383,46 +413,40 @@ export const GeneralManagerDashboard: React.FC = () => {
             </div>
 
             {/* Step 2: Target Team */}
-            <div className="p-3.5 rounded-xl bg-surface border border-border space-y-1 text-center">
+            <div className="p-3 rounded-xl bg-surface-elevated border border-border text-center space-y-1">
               <span className="text-[10px] uppercase font-mono text-text-tertiary">Target Team</span>
               <div className="font-bold text-text-primary text-sm">Client Service</div>
-              <div className="text-xs font-mono" style={{ color: 'var(--color-warning)' }}>
+              <div className="text-xs font-mono text-amber-500 font-semibold">
                 {csSatPercent}% Saturation
               </div>
             </div>
 
             {/* Step 3: Handoff Gate */}
             <div className="flex flex-col items-center justify-center p-2 text-center">
-              <div className="w-full flex items-center justify-center gap-1" style={{ color: 'var(--color-success)' }}>
-                <span className="h-0.5 flex-1" style={{ backgroundColor: 'color-mix(in srgb, var(--color-success) 35%, transparent)' }} />
-                <ArrowRight className="w-4 h-4" />
-                <span className="h-0.5 flex-1" style={{ backgroundColor: 'color-mix(in srgb, var(--color-success) 35%, transparent)' }} />
+              <div className="w-full flex items-center justify-center gap-1 text-emerald-500 text-xs">
+                <span className="h-0.5 flex-1 bg-border" />
+                <ArrowRight className="w-4 h-4 shrink-0" />
+                <span className="h-0.5 flex-1 bg-border" />
               </div>
-              <span className="text-[10px] font-mono font-bold uppercase mt-1" style={{ color: 'var(--color-success)' }}>
+              <span className="text-[10px] font-mono font-bold uppercase mt-1 text-emerald-500">
                 {avgGateReviewHours}h Gate Review
               </span>
             </div>
 
             {/* Step 4: Final Verification */}
-            <div className="p-3.5 rounded-xl bg-surface border border-border space-y-1 text-center">
+            <div className="p-3 rounded-xl bg-surface-elevated border border-border text-center space-y-1">
               <span className="text-[10px] uppercase font-mono text-text-tertiary">Outcome Gate</span>
               <div className="font-bold text-text-primary text-sm">Client Delivery</div>
-              <div className="text-xs font-mono" style={{ color: 'var(--color-success)' }}>
+              <div className="text-xs font-mono text-emerald-500 font-semibold">
                 {onTimeDeliveryPercent}% On-Time
               </div>
             </div>
           </div>
 
           {/* Deep-dive into the constriction */}
-          <div
-            className="p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs"
-            style={{
-              backgroundColor: 'var(--color-brand-muted)',
-              borderColor: 'color-mix(in srgb, var(--color-brand) 30%, transparent)'
-            }}
-          >
+          <div className="p-4 rounded-xl bg-surface-elevated border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
             <div className="space-y-1">
-              <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: 'var(--color-brand)' }}>
+              <span className="font-bold uppercase tracking-wider text-[10px] text-brand">
                 Bottleneck Root Cause Analysis ({activePeriodConfig.shortLabel}):
               </span>
               <p className="text-text-secondary leading-relaxed">
@@ -437,21 +461,17 @@ export const GeneralManagerDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowAffectedDeliverablesModal(true)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition-opacity hover:opacity-90 cursor-pointer flex items-center gap-1.5"
-                  style={{
-                    backgroundColor: 'var(--color-brand)',
-                    color: 'var(--color-brand-contrast)'
-                  }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-opacity hover:opacity-90 cursor-pointer flex items-center gap-1.5 bg-brand text-brand-contrast"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  <span>Inspect {frictionNodeCount} Affected Deliverables</span>
+                  <span>Inspect ({frictionNodeCount})</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowFrictionInline((prev) => !prev)}
-                  className="px-3 py-2 rounded-xl text-xs font-medium border border-border bg-surface hover:bg-surface-elevated text-text-secondary cursor-pointer transition-colors"
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium border border-border bg-surface hover:bg-surface-hover text-text-secondary cursor-pointer transition-colors"
                 >
-                  {showFrictionInline ? 'Hide List' : 'Quick Preview'}
+                  {showFrictionInline ? 'Hide List' : 'Preview'}
                 </button>
               </div>
             )}
@@ -510,16 +530,21 @@ export const GeneralManagerDashboard: React.FC = () => {
           )}
         </div>
       </section>
+      </div>
+      )}
 
-      {/* 3.5. EXECUTIVE VISUAL ANALYTICS TELEMETRY RADAR */}
-      <VisualAnalyticsWidget
-        scope="agency"
-        title="Executive Visual Analytics & Operational Radar Telemetry"
-        subtitle={`Agency-wide telemetry for ${activePeriodConfig.label}. Quantifies deliverable hours variance, quoting accuracy, and six studio operational pillars.`}
-      />
+      {/* 3.5 & 4. TEAM CAPACITY & HEATMAP PERSPECTIVE */}
+      {(activePerspective === 'capacity' || activePerspective === 'all') && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* 3.5. EXECUTIVE VISUAL ANALYTICS TELEMETRY RADAR */}
+          <VisualAnalyticsWidget
+            scope="agency"
+            title="Executive Visual Analytics & Operational Radar Telemetry"
+            subtitle={`Agency-wide telemetry for ${activePeriodConfig.label}. Quantifies deliverable hours variance, quoting accuracy, and six studio operational pillars.`}
+          />
 
-      {/* 4. ORGANISATIONAL HEATMAP (Progressive Disclosure) */}
-      <section className="space-y-4">
+          {/* 4. ORGANISATIONAL HEATMAP (Progressive Disclosure) */}
+          <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-lg font-bold text-text-primary tracking-tight">
@@ -632,9 +657,13 @@ export const GeneralManagerDashboard: React.FC = () => {
           </div>
         )}
       </section>
+        </div>
+      )}
 
       {/* 5. EXECUTIVE STRATEGIC RECOGNITION & VERIFIED IMPACT */}
-      {(() => {
+      {(activePerspective === 'impact' || activePerspective === 'all') && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {(() => {
         const verifiedContribs = contributions.filter((c) => c.status === 'VERIFIED' || c.status === 'RECOGNISED');
         const pendingReview = contributions.filter((c) => c.status === 'SUBMITTED');
         const needsClarification = contributions.filter((c) => c.status === 'CLARIFICATION_REQUIRED');
@@ -1222,9 +1251,13 @@ export const GeneralManagerDashboard: React.FC = () => {
           </section>
         );
       })()}
+        </div>
+      )}
 
       {/* 6. ORGANIZATIONAL ASSURANCE FUNNEL (Section 35) */}
-      <section className="p-6 rounded-2xl bg-surface/80 border border-border/70 space-y-4">
+      {(activePerspective === 'assurance' || activePerspective === 'all') && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          <section className="p-6 rounded-2xl bg-surface/80 border border-border/70 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
@@ -1304,6 +1337,8 @@ export const GeneralManagerDashboard: React.FC = () => {
           </div>
         </div>
       </section>
+        </div>
+      )}
 
       {/* Affected Deliverables Deep-Dive Modal */}
       {showAffectedDeliverablesModal && (

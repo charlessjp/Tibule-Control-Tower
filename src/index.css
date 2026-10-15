@@ -28,85 +28,82 @@
 }
 
 :root {
-  /* Surface & Layout Design Tokens */
-  --background: #09090B;
-  --color-canvas: #09090B;
-  --surface: #111114;
-  --color-surface: #111114;
-  --surface-elevated: #18181C;
-  --color-surface-elevated: #18181C;
-  --surface-muted: #0E0E12;
-  --color-surface-muted: #0E0E12;
-  --surface-hover: #202026;
-  --color-surface-hover: #202026;
-  --border: #222227;
-  --color-border: #222227;
-  --border-subtle: #2E2E35;
-  --color-border-subtle: #2E2E35;
+  /* Surface & Layout Design Tokens (Refined, Low Eyestrain) */
+  --background: #0B0F17;
+  --color-canvas: #0B0F17;
+  --surface: #111827;
+  --color-surface: #111827;
+  --surface-elevated: #162032;
+  --color-surface-elevated: #162032;
+  --surface-muted: #0D1422;
+  --color-surface-muted: #0D1422;
+  --surface-hover: #1E293B;
+  --color-surface-hover: #1E293B;
+  --border: rgba(255, 255, 255, 0.08);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
 
   /* Typography Design Tokens */
-  --text-primary: #F5F5F5;
-  --color-text-primary: #F5F5F5;
-  --text-secondary: #9E9EA7;
-  --color-text-secondary: #9E9EA7;
-  --text-muted: #6C6C75;
-  --color-text-tertiary: #6C6C75;
+  --text-primary: #F8FAFC;
+  --color-text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --color-text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --color-text-tertiary: #64748B;
 
-  /* Brand & Accent Tokens */
-  --accent: #03C1D6;
-  --color-brand: #03C1D6;
-  --color-brand-primary: #03C1D6;
-  --accent-contrast: #041C22;
-  --color-brand-contrast: #041C22;
-  --accent-hover: #029CB0;
-  --color-brand-hover: #029CB0;
-  --accent-soft: rgba(3, 193, 214, 0.35);
-  --color-brand-muted: rgba(3, 193, 214, 0.35);
-  --color-brand-glow: rgba(3, 193, 214, 0.35);
+  /* Brand & Accent Tokens: Refined Tibule Sky */
+  --accent: #0284C7;
+  --color-brand: #0284C7;
+  --color-brand-primary: #0284C7;
+  --accent-contrast: #FFFFFF;
+  --color-brand-contrast: #FFFFFF;
+  --accent-hover: #0369A1;
+  --color-brand-hover: #0369A1;
+  --accent-soft: rgba(2, 132, 199, 0.12);
+  --color-brand-muted: rgba(2, 132, 199, 0.12);
+  --color-brand-glow: rgba(2, 132, 199, 0.08);
 
-  /* Semantic System Tokens */
-  --success: #9CFE02;
-  --color-success: #9CFE02;
-  --warning: #FDDE03;
-  --color-warning: #FDDE03;
-  --critical: #FF355C;
-  --color-critical: #FF355C;
-  --info: #03C1D6;
-  --color-info: #03C1D6;
-  --strategic: #8E5CB8;
-  --color-strategic: #8E5CB8;
+  /* Semantic System Tokens: Clean, Human-Friendly Accents */
+  --success: #10B981;
+  --color-success: #10B981;
+  --warning: #F59E0B;
+  --color-warning: #F59E0B;
+  --critical: #EF4444;
+  --color-critical: #EF4444;
+  --info: #0284C7;
+  --color-info: #0284C7;
+  --strategic: #8B5CF6;
+  --color-strategic: #8B5CF6;
 
   /* Data Visualisation Series Tokens */
-  --chart-1: #03C1D6;
-  --chart-2: #9CFE02;
-  --chart-3: #8E5CB8;
-  --chart-4: #FDDE03;
-  --chart-5: #FF355C;
-  --color-chart-1: #03C1D6;
-  --color-chart-2: #9CFE02;
-  --color-chart-3: #8E5CB8;
-  --color-chart-4: #FDDE03;
-  --color-chart-5: #FF355C;
+  --chart-1: #0284C7;
+  --chart-2: #10B981;
+  --chart-3: #8B5CF6;
+  --chart-4: #F59E0B;
+  --chart-5: #EF4444;
+  --color-chart-1: #0284C7;
+  --color-chart-2: #10B981;
+  --color-chart-3: #8B5CF6;
+  --color-chart-4: #F59E0B;
+  --color-chart-5: #EF4444;
 
-  /* Halo Lighting Rings */
-  --color-halo-border: #03C1D6;
-  --color-halo-glow: rgba(3, 193, 214, 0.35);
-  --color-halo-secondary: rgba(255, 53, 92, 0.18);
+  /* Halo Lighting Rings - Subtle, Calm */
+  --color-halo-border: #0284C7;
+  --color-halo-glow: rgba(2, 132, 199, 0.12);
+  --color-halo-secondary: rgba(239, 68, 68, 0.08);
 }
 
 body {
   font-family: var(--font-sans);
   background-color: var(--color-canvas);
   color: var(--color-text-primary);
-  letter-spacing: -0.012em;
+  letter-spacing: -0.011em;
   overflow-x: hidden;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Crucial fix for html2canvas text baseline offset:
- * Tailwind CSS preflight sets img to `display: block`, which causes html2canvas's FontMetrics
- * test image to drop to a new line below its test span, artificially inflating baseline measurements
- * and shifting all rendered text down by several pixels across exported canvases and PDFs. */
+/* Crucial fix for html2canvas text baseline offset */
 img {
   display: inline-block !important;
 }
@@ -122,48 +119,38 @@ img {
 }
 
 /* ==========================================================================
-   Targeted Liquid Glass Design System
-   Translucent smoked glass surfaces, specular highlights, and fluid depth
+   Clean Surface System: Crisp, Minimalist Depth Without Optical Noise
    ========================================================================== */
 
 .liquid-glass-nav {
-  background-color: color-mix(in srgb, var(--color-surface) 80%, transparent) !important;
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent) !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.18), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  background-color: color-mix(in srgb, var(--color-surface) 92%, transparent) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
 }
 
 .liquid-glass-panel {
-  background-color: color-mix(in srgb, var(--color-surface) 84%, transparent) !important;
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent) !important;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.25), inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.05);
 }
 
 .liquid-glass-elevated {
-  background-color: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent) !important;
-  backdrop-filter: blur(24px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
-  border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent) !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55), 
-              0 0 0 1px rgba(255, 255, 255, 0.08), 
-              inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.16) !important;
+  background-color: var(--color-surface-elevated) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
 }
 
 .liquid-glass-capsule {
-  background-color: color-mix(in srgb, var(--color-surface-elevated) 65%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
-  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.06);
-  transition: all 0.2s ease;
+  background-color: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  transition: all 0.15s ease;
 }
 
 .liquid-glass-capsule:hover {
-  border-color: color-mix(in srgb, var(--color-brand) 60%, transparent);
-  box-shadow: 0 0 16px -2px var(--color-halo-glow, rgba(3, 193, 214, 0.3)), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
+  border-color: color-mix(in srgb, var(--color-brand) 40%, transparent);
+  background-color: var(--color-surface-hover);
 }
 
 /* Architectural Card */
@@ -171,11 +158,11 @@ img {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 14px;
-  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.2s ease;
 }
 .card-tower:hover {
-  border-color: var(--color-brand);
-  box-shadow: 0 0 24px -2px var(--color-halo-glow, rgba(3, 193, 214, 0.35)), 0 8px 20px -4px rgba(0, 0, 0, 0.25);
+  border-color: color-mix(in srgb, var(--color-brand) 50%, transparent);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.15);
 }
 
 /* Nav Item Active */

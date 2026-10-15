@@ -54,16 +54,24 @@ export function buildOrganogramTree(
 ): OrganogramNode | null {
   if (!users || users.length === 0) return null;
 
+  // Filter out platform admin as instructed ("take away the platform admin from the organogram")
+  const activeAgencyUsers = users.filter((u) => {
+    if (u.role === 'admin') return false;
+    if (u.id === 'usr-tariq-afriq') return false;
+    if (u.jobTitle?.toLowerCase().includes('admin') && !u.jobTitle?.toLowerCase().includes('client')) return false;
+    return true;
+  });
+
   // 1. Identify apex (General Manager / Root with no manager or usr-marcus-sterling)
   const apexUser =
-    users.find((u) => u.id === 'usr-marcus-sterling') ||
-    users.find((u) => u.role === 'general_manager') ||
-    users.find((u) => !u.managerId) ||
-    users[0];
+    activeAgencyUsers.find((u) => u.id === 'usr-marcus-sterling') ||
+    activeAgencyUsers.find((u) => u.role === 'general_manager') ||
+    activeAgencyUsers.find((u) => !u.managerId) ||
+    activeAgencyUsers[0];
 
   // 2. Map users by managerId for rapid subtree lookups
   const subordinatesByManager = new Map<string, User[]>();
-  users.forEach((u) => {
+  activeAgencyUsers.forEach((u) => {
     if (u.id === apexUser.id) return; // avoid self-loop
     const mId = u.managerId || apexUser.id;
     const list = subordinatesByManager.get(mId) || [];

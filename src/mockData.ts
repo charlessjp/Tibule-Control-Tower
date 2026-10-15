@@ -206,7 +206,7 @@ export const INITIAL_USERS: User[] = [
     createdDate: '2025-01-15',
     lastLogin: '2026-09-14T09:05:00Z',
     skillProfile: ['Brand Identity', 'Complex Art Direction', 'Typography Systems', 'Motion Direction', 'Cross-Team Coordination'],
-    capacityHoursPerWeek: 38,
+    capacityHoursPerWeek: 40,
     availability: {
       contractedHoursPerWeek: 40,
       leaveHours: 0,
@@ -230,7 +230,7 @@ export const INITIAL_USERS: User[] = [
     createdDate: '2025-02-01',
     lastLogin: '2026-09-14T08:15:00Z',
     skillProfile: ['Motion Graphics', '3D Cinema', 'Digital Advertising', 'Interactive Prototyping'],
-    capacityHoursPerWeek: 38,
+    capacityHoursPerWeek: 40,
     availability: {
       contractedHoursPerWeek: 40,
       leaveHours: 0,
@@ -254,7 +254,7 @@ export const INITIAL_USERS: User[] = [
     createdDate: '2025-02-20',
     lastLogin: '2026-09-14T08:10:00Z',
     skillProfile: ['Packaging Architecture', 'CGI Renders', 'Print Production', 'Design Guidelines'],
-    capacityHoursPerWeek: 38
+    capacityHoursPerWeek: 40
   },
   {
     id: 'usr-kofi-boateng',
