@@ -35,7 +35,7 @@ interface RewardCatalogueItem {
   };
   systemFormula: {
     name: string;
-    formula: string;
+    rankingLogic: string;
     benchmark: string;
   };
 }
@@ -54,9 +54,9 @@ const CROSS_DEPARTMENT_CATALOGUE: RewardCatalogueItem[] = [
       traffic: 'Master dispatch orchestration, zero SLA breach slippage, and agile cross-squad capacity balancing.'
     },
     systemFormula: {
-      name: 'Aggregate Performance Index',
-      formula: '(Completed Tasks × 50) + (On-Time % × 10) + (Zero-Revert % × 10) + Turnaround Velocity Bonus',
-      benchmark: 'Rank #1 on agency leaderboard or ≥1,500 points with ≥95% on-time delivery rate.'
+      name: 'Ranking Evaluation & Weighting',
+      rankingLogic: 'Rankings are driven by completed deliverable volume, with major score boosts awarded for maintaining on-time milestone delivery and zero-revert sign-offs. Turning around high-complexity briefs faster than benchmark hours grants an additional velocity bonus, placing practitioners at the top of the leaderboard.',
+      benchmark: 'Top-ranked position on the agency leaderboard or sustaining 95%+ on-time SLA reliability throughout the sprint cycle.'
     }
   },
   {
@@ -72,9 +72,9 @@ const CROSS_DEPARTMENT_CATALOGUE: RewardCatalogueItem[] = [
       traffic: 'Fastest operational dispatch turnaround (average intake-to-assignment lag under 1.5 hours).'
     },
     systemFormula: {
-      name: 'Turnaround Velocity Deviation',
-      formula: 'Max(0, ((Scoped Benchmark Hours - Actual Logged Hours) / Scoped Hours) × 100)',
-      benchmark: 'Velocity score ≥10% faster than benchmark with an active on-time delivery streak ≥6 tasks.'
+      name: 'Velocity Scoring Method',
+      rankingLogic: 'Compares actual production hours logged against the initial brief estimate. Delivering high-craft work in fewer hours than budgeted elevates turnaround speed, provided deliveries remain on schedule without quality drops.',
+      benchmark: 'Consistently finishing work ahead of benchmark pace with an unbroken on-time delivery streak.'
     }
   },
   {
@@ -90,9 +90,9 @@ const CROSS_DEPARTMENT_CATALOGUE: RewardCatalogueItem[] = [
       traffic: 'Zero client revert schedule collisions and zero unmitigated timeline arbitration disputes.'
     },
     systemFormula: {
-      name: 'First-Pass Approval Ratio',
-      formula: '(Zero-Revert Completed Tasks / Total Evaluated Tasks) × 100',
-      benchmark: 'Revert-free rate ≥90% across at least 10 completed or reviewed assignments.'
+      name: 'First-Pass Quality Evaluation',
+      rankingLogic: 'Measures the ratio of deliverables approved by clients on first presentation without requiring rework rounds, dieline alterations, or scope corrections. Reflects brief intake clarity and craft rigor.',
+      benchmark: 'High proportion of first-pass sign-offs (typically 90%+) across completed client assignments.'
     }
   },
   {
@@ -108,9 +108,9 @@ const CROSS_DEPARTMENT_CATALOGUE: RewardCatalogueItem[] = [
       traffic: 'Proactive workload leveling, mediating inter-department friction, and maintaining healthy studio flow.'
     },
     systemFormula: {
-      name: 'Verified Collaboration Index',
-      formula: '(Verified Strategic Contributions × 50) + Leadership Endorsement Index',
-      benchmark: 'Minimum 3 verified strategic contributions in the studio evidence vault.'
+      name: 'Collaboration & Support Assessment',
+      rankingLogic: 'Recognizes practitioners who step outside their lane—rescuing at-risk deliverables, shielding creative runways from unbudgeted client pushback, or resolving traffic bottlenecks during peak sprint crunch.',
+      benchmark: 'Multiple peer and lead verified contributions recorded and endorsed in the studio evidence vault.'
     }
   }
 ];
@@ -331,7 +331,7 @@ export const StudioChampionsView: React.FC = () => {
               Cross-Departmental Management Rewards Catalogue
             </div>
             <h2 className="text-lg font-bold text-text-primary mt-0.5">
-              Universal Studio Honours &amp; Eligibility Formulas
+              Studio Honours &amp; Eligibility
             </h2>
             <p className="text-xs text-text-secondary mt-1">
               Awards recognize exceptional operational, commercial, and craft contributions across Creative Studio, Client Service, and Studio Traffic desks.
@@ -424,25 +424,25 @@ export const StudioChampionsView: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Transparent System Calculation Formula */}
+          {/* Right Column: Textual Ranking & Eligibility Criteria */}
           <div className="lg:col-span-5 p-4 rounded-xl border border-border bg-surface-elevated space-y-3 flex flex-col justify-between">
             <div>
               <div className="flex items-center gap-1.5 text-text-tertiary text-[10px] font-mono uppercase font-bold tracking-wider">
                 <FileCheck2 className="w-3.5 h-3.5 text-brand" />
-                System Calculation Formula
+                How Parameters Determine Ranking
               </div>
               <h4 className="text-xs font-bold text-text-primary mt-1">
                 {selectedCatalogueItem.systemFormula.name}
               </h4>
 
-              <div className="mt-2.5 p-3 rounded-lg border border-border bg-surface font-mono text-[11px] text-text-primary leading-relaxed break-all">
-                {selectedCatalogueItem.systemFormula.formula}
-              </div>
+              <p className="mt-2 text-xs text-text-secondary leading-relaxed p-3.5 rounded-xl border border-border bg-surface">
+                {selectedCatalogueItem.systemFormula.rankingLogic}
+              </p>
             </div>
 
             <div className="pt-2 border-t border-border space-y-1 text-xs">
               <span className="text-[10px] font-mono uppercase text-text-tertiary font-bold">
-                Automated Qualification Threshold:
+                Qualification Benchmark:
               </span>
               <p className="text-[11px] text-text-secondary leading-relaxed">
                 {selectedCatalogueItem.systemFormula.benchmark}
