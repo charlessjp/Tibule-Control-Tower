@@ -115,7 +115,7 @@ export const CSNSSProgressionView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-text-tertiary">
             <GraduationCap className="w-4 h-4" style={{ color: 'var(--color-brand)' }} />
-            <span>Structured Progression &amp; Career Development</span>
+            <span>National Service &amp; Staff Development Pathway</span>
           </div>
           <h2 className="text-xl font-extrabold text-text-primary mt-1">
             Intern &amp; NSS Development Pathway → Account Executive (AE)
@@ -231,7 +231,7 @@ export const CSNSSProgressionView: React.FC = () => {
               {/* Structured Pathway Milestones */}
               <div className="space-y-2.5 pt-2 border-t border-border/60">
                 <h4 className="text-xs font-bold font-mono uppercase text-text-secondary">
-                  AE Progression Milestones
+                  AE Development Milestones
                 </h4>
 
                 <div className="space-y-2 text-xs">

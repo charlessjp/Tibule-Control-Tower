@@ -980,7 +980,7 @@ export const GeneralManagerDashboard: React.FC = () => {
 
                               {c.status === 'DECLINED' ? (
                                 <div className="flex items-center gap-2 ml-auto">
-                                  <span className="text-xs font-mono text-rose-600 dark:text-rose-400 font-bold px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20">
+                                  <span className="text-xs font-semibold text-rose-500">
                                     Declined
                                   </span>
                                   <button
@@ -1106,7 +1106,7 @@ export const GeneralManagerDashboard: React.FC = () => {
                     </button>
                   </div>
                   <p className="text-xs text-text-secondary">
-                    Add a permanent executive commendation to this employee's career progression dossier:
+                    Add a permanent executive commendation to this employee's permanent evidence dossier:
                   </p>
                   <textarea
                     rows={3}

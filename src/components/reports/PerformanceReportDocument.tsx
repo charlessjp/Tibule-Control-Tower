@@ -426,7 +426,7 @@ export const PerformanceReportDocument: React.FC<PerformanceReportDocumentProps>
                       style={{ color: tokens.semantic.warning }}
                     >
                       <Calendar className="w-3 h-3 shrink-0" />
-                      <span>100% Calendar Synced</span>
+                      <span>{tm.calendarSyncRate}% Calendar Synced</span>
                     </div>
                   </div>
                 </div>
@@ -857,7 +857,7 @@ export const PerformanceReportDocument: React.FC<PerformanceReportDocumentProps>
                 </div>
                 <h4 className="text-xs font-bold text-text-primary">Studio Operations Champion</h4>
                 <p className="text-[11px] text-text-secondary italic leading-relaxed">
-                  &ldquo;Zero SLA dispatch breaches and maintained an 88% Studio Balance Index across all Q3 creative sprints with instant timeline conflict mediation.&rdquo;
+                  &ldquo;Zero SLA dispatch breaches and maintained an {tm.studioBalanceIndex}% Studio Balance Index across all creative sprints with instant timeline conflict mediation.&rdquo;
                 </p>
                 <div className="text-[10px] text-text-tertiary font-mono pt-1 border-t border-border">
                   Conferred by Marcus Sterling (Managing Partner &amp; General Manager)
@@ -879,7 +879,7 @@ export const PerformanceReportDocument: React.FC<PerformanceReportDocumentProps>
                 </div>
                 <h4 className="text-xs font-bold text-text-primary">Enterprise Dispatch &amp; Historical Archive</h4>
                 <p className="text-[11px] text-text-secondary italic leading-relaxed">
-                  &ldquo;Instituted mandatory CS Debriefs, Creative Strategy Brainstorms, automated Microsoft Teams calendar syncing, and the OneDrive Year-Long Historical Archive. Governed over 1,840 tasks with 96.4% on-time agency delivery.&rdquo;
+                  &ldquo;Instituted mandatory CS Debriefs, Creative Strategy Brainstorms, automated Microsoft Teams calendar syncing ({tm.calendarSyncRate}%), and the OneDrive Year-Long Historical Archive. Governed over {tm.totalStudioTasksGoverned} tasks with {tm.agencyOnTimeGovernanceRate}% on-time agency delivery.&rdquo;
                 </p>
                 <div className="text-[10px] text-text-tertiary font-mono pt-1 border-t border-border">
                   Endorsed by Executive Directorate &amp; Creative Leadership

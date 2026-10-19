@@ -197,7 +197,7 @@ export const AnalystTipsDrawer: React.FC<AnalystTipsDrawerProps> = ({ isOpen, on
                 }}
               >
                 <div className="font-bold text-purple-400 flex items-center justify-between">
-                  <span>Case Progression &amp; Appeals</span>
+                  <span>Case Reviews &amp; Appeals</span>
                   <span className="font-mono text-[10px] text-text-tertiary">CT-CP</span>
                 </div>
                 <p className="mt-1 text-[11px] leading-relaxed text-text-secondary">

@@ -895,7 +895,7 @@ export const INITIAL_EXCEPTIONS: ExceptionItem[] = [
     severity: 'low',
     teamId: 'team-creative',
     relatedEmployeeId: 'usr-sarah-jenkins',
-    recommendedAction: 'Grant Commendation or add formal leadership support note to upcoming Progression Case #0042.',
+    recommendedAction: 'Grant Commendation or add formal leadership support note to upcoming Performance Case #0042.',
     timestamp: '2026-09-14T07:30:00Z'
   }
 ];
@@ -912,7 +912,7 @@ export const INITIAL_CASES: ProgressionCase[] = [
     submissionDate: '2026-09-05T14:30:00Z',
     reviewerId: 'usr-elena-rostova',
     reviewerName: 'Elena Rostova',
-    title: 'Progression to Associate Creative Director & Studio Design Lead',
+    title: 'Senior Creative Direction & Studio Design Lead Performance Case',
     narrative: 'Over the last 9 months, my scope has shifted from individual design execution to leading creative direction across our key Accra accounts (Zenith, Vanguard, MTN MoMo). I instituted our agency tokenized design system which reduced artwork rework by 34%, while actively mentoring our junior and mid designers.',
     leadEndorsementStatus: 'pending',
     evidenceData: {
@@ -1203,14 +1203,14 @@ export const INITIAL_CASES: ProgressionCase[] = [
     employeeName: 'Kwame Mensah',
     employeeTitle: 'Studio Traffic Manager',
     teamId: 'team-ops',
-    type: 'traffic_progression',
+    type: 'traffic_governance',
     status: 'evidence_review',
     submissionDate: '2026-09-02T11:00:00Z',
     reviewerId: 'usr-marcus-sterling',
     reviewerName: 'Marcus Sterling',
-    title: 'Progression to Head of Studio Operations & Enterprise Dispatch Architecture',
+    title: 'Head of Studio Operations & Enterprise Dispatch Architecture Governance Review',
     narrative: 'Over the past 12 months, I transformed agency traffic from reactive task forwarding into an intelligence-driven studio operations engine. Instituted mandatory CS Debriefs, Creative Strategy Brainstorms, automated Microsoft Teams calendar syncing, and the OneDrive Year-Long Historical Archive. Governed over 1,840 tasks with 96.4% on-time agency delivery.',
-    category: 'career_progression',
+    category: 'performance_review',
     evidenceData: {
       responsibilityGrowth: {
         originalCount: 4,
@@ -1311,7 +1311,7 @@ export const INITIAL_AUDIT_EVENTS: AuditEvent[] = [
     actorRole: 'General Manager',
     action: 'CASE_STATUS_UPDATED',
     objectId: 'CASE-0042',
-    objectTitle: 'Sarah Jenkins Progression to Creative Director',
+    objectTitle: 'Sarah Jenkins Creative Lead Performance Case',
     previousValue: 'SUBMITTED',
     newValue: 'MANAGER_REVIEW',
     details: 'Progressed to formal review stage.'

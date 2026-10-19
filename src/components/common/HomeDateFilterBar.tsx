@@ -117,20 +117,18 @@ export const HomeDateFilterBar: React.FC<HomeDateFilterBarProps> = ({
 
   return (
     <div
-      className={`rounded-xl border p-3 sm:p-3.5 space-y-2.5 transition-all duration-150 relative ${className}`}
+      className={`rounded-xl border p-3 sm:p-3.5 transition-all duration-150 relative ${className}`}
       style={{
         backgroundColor: 'var(--color-surface)',
         borderColor: 'var(--color-border)'
       }}
     >
-      {/* Top Row: Calendar Scope Trigger + Date Horizon Summary */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {label && (
-            <span className="text-[11px] font-mono font-semibold text-text-tertiary hidden sm:inline uppercase">
-              {label}:
-            </span>
-          )}
+      {/* Operating Period & Unified Calendar Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-xs font-bold text-text-primary uppercase tracking-wide">
+            {label || 'Operating Period'}:
+          </span>
 
           {/* Unified Primary Calendar & Scope Trigger */}
           <ReportScopeCalendarPicker
@@ -140,8 +138,8 @@ export const HomeDateFilterBar: React.FC<HomeDateFilterBarProps> = ({
             referenceDate={referenceDate}
             isOpen={isCalendarOpen}
             onOpenChange={setIsCalendarOpen}
-            headerTitle="Workspace Operating Horizon"
-            headerSubtitle="Select custom date range or configure duration stepper."
+            headerTitle="Operating Period Selection"
+            headerSubtitle="Select custom date range or standard reporting period."
           />
 
           {/* Active Operating Cycle Status Indicator */}
@@ -153,49 +151,15 @@ export const HomeDateFilterBar: React.FC<HomeDateFilterBarProps> = ({
           )}
         </div>
 
-        {/* Right Info: Date Range & Deliverables Count */}
-        <div className="flex items-center gap-2 text-[11px] font-mono text-text-tertiary flex-wrap">
-          <span className="font-medium text-text-secondary">{formattedDateRange}</span>
-          {(matchedCount !== undefined || totalCount !== undefined) && (
-            <>
-              <span>·</span>
-              <span className="text-text-secondary">
-                <strong className="text-text-primary font-bold">{matchedCount !== undefined ? matchedCount : totalCount}</strong> deliverables
-                {archivedCount > 0 && ` (${archivedCount} archived)`}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Quick Period Filter Chips */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-0.5 text-xs no-scrollbar pt-1 border-t border-border/50">
-        <span className="text-[10px] font-mono text-text-tertiary mr-1 flex items-center gap-1 shrink-0 uppercase tracking-wider">
-          <Filter className="w-3 h-3" /> Scope:
-        </span>
-        {CALENDAR_PERIODS.map((p) => {
-          const isSelected = period === p.id;
-          return (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => {
-                onPeriodChange(p.id);
-                if (p.id === 'custom') {
-                  setIsCalendarOpen(true);
-                }
-              }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
-                isSelected
-                  ? 'bg-surface-elevated text-brand font-semibold border border-border shadow-xs'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
-              }`}
-              title={p.description}
-            >
-              {p.shortLabel}
-            </button>
-          );
-        })}
+        {/* Deliverables Count */}
+        {(matchedCount !== undefined || totalCount !== undefined) && (
+          <div className="text-[11px] font-mono text-text-tertiary">
+            <span className="text-text-secondary">
+              <strong className="text-text-primary font-bold">{matchedCount !== undefined ? matchedCount : totalCount}</strong> deliverables
+              {archivedCount > 0 && ` (${archivedCount} archived)`}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

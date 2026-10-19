@@ -98,6 +98,8 @@ import {
   INITIAL_REWARDS,
   INITIAL_EMAIL_ALERTS
 } from '../data/competitionData';
+import { calculateDynamicLeaderboard } from '../utils/leaderboardEngine';
+import { hydrateCasesWithLiveMetrics } from '../utils/narrativeEngine';
 import { PALETTES, DEFAULT_PALETTE_ID, PaletteScheme } from '../theme/palettes';
 import { getActiveOperationalLoadColors } from '../utils/chartColorUtils';
 import { buildClientRevertRecord } from '../utils/revertConflictEngine';
@@ -471,7 +473,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [webNotifications, setWebNotifications] = useState<WebNotificationItem[]>(() => {
     return generateInitialWebNotifications(INITIAL_JOBS, INITIAL_USERS, 24);
   });
-  const [efficiencyLeaderboard, setEfficiencyLeaderboard] = useState<EfficiencyLeaderboardEntry[]>(INITIAL_LEADERBOARD);
   const [efficiencyRewards, setEfficiencyRewards] = useState<EfficiencyReward[]>(INITIAL_REWARDS);
   const [isDeadlineRadarOpen, setIsDeadlineRadarOpen] = useState<boolean>(false);
 
@@ -563,6 +564,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('tibule_archived_tasks', JSON.stringify(archivedTasks));
     } catch {}
   }, [archivedTasks]);
+
+  // Dynamic Studio Champions Efficiency Leaderboard (Calculated live from real records)
+  const [leaderboardBonusPoints, setLeaderboardBonusPoints] = useState<Record<string, number>>({});
+  const efficiencyLeaderboard = useMemo(() => {
+    const dynamicEntries = calculateDynamicLeaderboard(jobs, archivedTasks, users);
+    if (Object.keys(leaderboardBonusPoints).length === 0) {
+      return dynamicEntries;
+    }
+    return dynamicEntries
+      .map((entry) => {
+        const bonus = leaderboardBonusPoints[entry.employeeId] || 0;
+        if (bonus > 0) {
+          return {
+            ...entry,
+            points: entry.points + bonus,
+            activeStreak: entry.activeStreak + Math.floor(bonus / 250)
+          };
+        }
+        return entry;
+      })
+      .sort((a, b) => b.points - a.points)
+      .map((entry, idx) => ({ ...entry, rank: idx + 1 }));
+  }, [jobs, archivedTasks, users, leaderboardBonusPoints]);
+
+  // Dynamic Case Narrative Hydration: Derives evidence justifications from real deliverable logs
+  useEffect(() => {
+    setCases((prev) => hydrateCasesWithLiveMetrics(prev, users, jobs, archivedTasks, contributions));
+  }, [users, jobs, archivedTasks, contributions]);
 
   const [oneDriveConfig, setOneDriveConfig] = useState<OneDriveSyncConfig>(() => {
     try {
@@ -1240,6 +1269,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return {
             ...job,
             status: newStatus,
+            workflowStage: newStatus === 'in_progress' && (!job.workflowStage || job.workflowStage === 'debrief_ready' || job.workflowStage === 'creative_brainstorm')
+              ? 'in_production'
+              : newStatus === 'in_review'
+              ? 'internal_review'
+              : job.workflowStage,
             completedDate: newStatus === 'completed' ? new Date().toISOString() : job.completedDate,
             blockerReason: newStatus === 'blocked' ? (reason || job.blockerReason) : undefined,
             blockedSince: newStatus === 'blocked' ? new Date().toISOString() : undefined
@@ -2097,25 +2131,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!subject) {
       if (type === 'nearly_due') {
-        subject = `⏰ [Nearly Due] ${job?.id}: ${job?.title} (Due soon)`;
+        subject = `[Upcoming Deadline] ${job?.id}: ${job?.title} (Due soon)`;
       } else if (type === 'due_now') {
-        subject = `🔔 [Deliverable Due] ${job?.id}: Time to push work to superior for review`;
+        subject = `[Deliverable Due Now] ${job?.id}: Time to push work to superior for review`;
       } else if (type === 'traffic_prompt') {
-        subject = `⚠️ [1h Overdue Alert] Traffic prompt required for ${job?.id}`;
+        subject = `[Traffic Prompt - 1h Overdue] Traffic prompt required for ${job?.id}`;
       } else if (type === 'escalation_lead') {
-        subject = `🚨 [3h Overdue Escalation] Superior intervention required for ${job?.id}`;
+        subject = `[Lead Escalation - 3h Overdue] Superior intervention required for ${job?.id}`;
       } else if (type === 'escalation_director') {
-        subject = `🔴 [24h Overdue Escalation] Studio Director intervention required for ${job?.id}`;
+        subject = `[Director Escalation - 24h Overdue] Studio Director intervention required for ${job?.id}`;
       } else if (type === 'escalation_gm') {
-        subject = `⛔ [72h Critical GM Escalation] Deliverable 3 Days Overdue: GM Executive Intervention for ${job?.id}`;
+        subject = `[Critical Escalation - 72h Overdue] Deliverable 3 Days Overdue: GM Executive Intervention for ${job?.id}`;
       } else if (type === 'overdue') {
-        subject = `🚨 [URGENT OVERDUE] ${job?.id}: ${job?.title} has passed delivery deadline`;
+        subject = `[Overdue Alert] ${job?.id}: ${job?.title} has passed delivery deadline`;
       } else if (type === 'debrief_ready') {
-        subject = `📋 [Debrief Ready] ${job?.id} (${brandName}) material prepared for squad debrief`;
+        subject = `[Debrief Ready] ${job?.id} (${brandName}) material prepared for squad debrief`;
       } else if (type === 'assignment') {
-        subject = `🎯 [Task Assignment] You have been allocated to ${job?.id} (${brandName})`;
+        subject = `[Task Assignment] You have been allocated to ${job?.id} (${brandName})`;
       } else {
-        subject = `🏆 [Agency Honor] Efficiency & Craft Award conferred by Management`;
+        subject = `[Agency Honor] Efficiency & Craft Award conferred by Management`;
       }
     }
 
@@ -2750,19 +2784,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setEfficiencyRewards((prev) => [newReward, ...prev]);
 
-    // Boost points in leaderboard
-    setEfficiencyLeaderboard((prev) =>
-      prev.map((entry) => {
-        if (entry.employeeId === rewardData.employeeId) {
-          return {
-            ...entry,
-            points: entry.points + 250,
-            activeStreak: entry.activeStreak + 1
-          };
-        }
-        return entry;
-      })
-    );
+    // Boost points in dynamic leaderboard
+    setLeaderboardBonusPoints((prev) => ({
+      ...prev,
+      [rewardData.employeeId]: (prev[rewardData.employeeId] || 0) + 250
+    }));
 
     logAuditEvent(
       'EFFICIENCY_REWARD_CONFERRED',

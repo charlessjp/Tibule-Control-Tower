@@ -522,7 +522,7 @@ export function compileUserPerformanceReport(
     const dispatchSlaComplianceRate =
       scopedAgencyJobs.length > 0
         ? Math.round((dispatchCompliantJobs.length / scopedAgencyJobs.length) * 1000) / 10
-        : 98.2;
+        : 100;
 
     // Average Dispatch Turnaround: average hours from creation to assignment
     const turnaroundList = scopedAgencyJobs
@@ -534,7 +534,7 @@ export function compileUserPerformanceReport(
     const averageDispatchTurnaroundHours =
       turnaroundList.length > 0
         ? Number((turnaroundList.reduce((a, b) => a + b, 0) / turnaroundList.length).toFixed(1))
-        : 1.4;
+        : 0.0;
 
     // Brief completeness: percentage of briefs with full spec, type, and benchmark hours
     const completeBriefs = scopedAgencyJobs.filter(
@@ -543,7 +543,7 @@ export function compileUserPerformanceReport(
     const briefCompletenessAuditRate =
       scopedAgencyJobs.length > 0
         ? Math.round((completeBriefs.length / scopedAgencyJobs.length) * 1000) / 10
-        : 96.5;
+        : 100;
 
     // Calendar sync rate: tasks with scheduled debriefs or calendar sync enabled
     const syncedTasks = scopedAgencyJobs.filter(

@@ -303,7 +303,7 @@ export const TrafficDispatchHubView: React.FC = () => {
               </h2>
               <button
                 onClick={() => setShowPointsGuide(!showPointsGuide)}
-                className="flex items-center gap-1 text-[11px] font-medium text-text-tertiary hover:text-text-primary cursor-pointer px-2 py-0.5 rounded border border-border bg-surface-elevated transition-colors"
+                className="flex items-center gap-1 text-xs font-medium text-text-secondary hover:text-text-primary cursor-pointer px-2.5 py-1 rounded-lg border border-border bg-surface-elevated transition-colors"
                 title="Click to learn how Traffic workload points are calculated"
               >
                 <HelpCircle className="w-3.5 h-3.5" style={{ color: 'var(--color-brand)' }} />

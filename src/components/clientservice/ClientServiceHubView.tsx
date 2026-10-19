@@ -241,7 +241,7 @@ export const ClientServiceHubView: React.FC = () => {
           }`}
         >
           <GraduationCap className={`w-4 h-4 ${activeTab === 'nss_progression' ? 'text-brand' : 'text-text-tertiary'}`} />
-          <span>NSS Progression</span>
+          <span>NSS &amp; Staff Development</span>
         </button>
       </div>
 

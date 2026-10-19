@@ -63,7 +63,7 @@ export const GlobalSearchModal: React.FC = () => {
           { label: '/ overloaded teams', desc: 'Jump to traffic map with capacity filters', action: () => { setActiveView('team_traffic'); setIsCommandBarOpen(false); } },
           { label: '/ work due tomorrow', desc: 'Filter high-urgency deliverables', action: () => { setActiveView('all_work'); setIsCommandBarOpen(false); } },
           { label: '/ blocked jobs', desc: 'Inspect jobs delayed by dependencies', action: () => { setActiveView('all_work'); setIsCommandBarOpen(false); } },
-          { label: '/ progression reviews', desc: 'Review submitted role & salary cases', action: () => { setActiveView('cases'); setIsCommandBarOpen(false); } },
+          { label: '/ cases', desc: 'Review submitted role, workload & salary cases', action: () => { setActiveView('cases'); setIsCommandBarOpen(false); } },
         ],
         jobs: baseJobs.slice(0, 3),
         users: baseUsers.slice(0, 3),
@@ -325,7 +325,7 @@ export const GlobalSearchModal: React.FC = () => {
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-text-tertiary px-2 mb-1.5 flex items-center gap-1.5">
                 <FileText className="w-3 h-3 text-purple-500" />
-                Progression & Review Cases ({filteredResults.cases.length})
+                Studio &amp; Review Cases ({filteredResults.cases.length})
               </div>
               <div className="space-y-1">
                 {filteredResults.cases.map((c) => (

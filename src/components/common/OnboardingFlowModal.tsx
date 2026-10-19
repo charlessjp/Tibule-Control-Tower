@@ -265,7 +265,7 @@ export const OnboardingFlowModal: React.FC<OnboardingFlowModalProps> = ({ isOpen
                   Your Contribution
                 </div>
                 <p className="text-xs text-text-secondary leading-relaxed">
-                  Completed work builds undeniable evidence for formal salary, role, and progression reviews.
+                  Completed work builds undeniable evidence for formal salary, role, and merit reviews.
                 </p>
               </div>
 

@@ -361,7 +361,7 @@ export const MyEvidenceView: React.FC = () => {
               ? `Review studio dispatch velocity, SLA relief determinations, and calendar sync governance for ${inspectedUser.name}.`
               : isManagement
               ? `Review verified deliverables, sprint benchmarks, and peer feedback for ${inspectedUser.name}.`
-              : 'Verified record of your completed deliverables, client sign-offs, and peer commendations used for performance reviews and career progression.'}
+              : 'Verified record of your completed deliverables, client sign-offs, and peer commendations used for performance reviews, workload leveling, and evidence dossiers.'}
           </p>
         </div>
 
@@ -419,7 +419,7 @@ export const MyEvidenceView: React.FC = () => {
               }}
             >
               <Award className="w-3.5 h-3.5" />
-              <span>Build Career Case</span>
+              <span>Build Case Dossier</span>
             </button>
           )}
 
@@ -841,7 +841,7 @@ export const MyEvidenceView: React.FC = () => {
                   </h2>
                 </div>
                 <p className="text-xs text-text-tertiary mt-0.5">
-                  Verified record of impact across Exceptional Delivery, Client Impact, Collaboration, Craft, and Process Innovation. Ground truth for progression and appraisal dossiers.
+                  Verified record of impact across Exceptional Delivery, Client Impact, Collaboration, Craft, and Process Innovation. Ground truth for performance and appraisal dossiers.
                 </p>
               </div>
 
@@ -1206,7 +1206,7 @@ export const MyEvidenceView: React.FC = () => {
                       <div className="pt-2.5 border-t border-border flex items-center justify-between flex-wrap gap-2">
                         {c.status === 'DECLINED' ? (
                           <div className="flex items-center gap-2 ml-auto">
-                            <span className="text-xs font-mono text-rose-600 dark:text-rose-400 font-bold px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20">
+                            <span className="text-xs font-semibold text-rose-500">
                               Declined
                             </span>
                             <button
@@ -1395,7 +1395,7 @@ export const MyEvidenceView: React.FC = () => {
               </button>
             </div>
             <p className="text-xs text-text-secondary">
-              Attach an executive commendation note for the permanent career dossier:
+              Attach an executive commendation note for the permanent evidence dossier:
             </p>
             <textarea
               rows={3}

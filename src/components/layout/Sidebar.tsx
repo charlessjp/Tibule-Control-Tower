@@ -194,7 +194,7 @@ export const Sidebar: React.FC = () => {
       {/* ROLE 1: GENERAL MANAGER */}
       {isGM && (
         <>
-          {renderNavButton('overview', 'Nerve Center', <Home className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
+          {renderNavButton('overview', 'Home', <Home className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
           {renderNavButton(
             'cases',
             'Cases to Review',
@@ -239,7 +239,7 @@ export const Sidebar: React.FC = () => {
       {/* ROLE 2: DISCIPLINE MANAGER / CREATIVE DIRECTOR */}
       {isDisciplineLead && (
         <>
-          {renderNavButton('overview', 'Creative Studio Hub', <Home className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
+          {renderNavButton('overview', 'Home', <Home className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
           {renderNavButton(
             'agency_workflow',
             'Workflow Engine',
@@ -285,7 +285,7 @@ export const Sidebar: React.FC = () => {
         <>
           {renderNavButton(
             'overview',
-            'Traffic Dispatch Hub',
+            'Home',
             <Home className="w-4 h-4" />,
             trafficUnassignedCount > 0 ? trafficUnassignedCount : null,
             'amber',
@@ -335,7 +335,7 @@ export const Sidebar: React.FC = () => {
       {/* ROLE 4: CLIENT SERVICE / ACCOUNTS */}
       {isClientService && (
         <>
-          {renderNavButton('overview', 'Client Service Hub', <Home className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
+          {renderNavButton('overview', 'Home', <Home className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
           {renderNavButton(
             'agency_workflow',
             'Workflow Engine',
@@ -377,7 +377,7 @@ export const Sidebar: React.FC = () => {
       {/* ROLE 5: SPECIALIST / PRODUCTION EMPLOYEE */}
       {isEmployee && (
         <>
-          {renderNavButton('overview', 'My Workspace', <Home className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
+          {renderNavButton('overview', 'Home', <Home className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
           {renderNavButton('my_work', 'My Work', <CheckSquare className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
           {renderNavButton('visual_analytics', 'My Analytics', <BarChart3 className="w-4 h-4" />, null, 'primary', false, isCollapsed)}
           {renderNavButton('evidence', 'My Evidence', <Award className="w-4 h-4" />, null, 'primary', false, isCollapsed)}

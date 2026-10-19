@@ -449,7 +449,8 @@ export type CaseType =
   | 'traffic_scope_dispute'
   | 'traffic_capacity_requisition'
   | 'traffic_process_waiver'
-  | 'traffic_progression'
+  | 'traffic_governance'
+  | 'performance_review'
   | 'sla_exception_ruling'
   | 'scope_dispute'
   | 'capacity_requisition'
@@ -473,7 +474,7 @@ export interface CasePromptLog {
   message: string;
 }
 
-export interface ProgressionCase {
+export interface StudioCase {
   id: string;
   employeeId: string;
   employeeName: string;
@@ -486,7 +487,7 @@ export interface ProgressionCase {
   reviewerName?: string;
   title: string;
   narrative: string;
-  category?: 'career_progression' | 'operational_sla_dispute' | 'capacity_requisition' | 'process_waiver';
+  category?: 'performance_review' | 'operational_sla_dispute' | 'capacity_requisition' | 'process_waiver' | 'workload_appeal';
   leadEndorsementStatus?: LeadEndorsementStatus;
   leadEndorsementNotes?: string;
   leadEndorsementDate?: string;
@@ -531,6 +532,8 @@ export interface ProgressionCase {
   decisionNotes?: string;
   decisionDate?: string;
 }
+
+export type ProgressionCase = StudioCase;
 
 // ----------------------------------------------------
 // ANNUAL TASK ARCHIVE BACKUP TYPES
@@ -1138,7 +1141,7 @@ export interface NSSCompetencyEvaluation {
   evidenceNotes: string;
 }
 
-export interface NSSProgressionDossier {
+export interface NSSDevelopmentDossier {
   employeeId: string;
   employeeName: string;
   supervisorId: string;
@@ -1154,6 +1157,8 @@ export interface NSSProgressionDossier {
   executiveSponsorNote?: string;
   status: 'active_nss' | 'review_pending' | 'endorsed_for_ae';
 }
+
+export type NSSProgressionDossier = NSSDevelopmentDossier;
 
 // ============================================================================
 // CLIENT SERVICES 40-HOUR CAPACITY, TIMESHEET & DISCREPANCY AUDIT SYSTEM

@@ -19,6 +19,7 @@ import {
   Lock,
   AlertTriangle
 } from 'lucide-react';
+import { DeliverableSubmissionModal } from '../workflow/DeliverableSubmissionModal';
 
 interface MyWorkViewProps {
   filterMode?: 'my_work' | 'all_work' | 'team_queue' | 'unassigned_queue';
@@ -50,6 +51,7 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedSubmitJob, setSelectedSubmitJob] = useState<Job | null>(null);
 
   // New Job Form State
   const [newTitle, setNewTitle] = useState('');
@@ -138,7 +140,7 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
   };
 
   const statusBoardColumns: { id: JobStatus; label: string; color: string }[] = [
-    { id: 'assigned', label: 'To Do', color: 'var(--color-text-tertiary)' },
+    { id: 'assigned', label: 'To Do (Assigned)', color: 'var(--color-text-tertiary)' },
     { id: 'in_progress', label: 'In Progress', color: 'var(--color-brand)' },
     { id: 'blocked', label: 'Waiting / Blocked', color: '#f59e0b' },
     { id: 'in_review', label: 'In Review', color: '#38bdf8' },
@@ -249,17 +251,19 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
             <span>Log Impediment</span>
           </button>
 
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-            style={{
-              backgroundColor: 'var(--color-brand)',
-              color: 'var(--color-brand-contrast)'
-            }}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>New Task</span>
-          </button>
+          {canSeeAllStudioJobs && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-3.5 py-2 rounded-xl font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              style={{
+                backgroundColor: 'var(--color-brand)',
+                color: 'var(--color-brand-contrast)'
+              }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Task</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -521,6 +525,7 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
               job={job}
               isSelected={selectedJobId === job.id}
               onClick={() => setSelectedJobId(job.id)}
+              onOpenSubmitForReview={setSelectedSubmitJob}
             />
           ))}
         </div>
@@ -563,6 +568,7 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
                         job={job}
                         isSelected={selectedJobId === job.id}
                         onClick={() => setSelectedJobId(job.id)}
+                        onOpenSubmitForReview={setSelectedSubmitJob}
                       />
                     ))
                   )}
@@ -717,6 +723,13 @@ export const MyWorkView: React.FC<MyWorkViewProps> = ({ filterMode = 'my_work' }
           </div>
         </div>
       )}
+
+      {/* Deliverable Review Submission Modal */}
+      <DeliverableSubmissionModal
+        job={selectedSubmitJob}
+        isOpen={!!selectedSubmitJob}
+        onClose={() => setSelectedSubmitJob(null)}
+      />
     </div>
   );
 };

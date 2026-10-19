@@ -42,15 +42,15 @@ const SYSTEM_TERM_MAP: Record<string, string> = {
   client_approved: 'Client Approved',
   internal_approved: 'Internal Approved',
 
-  // Progression & Case Types
+  // Studio Case Types
   salary_adjustment: 'Salary Adjustment',
-  role_promotion: 'Role Promotion',
+  role_promotion: 'Role Merit Review',
   workload_rebalance: 'Workload Rebalance',
-  title_upgrade: 'Title Upgrade',
-  fast_track_lead: 'Fast-Track Lead',
+  title_upgrade: 'Seniority Review',
+  fast_track_lead: 'Lead Requisition',
   salary_review: 'Salary Review',
-  promotion: 'Promotion',
-  role_review: 'Role Review',
+  promotion: 'Merit Review',
+  role_review: 'Role & Workload Review',
   responsibility_expansion: 'Responsibility Expansion',
   workload_concern: 'Workload Concern',
   resource_request: 'Resource Request',
@@ -60,7 +60,8 @@ const SYSTEM_TERM_MAP: Record<string, string> = {
   traffic_scope_dispute: 'Scope Breach Dispute',
   traffic_capacity_requisition: 'Emergency Capacity Requisition',
   traffic_process_waiver: 'Process Fast-Track Waiver',
-  traffic_progression: 'Traffic Operations Career Progression',
+  traffic_governance: 'Traffic Operations Governance',
+  performance_review: 'Performance Review',
 
   // Case Statuses & Decisions
   draft: 'Draft',
@@ -156,7 +157,7 @@ const SYSTEM_TERM_MAP: Record<string, string> = {
   BRIEF_SUBMITTED: 'Brief Submitted',
   DELIVERABLE: 'Deliverable',
   TASK: 'Task',
-  CASE: 'Progression Case',
+  CASE: 'Operational Case',
   USER: 'Team Member',
   SYSTEM: 'Governance Engine'
 };

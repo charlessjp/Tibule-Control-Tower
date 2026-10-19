@@ -143,6 +143,14 @@ export const ManagerDashboard: React.FC = () => {
     (j) => j.assigneeId === overloadedMember?.id && j.status !== 'completed'
   );
 
+  // Dynamic Rebalance Capacity Projections
+  const rebalanceHours = rebalanceJob?.estimatedHours || 6;
+  const donorCurrentHours = overloadedMember ? (employeeCapacities[overloadedMember.id]?.committedHours || 44) : 44;
+  const donorProjectedPct = Math.max(0, Math.round(((donorCurrentHours - rebalanceHours) / 40.0) * 100));
+
+  const recipientCurrentHours = availableMember ? (employeeCapacities[availableMember.id]?.committedHours || 24) : 24;
+  const recipientProjectedPct = Math.min(150, Math.round(((recipientCurrentHours + rebalanceHours) / 40.0) * 100));
+
   return (
     <div id="manager-command-centre" className="space-y-8 pb-16">
       {/* 1. Team Management Header */}
@@ -401,7 +409,7 @@ export const ManagerDashboard: React.FC = () => {
               <span className="text-[10px] uppercase font-mono text-text-tertiary">Overloaded Team Lane</span>
               <div className="font-bold text-sm" style={{ color: 'var(--color-critical)' }}>{overloadedMember.name}</div>
               <div className="text-xs font-mono text-text-secondary">
-                Current: {employeeCapacities[overloadedMember.id]?.capacityPercent}% ➔ Projected: 82%
+                Current: {employeeCapacities[overloadedMember.id]?.capacityPercent}% ➔ Projected: {donorProjectedPct}%
               </div>
             </div>
 
@@ -409,7 +417,7 @@ export const ManagerDashboard: React.FC = () => {
               <span className="text-[10px] uppercase font-mono text-text-tertiary">Available Capacity Lane</span>
               <div className="font-bold text-sm" style={{ color: 'var(--color-success)' }}>{availableMember.name}</div>
               <div className="text-xs font-mono text-text-secondary">
-                Current: {employeeCapacities[availableMember.id]?.capacityPercent}% ➔ Projected: 68%
+                Current: {employeeCapacities[availableMember.id]?.capacityPercent}% ➔ Projected: {recipientProjectedPct}%
               </div>
             </div>
 
@@ -881,7 +889,7 @@ export const ManagerDashboard: React.FC = () => {
                             </div>
                           ) : c.status === 'DECLINED' ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-mono text-rose-600 dark:text-rose-400 font-bold px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20">
+                              <span className="text-xs font-semibold text-rose-500">
                                 Declined
                               </span>
                               <button

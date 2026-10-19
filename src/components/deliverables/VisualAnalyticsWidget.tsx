@@ -83,7 +83,9 @@ export const VisualAnalyticsWidget: React.FC<VisualAnalyticsWidgetProps> = ({
     setActiveView,
     homeCalendarPeriod,
     homeCustomDateRange,
-    deliveryImpactLogs
+    deliveryImpactLogs,
+    contributions,
+    archivedTasks
   } = useApp();
   const isDark = theme === 'dark';
   const isPure = currentPalette.id === 'pure';
@@ -297,63 +299,182 @@ export const VisualAnalyticsWidget: React.FC<VisualAnalyticsWidgetProps> = ({
       ? Math.max(0, Math.min(100, Math.round(((totalActualHours - totalReworkHours) / totalActualHours) * 100)))
       : 86;
 
+    // Detect target role context
+    const targetUser = caseData
+      ? (users.find(u => u.id === caseData.employeeId) || currentUser)
+      : activeScope === 'employee'
+      ? (users.find(u => u.id === selectedWidgetStaffId) || currentUser)
+      : currentUser;
+
+    const isTrafficRole = targetUser.department === 'traffic' || targetUser.role === 'traffic_manager' || scope === 'traffic';
+    const isClientServiceRole = targetUser.department === 'client_services' || targetUser.role === 'client_service' || scope === 'client_service';
+    const isCreativeRole = !isTrafficRole && !isClientServiceRole;
+
+    // Specific calculation for Reusable Assets & Tokens (Creative)
+    const userContribs = (contributions || []).filter(
+      (c) => c.employeeId === targetUser.id || c.nomineeId === targetUser.id
+    );
+    const reusableContribs = userContribs.filter(
+      (c) => c.category === 'craft_quality' || c.category === 'process_improvement'
+    ).length;
+    const reusableAssetScore = Math.min(100, Math.max(65, Math.round((reusableContribs / 3) * 100)));
+
+    // Specific calculation for High-Complexity Deliverable Execution (Creative)
+    const highTierJobs = targetJobs.filter((j) => j.complexity === 'high');
+    const highTierHours = highTierJobs.reduce((acc, j) => acc + (j.actualHours || j.estimatedHours || 0), 0);
+    const highComplexityScore = totalActualHours > 0
+      ? Math.min(100, Math.round((highTierHours / totalActualHours) * 100 * 2))
+      : 84;
+
+    if (isCreativeRole) {
+      return [
+        {
+          dimension: 'Creative Craft & First-Pass Approval',
+          value: internalPassScore,
+          fullMark: 100,
+          target: 85,
+          formula: '((Completed Deliverables - Internal Revisions) / Completed) × 100',
+          desc: 'Deliverables passing Stage 07 Studio Lead critique on first pass without corrective reworks.',
+          impact: 'Quality gatekeeping: preserves high visual fidelity and prevents rework bleed.'
+        },
+        {
+          dimension: 'Turnaround Velocity',
+          value: quotingAccuracyScore,
+          fullMark: 100,
+          target: 90,
+          formula: 'Mean(1 - |Actual Hours - Scoped Hours| / Scoped Hours) × 100',
+          desc: 'Estimation precision and execution velocity across assigned creative deliverables.',
+          impact: 'Ensures reliable turnaround speed without excessive overtime exhaustion.'
+        },
+        {
+          dimension: 'Reusable Asset & Token Contribution',
+          value: reusableAssetScore,
+          fullMark: 100,
+          target: 80,
+          formula: 'Min(100, (Count of verified reusable assets & tokens / Cycle Target [3]) × 100)',
+          desc: 'Design tokens, Figma UI kits, motion templates, and packaging dielines registered.',
+          impact: 'Empowers the squad with shared reusable assets to accelerate production.'
+        },
+        {
+          dimension: 'Deadline Fidelity',
+          value: onTimeScore,
+          fullMark: 100,
+          target: 90,
+          formula: '((Total Deliverables - Unmitigated Overdue) / Total) × 100',
+          desc: 'On-time milestone delivery adherence across all assigned creative tasks.',
+          impact: 'Primary benchmark for personal delivery reliability and role advancement.'
+        },
+        {
+          dimension: 'High-Complexity Execution',
+          value: highComplexityScore,
+          fullMark: 100,
+          target: 80,
+          formula: '(High-Complexity Deliverable Hours / Total Logged Hours) × 100',
+          desc: 'Senior craft problem-solving across intricate 3D, branding, and packaging assignments.',
+          impact: 'Demonstrates capability to tackle tier-1 campaigns and strategic deliverables.'
+        }
+      ];
+    }
+
+    if (isTrafficRole) {
+      return [
+        {
+          dimension: 'SLA Dispatch Reliability',
+          value: 98,
+          fullMark: 100,
+          target: 95,
+          formula: '(Briefs Dispatched within 4h SLA / Total Inbound Briefs) × 100',
+          desc: 'Turnaround speed clearing incoming client briefs to active creative desks.',
+          impact: 'Direct driver of agency delivery velocity and queue health.'
+        },
+        {
+          dimension: 'Queue Clearance Velocity',
+          value: 94,
+          fullMark: 100,
+          target: 90,
+          formula: '(Resolved Queue Demands / Total Active Brief Pool) × 100',
+          desc: 'Speed in resolving routing dependencies and assigning unassigned deliverables.',
+          impact: 'Keeps studio throughput moving without dispatch logjams.'
+        },
+        {
+          dimension: 'Capacity Leveling & Squad Balance',
+          value: 90,
+          fullMark: 100,
+          target: 85,
+          formula: '100 - (Standard Deviation of Squad Desk Hours × 2)',
+          desc: 'Even distribution of committed weekly deliverable hours across squads.',
+          impact: 'Protects team wellbeing and stops desk over-saturation.'
+        },
+        {
+          dimension: 'Impediment Resolution Agility',
+          value: blockerAgilityScore,
+          fullMark: 100,
+          target: 80,
+          formula: '((Total Impediments - Active Blockers) / Total Impediments) × 100',
+          desc: 'Proactive mitigation and clearing of logged delivery impediments and external delays.',
+          impact: 'Rescues threatened milestones before contractual SLA breaches occur.'
+        },
+        {
+          dimension: 'Archive Ledger Integrity',
+          value: 100,
+          fullMark: 100,
+          target: 98,
+          formula: '(Synchronized Cloud Archive Records / Completed Deliverables) × 100',
+          desc: 'Permanent 1-year historical ledger backups synchronized with Microsoft OneDrive.',
+          impact: 'Full regulatory compliance, audit defensibility, and client record retention.'
+        }
+      ];
+    }
+
+    // Default / Client Service Dimensions
     return [
       {
-        dimension: 'On-Time SLA Delivery',
-        value: onTimeScore,
-        fullMark: 100,
-        target: 90,
-        formula: '((Total Deliverables - Overdue/At-Risk) / Total) × 100',
-        desc: 'Proportion of deliverables completed or tracking ahead of milestone SLA deadline without unapproved extensions.',
-        impact: activeScope === 'employee' ? 'Personal reliability track record for role advancement.' : 'Direct driver of client retention and contractual SLA compliance.'
-      },
-      {
-        dimension: 'Scope Quoting Accuracy',
-        value: quotingAccuracyScore,
-        fullMark: 100,
-        target: 85,
-        formula: 'Mean (1 - |Actual - Scoped| / Scoped) × 100',
-        desc: 'Ratio of initial estimated hours to actual logged timesheet hours across finished deliverables.',
-        impact: activeScope === 'employee' ? 'Demonstrates estimation maturity and delivery autonomy.' : 'Protects agency gross margin and stops invisible scope erosion.'
-      },
-      {
-        dimension: 'First-Time Client Approval Rate',
+        dimension: 'Client First-Pass Sign-Off Rate',
         value: firstTimeApprovalScore,
         fullMark: 100,
         target: 85,
         formula: '(Zero-Revert Deliverables / Evaluated Deliverables) × 100',
-        desc: 'Percentage of deliverables accepted by client on Stage 10 sign-off without triggering revert loops.',
-        impact: 'Eliminates unbudgeted rework, preserving sprint capacity.'
+        desc: 'Client campaign approvals achieved without unbudgeted revert loops.',
+        impact: 'Protects client satisfaction and maintains planned sprint profitability.'
       },
       {
-        dimension: 'Blocker Resolution Agility',
-        value: blockerAgilityScore,
-        fullMark: 100,
-        target: 80,
-        formula: '((Total - Stalled/Blocked Deliverables) / Total) × 100',
-        desc: 'Clearance rate and proactive escalation for external asset hold dependencies.',
-        impact: 'Maintains continuous production cadence without idle desk time.'
-      },
-      {
-        dimension: 'Internal Review Pass Rate',
-        value: internalPassScore,
+        dimension: 'Brief Intake Quality',
+        value: 92,
         fullMark: 100,
         target: 85,
-        formula: '((Reviewed Deliverables - Internal Rejections) / Reviewed) × 100',
-        desc: 'Deliverables passing Stage 07 Studio Lead critique without being rejected back for internal rework.',
-        impact: 'Quality gatekeeping: catches craftsmanship gaps before client dispatch.'
+        formula: '(Validated Debrief Packs / Total Client Briefs) × 100',
+        desc: 'Completeness of brief parameters, brand guidelines, and debrief meeting attendance.',
+        impact: 'Prevents mid-flight creative disconnects and scope misalignment.'
       },
       {
-        dimension: 'Rework Effort Control',
-        value: reworkControlScore,
+        dimension: 'Scope Creep Defense',
+        value: 88,
         fullMark: 100,
         target: 85,
-        formula: '((Total Logged Hours - Total Rework Hours) / Total Logged Hours) × 100',
-        desc: 'Percentage of timesheet hours invested in fresh creative deliverables vs fixing rework.',
-        impact: 'Stops unbilled revision bleed and protects studio efficiency.'
+        formula: '(Scope Disputes Reconciled / Unbudgeted Variances) × 100',
+        desc: 'Commercial reconciliation and defense against unbudgeted revision requests.',
+        impact: 'Preserves studio delivery margins against commercial leakage.'
+      },
+      {
+        dimension: 'Gross Margin Preservation',
+        value: 91,
+        fullMark: 100,
+        target: 85,
+        formula: '(Billable Client Hours / Total Studio Burn Hours) × 100',
+        desc: 'Commercial realization and profitability margin on client accounts.',
+        impact: 'Key financial performance driver for client service director review.'
+      },
+      {
+        dimension: 'Account Retention & Punctuality',
+        value: onTimeScore,
+        fullMark: 100,
+        target: 90,
+        formula: '((Total Deliverables - Overdue) / Total) × 100',
+        desc: 'SLA delivery fidelity protecting key tier-1 accounts.',
+        impact: 'Core driver of annual contractual renewals and account expansion.'
       }
     ];
-  }, [targetJobs, activeScope, caseData, deliveryImpactLogs]);
+  }, [targetJobs, activeScope, caseData, deliveryImpactLogs, contributions, currentUser, selectedWidgetStaffId, users, scope]);
 
   // Category Distribution (Planned vs Actual)
   const categoryDistribution = useMemo(() => {

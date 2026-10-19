@@ -1503,7 +1503,7 @@ export const OutputEVisualAnalytics: React.FC = () => {
                           </button>
                         ) : (
                           <span
-                            className="inline-flex items-center gap-1 text-[10px] font-mono text-text-tertiary px-2 py-0.5 rounded border border-border/40 bg-surface/50"
+                            className="inline-flex items-center gap-1 text-[11px] text-text-tertiary"
                             title="Seniority access restricted: You can only inspect your own telemetry and those of team members lower in seniority."
                           >
                             <Lock className="w-3 h-3 text-text-tertiary" />

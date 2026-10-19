@@ -77,7 +77,7 @@ export const AuditTrailDrawer: React.FC<AuditTrailDrawerProps> = ({ isOpen, onCl
           >
             <option value="all">All Events ({auditEvents.length})</option>
             <option value="job">Jobs & Tasks</option>
-            <option value="case">Progression Cases</option>
+            <option value="case">Studio Cases</option>
             <option value="user">User & Access</option>
             <option value="team">Teams</option>
             <option value="recognition">Recognitions</option>

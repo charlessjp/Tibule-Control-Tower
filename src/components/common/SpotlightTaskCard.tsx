@@ -16,14 +16,16 @@ interface SpotlightTaskCardProps {
   job: Job;
   onClick?: () => void;
   isSelected?: boolean;
+  onOpenSubmitForReview?: (job: Job) => void;
 }
 
 export const SpotlightTaskCard: React.FC<SpotlightTaskCardProps> = ({
   job,
   onClick,
-  isSelected = false
+  isSelected = false,
+  onOpenSubmitForReview
 }) => {
-  const { theme, users, currentPalette } = useApp();
+  const { theme, users, currentPalette, updateJobStatus, resolveBlocker, openLogDeliveryImpactModal } = useApp();
   const isDark = theme === 'dark';
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -203,6 +205,54 @@ export const SpotlightTaskCard: React.FC<SpotlightTaskCardProps> = ({
             />
           </div>
         </div>
+
+        {/* Workflow Engine Actions */}
+        {job.status === 'assigned' && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              updateJobStatus(job.id, 'in_progress', 'Accepted task');
+            }}
+            className="w-full mt-2.5 py-1.5 px-3 rounded-xl font-bold text-xs bg-brand text-brand-contrast flex items-center justify-center cursor-pointer shadow-xs transition-opacity hover:opacity-90"
+          >
+            Accept Task
+          </button>
+        )}
+
+        {job.status === 'in_progress' && (
+          <div className="flex items-center gap-2 mt-2.5" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => onOpenSubmitForReview?.(job)}
+              className="flex-1 py-1.5 px-3 rounded-xl font-bold text-xs bg-brand text-brand-contrast flex items-center justify-center cursor-pointer shadow-xs transition-opacity hover:opacity-90"
+            >
+              Submit for Review
+            </button>
+            <button
+              onClick={() => openLogDeliveryImpactModal(job.id)}
+              title="Log Delivery Impediment"
+              className="p-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 cursor-pointer shrink-0"
+            >
+              <AlertCircle className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {job.status === 'blocked' && (
+          <div className="mt-2.5" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => resolveBlocker(job.id)}
+              className="w-full py-1.5 px-3 rounded-xl font-bold text-xs border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 flex items-center justify-center cursor-pointer"
+            >
+              Resolve Blocker
+            </button>
+          </div>
+        )}
+
+        {job.status === 'in_review' && (
+          <div className="mt-2.5 py-1 px-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-500 text-[10px] font-mono text-center font-semibold">
+            Under Art Director Review
+          </div>
+        )}
       </div>
 
       {/* Bottom Row: Assignee & Due Date */}

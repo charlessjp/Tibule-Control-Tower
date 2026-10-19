@@ -285,11 +285,11 @@ export const INITIAL_ACCOUNT_COMMITMENTS: CSAccountCommitment[] = [
 ];
 
 /**
- * Structured NSS / Intern Progression Dossier (Progression Pathway to AE)
- * "Completion of National Service should not automatically trigger promotion;
- * readiness and progression remain management decisions supported by evidence."
+ * Structured NSS / Associate Development Dossier (AE Development Pathway)
+ * "Completion of National Service supports structured development;
+ * readiness and staffing remain management decisions supported by evidence."
  */
-export const INITIAL_NSS_PROGRESSION_DOSSIERS: NSSProgressionDossier[] = [
+export const INITIAL_NSS_DEVELOPMENT_DOSSIERS: NSSProgressionDossier[] = [
   {
     employeeId: 'usr-abena-mensah',
     employeeName: 'Abena Mensah',
@@ -343,6 +343,8 @@ export const INITIAL_NSS_PROGRESSION_DOSSIERS: NSSProgressionDossier[] = [
     ]
   }
 ];
+
+export const INITIAL_NSS_PROGRESSION_DOSSIERS = INITIAL_NSS_DEVELOPMENT_DOSSIERS;
 
 /**
  * Helper to compute capacity breakdown for an employee across both dimensions:
